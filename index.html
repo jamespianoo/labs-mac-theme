@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mac Theme | Labs</title>
+    <meta name="description" content="A classic Macintosh desktop experiment.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;700&family=Syne:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --desktop: #008080;
+            --menubar: #ffffff;
+            --chrome: #dddddd;
+            --chrome-hi: #ffffff;
+            --chrome-lo: #888888;
+            --chrome-ink: #000000;
+            --window: #ffffff;
+            --title: #000000;
+            --select: #000000;
+            --select-fg: #ffffff;
+        }
+
+        * { box-sizing: border-box; }
+
+        html, body {
+            margin: 0;
+            height: 100%;
+        }
+
+        body {
+            font-family: "Pixelify Sans", Chicago, Geneva, "Lucida Grande", sans-serif;
+            background: var(--desktop);
+            color: var(--chrome-ink);
+            overflow: hidden;
+            /* Classic Mac desktop dither */
+            background-image:
+                linear-gradient(45deg, #007070 25%, transparent 25%),
+                linear-gradient(-45deg, #007070 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #007070 75%),
+                linear-gradient(-45deg, transparent 75%, #007070 75%);
+            background-size: 4px 4px;
+            background-color: #008080;
+            background-position: 0 0, 0 2px, 2px -2px, -2px 0;
+        }
+
+        /* Menu bar */
+        .menubar {
+            position: fixed;
+            inset: 0 0 auto 0;
+            height: 22px;
+            display: flex;
+            align-items: center;
+            gap: 1.1rem;
+            padding: 0 0.65rem;
+            background: var(--menubar);
+            border-bottom: 1px solid #000;
+            font-size: 13px;
+            z-index: 20;
+            box-shadow: 0 1px 0 #fff inset;
+        }
+
+        .menubar .apple {
+            display: inline-flex;
+            align-items: center;
+            line-height: 1;
+        }
+
+        .menubar .apple svg {
+            display: block;
+        }
+
+        .menubar button {
+            appearance: none;
+            border: 0;
+            background: transparent;
+            font: inherit;
+            padding: 0 0.35rem;
+            height: 18px;
+            cursor: default;
+            color: inherit;
+        }
+
+        .menubar button:hover,
+        .menubar button[aria-pressed="true"] {
+            background: var(--select);
+            color: var(--select-fg);
+        }
+
+        .menubar .spacer { flex: 1; }
+
+        .menubar .clock {
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 0.02em;
+        }
+
+        /* Desktop icons */
+        .desktop {
+            position: absolute;
+            inset: 22px 0 0 0;
+            padding: 1.25rem;
+        }
+
+        .icon {
+            width: 5.5rem;
+            text-align: center;
+            color: #fff;
+            text-shadow: 1px 1px 0 #000;
+            font-size: 12px;
+            cursor: default;
+            user-select: none;
+            animation: fade-in 0.5s ease both;
+        }
+
+        .icon + .icon { margin-top: 1.25rem; }
+
+        .icon .glyph {
+            width: 42px;
+            height: 34px;
+            margin: 0 auto 0.35rem;
+            display: grid;
+            place-items: center;
+            background: #c0c0c0;
+            border: 1px solid #000;
+            box-shadow:
+                inset 1px 1px 0 #fff,
+                inset -1px -1px 0 #808080;
+            font-size: 18px;
+            color: #000;
+            text-shadow: none;
+        }
+
+        .icon.selected .glyph {
+            background: var(--select);
+            color: #fff;
+        }
+
+        .icon.selected .label {
+            background: var(--select);
+            color: var(--select-fg);
+            text-shadow: none;
+            padding: 0 0.25rem;
+        }
+
+        /* Window */
+        .window {
+            position: absolute;
+            top: 14%;
+            left: 50%;
+            width: min(34rem, calc(100vw - 2rem));
+            transform: translateX(-50%) scale(0.96);
+            opacity: 0;
+            background: var(--window);
+            border: 1px solid #000;
+            box-shadow:
+                inset 1px 1px 0 var(--chrome-hi),
+                2px 2px 0 rgba(0, 0, 0, 0.35);
+            animation: window-open 0.55s cubic-bezier(0.2, 0.9, 0.25, 1) 0.2s forwards;
+            z-index: 10;
+        }
+
+        .titlebar {
+            display: grid;
+            grid-template-columns: 18px 1fr 18px;
+            align-items: center;
+            gap: 0.4rem;
+            height: 22px;
+            padding: 0 0.35rem;
+            background: repeating-linear-gradient(
+                to bottom,
+                #fff 0 1px,
+                #ddd 1px 2px
+            );
+            border-bottom: 1px solid #000;
+            font-size: 13px;
+            user-select: none;
+        }
+
+        .titlebar .box {
+            width: 13px;
+            height: 13px;
+            background: var(--chrome);
+            border: 1px solid #000;
+            box-shadow:
+                inset 1px 1px 0 #fff,
+                inset -1px -1px 0 #808080;
+            justify-self: start;
+        }
+
+        .titlebar h1 {
+            margin: 0;
+            justify-self: center;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+            background: var(--window);
+            padding: 0 0.5rem;
+            white-space: nowrap;
+        }
+
+        .content {
+            padding: 1.35rem 1.5rem 1.5rem;
+            min-height: 12rem;
+        }
+
+        .content p {
+            margin: 0 0 1rem;
+            font-family: Geneva, "Lucida Grande", "Helvetica Neue", sans-serif;
+            font-size: 14px;
+            line-height: 1.45;
+        }
+
+        .content p:last-of-type { margin-bottom: 1.35rem; }
+
+        .content .lede {
+            font-size: 15px;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.65rem;
+        }
+
+        .btn {
+            appearance: none;
+            font: inherit;
+            font-family: Geneva, "Lucida Grande", sans-serif;
+            font-size: 13px;
+            padding: 0.35rem 0.9rem;
+            min-width: 5.5rem;
+            background: var(--chrome);
+            color: #000;
+            border: 1px solid #000;
+            box-shadow:
+                inset 1px 1px 0 #fff,
+                inset -1px -1px 0 #808080,
+                1px 1px 0 #000;
+            cursor: pointer;
+            text-decoration: none;
+            text-align: center;
+            transition: transform 0.05s ease;
+        }
+
+        .btn:active {
+            box-shadow:
+                inset 1px 1px 0 #808080,
+                inset -1px -1px 0 #fff;
+            transform: translate(1px, 1px);
+        }
+
+        .btn.primary {
+            box-shadow:
+                inset 1px 1px 0 #fff,
+                inset -1px -1px 0 #808080,
+                0 0 0 2px #000,
+                2px 2px 0 #000;
+            font-weight: 700;
+        }
+
+        .back {
+            position: fixed;
+            right: 1rem;
+            bottom: 1rem;
+            z-index: 15;
+            animation: fade-in 0.6s ease 0.5s both;
+        }
+
+        @keyframes window-open {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) scale(0.88);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) scale(1);
+            }
+        }
+
+        @keyframes fade-in {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @media (max-width: 520px) {
+            .window {
+                top: 18%;
+                width: calc(100vw - 1.25rem);
+            }
+
+            .content { padding: 1rem 1.1rem 1.2rem; }
+
+            .icon { display: none; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .window, .icon, .back { animation: none; opacity: 1; transform: translateX(-50%); }
+        }
+    </style>
+</head>
+<body>
+    <header class="menubar" role="menubar" aria-label="Menu bar">
+        <span class="apple" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true">
+                <path d="M9.6 3.2c-.5.6-1.3.9-2 .8-.1-.7.3-1.5.8-2 .5-.5 1.4-.9 2.1-.9.1.8-.3 1.5-.9 2.1zM11.5 7.3c0-1.5 1.2-2.2 1.3-2.3-.7-1-1.8-1.1-2.2-1.2-1-.1-1.8.6-2.3.6-.5 0-1.2-.5-2-.5-1 0-2 .6-2.5 1.5-1.1 1.9-.3 4.6.8 6.1.5.7 1.1 1.5 1.9 1.5.8 0 1-.5 2-.5s1.2.5 2 .5c.8 0 1.4-.8 1.9-1.5.6-.8.8-1.6.8-1.6s-1.5-.6-1.5-2.1z"/>
+            </svg>
+        </span>
+        <button type="button" aria-pressed="true">File</button>
+        <button type="button">Edit</button>
+        <button type="button">View</button>
+        <button type="button">Special</button>
+        <span class="spacer"></span>
+        <time class="clock" id="clock" datetime=""></time>
+    </header>
+
+    <div class="desktop">
+        <div class="icon selected" aria-hidden="true">
+            <div class="glyph"></div>
+            <div class="label">Mac Theme</div>
+        </div>
+        <div class="icon" aria-hidden="true">
+            <div class="glyph">◆</div>
+            <div class="label">Trash</div>
+        </div>
+    </div>
+
+    <main class="window" aria-labelledby="win-title">
+        <div class="titlebar">
+            <span class="box" aria-hidden="true"></span>
+            <h1 id="win-title">Mac Theme</h1>
+            <span aria-hidden="true"></span>
+        </div>
+        <div class="content">
+            <p class="lede">A classic Macintosh desktop — System 7 chrome, teal desktop, and that chunky click feel.</p>
+            <p>Placeholder for now. Build the experiment here.</p>
+            <div class="actions">
+                <a class="btn primary" href="../">Back to Labs</a>
+            </div>
+        </div>
+    </main>
+
+    <a class="btn back" href="../">Labs</a>
+
+    <script>
+        (function () {
+            var el = document.getElementById("clock");
+            function tick() {
+                var d = new Date();
+                var h = d.getHours();
+                var m = String(d.getMinutes()).padStart(2, "0");
+                var ampm = h >= 12 ? "PM" : "AM";
+                h = h % 12 || 12;
+                el.textContent = h + ":" + m + " " + ampm;
+                el.setAttribute("datetime", d.toISOString());
+            }
+            tick();
+            setInterval(tick, 15000);
+        })();
+    </script>
+</body>
+</html>

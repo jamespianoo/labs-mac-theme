@@ -1,27 +1,25 @@
 <!-- ================================ windows =============================== -->
-<template id="tpl-labs" data-title="Labs" data-w="680" data-h="440" data-info="6 items|Weird projects|jamesbeckwith.com">
+<template id="tpl-labs" data-title="Labs" data-w="680" data-h="440" data-info="4 items|Weird projects">
   <div class="items">
-    <button class="item" data-href="https://labs.jamesbeckwith.com/tubemap/demo.php"><img src="img/icons/folder.webp" width="32" height="32" alt=""><span class="label">Tube Symphony</span></button>
-    <button class="item" data-href="https://labs.jamesbeckwith.com/gig-map/"><img src="img/icons/folder.webp" width="32" height="32" alt=""><span class="label">Gig Map</span></button>
-    <button class="item" data-href="https://labs.jamesbeckwith.com/dead-venues/"><img src="img/icons/folder.webp" width="32" height="32" alt=""><span class="label">Dead Venues</span></button>
-    <button class="item" data-href="https://labs.jamesbeckwith.com/solar-system/"><img src="img/icons/application.webp" width="32" height="32" alt=""><span class="label">Solar System</span></button>
-    <button class="item" data-href="https://labs.jamesbeckwith.com/ganymede-synth-engine/"><img src="img/icons/application.webp" width="32" height="32" alt=""><span class="label">Ganymede</span></button>
-    <button class="item" data-href="https://labs.jamesbeckwith.com/flight-radar/"><img src="img/icons/application.webp" width="32" height="32" alt=""><span class="label">Flight Radar</span></button>
+    <button class="item" data-open="maps"><span class="art"><img src="img/icons/folder-map.webp" width="128" height="128" alt=""></span><span class="label">Maps</span></button>
+    <button class="item" data-href="https://labs.jamesbeckwith.com/solar-system/"><span class="art site"><img src="img/icons/sites/labs-app.webp" width="128" height="128" alt=""></span><span class="label">Solar System</span></button>
+    <button class="item" data-href="https://labs.jamesbeckwith.com/ganymede-synth-engine/"><span class="art site"><img src="img/icons/sites/labs-app.webp" width="128" height="128" alt=""></span><span class="label">Ganymede</span></button>
+    <button class="item" data-href="https://labs.jamesbeckwith.com/flight-radar/"><span class="art site"><img src="img/icons/sites/labs-app.webp" width="128" height="128" alt=""></span><span class="label">Flight Radar</span></button>
   </div>
 </template>
 
-<template id="tpl-maps" data-title="Maps" data-w="626" data-h="404" data-info="3 items|London Underground, venues, gigs|Labs">
+<template id="tpl-maps" data-title="Maps" data-w="626" data-h="404" data-info="3 items|London Underground, venues, gigs">
   <div class="items">
-    <button class="item" data-href="https://labs.jamesbeckwith.com/tubemap/demo.php"><img src="img/icons/folder.webp" width="32" height="32" alt=""><span class="label">Tube Symphony</span></button>
-    <button class="item" data-href="https://labs.jamesbeckwith.com/gig-map/"><img src="img/icons/folder.webp" width="32" height="32" alt=""><span class="label">Gig Map</span></button>
-    <button class="item" data-href="https://labs.jamesbeckwith.com/dead-venues/"><img src="img/icons/folder.webp" width="32" height="32" alt=""><span class="label">Dead Venues</span></button>
+    <button class="item" data-href="https://labs.jamesbeckwith.com/tubemap/demo.php"><span class="art site"><img src="img/icons/sites/tube-symphony.webp" width="128" height="128" alt=""></span><span class="label">Tube Symphony</span></button>
+    <button class="item" data-href="https://labs.jamesbeckwith.com/gig-map/"><span class="art site"><img src="img/icons/sites/gig-map.webp" width="128" height="128" alt=""></span><span class="label">Gig Map</span></button>
+    <button class="item" data-href="https://labs.jamesbeckwith.com/dead-venues/"><span class="art site"><img src="img/icons/sites/dead-venues.webp" width="128" height="128" alt=""></span><span class="label">dead-venues.map</span></button>
   </div>
 </template>
 
 <template id="tpl-music" data-title="Music" data-w="560" data-h="360" data-info="2 items|Albums">
   <div class="items">
-    <button class="item" data-open="album-se10"><img src="img/icons/sound.webp" width="32" height="32" alt=""><span class="label">SE10</span></button>
-    <button class="item" data-open="album-ld"><img src="img/icons/sound.webp" width="32" height="32" alt=""><span class="label">Long Distance</span></button>
+    <button class="item" data-open="album-se10"><span class="art"><img src="img/icons/sound.webp" width="128" height="128" alt=""></span><span class="label">SE10</span></button>
+    <button class="item" data-open="album-ld"><span class="art"><img src="img/icons/sound.webp" width="128" height="128" alt=""></span><span class="label">Long Distance</span></button>
   </div>
 </template>
 
@@ -80,8 +78,8 @@
   <div class="doc" style="max-width:none">
     <p>Two sites built for the Arsenal fandom. Both answer one question, precisely.</p>
     <div class="items" style="margin-top:18px">
-      <button class="item" data-href="https://www.whenissttotteringhamsday.com"><img src="img/icons/application.webp" width="32" height="32" alt=""><span class="label">St Totteringham&#39;s Day</span></button>
-      <button class="item" data-href="https://www.whenisinvinciblesday.com"><img src="img/icons/application.webp" width="32" height="32" alt=""><span class="label">Invincibles Day</span></button>
+      <button class="item" data-href="https://www.whenissttotteringhamsday.com"><span class="art site"><img src="img/icons/sites/st-totteringham.webp" width="128" height="128" alt=""></span><span class="label">St Totteringham&#39;s Day</span></button>
+      <button class="item" data-href="https://www.whenisinvinciblesday.com"><span class="art site"><img src="img/icons/sites/invincibles.webp" width="128" height="128" alt=""></span><span class="label">Invincibles Day</span></button>
     </div>
   </div>
 </template>
@@ -90,37 +88,14 @@
   <div class="doc" style="max-width:none">
     <p>Servicing and restoration of Fender Rhodes, Wurlitzer, Hohner Clavinet and Pianet. Tuning and repair of Steinway, Yamaha and other acoustic pianos.</p>
     <div class="items" style="margin-top:18px">
-      <button class="item" data-href="https://www.jupitervintagepianos.com"><img src="img/icons/application.webp" width="32" height="32" alt=""><span class="label">Jupiter Vintage Pianos</span></button>
-      <button class="item" data-href="https://www.greenwichpianotuner.co.uk"><img src="img/icons/application.webp" width="32" height="32" alt=""><span class="label">Greenwich Piano Services</span></button>
+      <button class="item" data-href="https://www.jupitervintagepianos.com"><span class="art site"><img src="img/icons/sites/jupiter.webp" width="128" height="128" alt=""></span><span class="label">Jupiter Vintage Pianos</span></button>
+      <button class="item" data-href="https://www.greenwichpianotuner.co.uk"><span class="art site"><img src="img/icons/sites/greenwich-piano.webp" width="128" height="128" alt=""></span><span class="label">Greenwich Piano Services</span></button>
     </div>
   </div>
 </template>
 
-<template id="tpl-readme" data-title="readme.txt" data-w="520" data-h="400" data-info="Text|Read only|Desktop">
-  <div class="doc readme">
-    <h2>readme.txt</h2>
-    <p class="sub">Notes from the desk</p>
-    <pre>James Beckwith — Greenwich SE10
-
-Piano, composition, vintage electric pianos,
-and small weird web things that should not
-work as well as they do.
-
-This week:
-  · SE10 still spinning
-  · Tube map as synthesiser (again)
-  · Sticky notes everywhere (again)
-
-If you are here looking for a CV, open
-about-me.pdf. If you are here looking for
-trouble, try Labs.
-
-james@jamesbeckwith.com
-</pre>
-  </div>
-</template>
-
 <?php require __DIR__ . '/about.php'; ?>
+<?php require __DIR__ . '/contact.php'; ?>
 
 <template id="tpl-trash" data-title="Trash" data-w="480" data-h="340" data-info="4 items|Desktop">
   <div class="items" id="trash-items">

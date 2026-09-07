@@ -7,6 +7,7 @@
       <button class="menu-title" data-menu="m-file" aria-expanded="false" aria-haspopup="true">File</button>
       <button class="menu-title" data-menu="m-edit" aria-expanded="false" aria-haspopup="true">Listen</button>
       <button class="menu-title" data-menu="m-view" aria-expanded="false" aria-haspopup="true">View</button>
+      <button class="menu-title" data-menu="m-label" aria-expanded="false" aria-haspopup="true">Label</button>
       <button class="menu-title" data-menu="m-special" aria-expanded="false" aria-haspopup="true">Special</button>
     </div>
     <div class="status">
@@ -39,7 +40,7 @@
 
   <div class="menu" id="m-file" hidden>
     <button data-open="about">About James Beckwith</button>
-    <button data-open="readme">Open readme.txt</button>
+    <button data-open="contact">Contact&hellip;</button>
     <hr>
     <div class="submenu-wrap">
       <button data-submenu="m-labs" aria-haspopup="true" aria-expanded="false">Labs<span>&#9656;</span></button>
@@ -61,12 +62,12 @@
     <hr>
     <a href="https://www.whenissttotteringhamsday.com" target="_blank" rel="noopener">St Totteringham&#39;s Day</a>
     <a href="https://www.whenisinvinciblesday.com" target="_blank" rel="noopener">Invincibles Day</a>
-    <hr>
-    <a href="mailto:james@jamesbeckwith.com">Contact&hellip;</a>
   </div>
 
   <div class="menu" id="m-edit" hidden>
     <button data-open="player">SE10.aiff</button>
+    <hr>
+    <a href="https://realmusic.london" target="_blank" rel="noopener">realmusic.london</a>
     <hr>
     <a href="https://jamesbeckwith.bandcamp.com" target="_blank" rel="noopener">Bandcamp</a>
     <a href="https://open.spotify.com/artist/2IKevWKWuhVBPlg7QtBDOd" target="_blank" rel="noopener">Spotify</a>
@@ -79,14 +80,23 @@
 
   <div class="menu" id="m-view" hidden>
     <button data-open="labs">Labs</button>
+    <button data-open="maps">Maps</button>
     <button data-open="music">Music</button>
     <button data-open="videos">Videos</button>
     <button data-open="football">Football</button>
     <button data-open="piano">Piano Repair</button>
     <hr>
-    <button data-open="readme">readme.txt</button>
+    <button data-open="contact">contact.me</button>
     <button data-open="promo">promo.png</button>
     <button data-open="trash">Trash</button>
+  </div>
+
+  <div class="menu" id="m-label" hidden>
+    <button type="button" data-tag="">None</button>
+    <hr>
+    <button type="button" data-tag="coral"><span class="swatch coral" aria-hidden="true"></span>Coral</button>
+    <button type="button" data-tag="blue"><span class="swatch blue" aria-hidden="true"></span>Blue</button>
+    <button type="button" data-tag="green"><span class="swatch green" aria-hidden="true"></span>Green</button>
   </div>
 
   <div class="menu" id="m-special" hidden>

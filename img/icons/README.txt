@@ -1,17 +1,31 @@
-Desktop icons (WebP)
+Desktop icons
 
-Classic Mac–style bases (nearest-neighbour upscaled from System 7 / OS 8 bitmaps):
-  folder.webp, application.webp, document.webp, sound.webp, textfile.webp,
-  trash.webp, trash-full.webp
+All bitmap icons are 128×128 WebP, shown in one square slot
+(--icon-size: 104px desk / 80px narrow). Folders, apps, docs, sound,
+and trash share that size. Pagefiles use the same slot with inner padding
+so the photo sits smaller inside the document frame.
 
-Specialised folders (folder base + Noun Project solid glyphs, credits stripped):
+Specialty folders (folder base + Noun Project glyphs, credits stripped):
+
   folder-labs.webp      flask
   folder-music.webp     music note
   folder-videos.webp    video / play
   folder-football.webp  football
   folder-piano.webp     tuning fork
+  folder-map.webp       map + pin
 
-  jb.webp               about / identity mark (also favicon + menubar)
+Other desktop icons:
+
+  document.webp, sound.webp, textfile.webp,
+  trash.webp, trash-full.webp
+
+  jb.webp               opaque identity mark (favicon, menubar)
   favicon-16.png, favicon-32.png, apple-touch-icon.png
+
+Website favicons (img/icons/sites/) — used as file icons for external links:
+
+  realmusic.webp, tube-symphony.webp, gig-map.webp, dead-venues.webp,
+  labs-app.webp, st-totteringham.webp, invincibles.webp,
+  jupiter.webp, greenwich-piano.webp
 
 Personal UI homage — not Apple product branding.

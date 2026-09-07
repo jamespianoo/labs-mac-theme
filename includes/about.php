@@ -1,4 +1,4 @@
-<template id="tpl-about" data-title="about-me.pdf" data-w="580" data-h="430" data-info="Read only|jamesbeckwith.com">
+<template id="tpl-about" data-title="about-me.pdf" data-w="580" data-h="430">
   <div class="doc">
     <figure class="portrait">
       <img src="img/promo.png" data-promo alt="James Beckwith">

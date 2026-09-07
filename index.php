@@ -24,12 +24,10 @@ declare(strict_types=1);
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Pixelify+Sans:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="css/desktop.css">
 </head>
 <body class="booting">
-
-<?php require __DIR__ . '/includes/icons.svg.php'; ?>
 
 <div class="hero">
   <?php require __DIR__ . '/includes/desktop-map.php'; ?>
@@ -43,11 +41,14 @@ declare(strict_types=1);
   <div class="boot-veil" aria-hidden="true"></div>
 </div>
 
-<?php require __DIR__ . '/includes/below.php'; ?>
 <?php require __DIR__ . '/includes/windows.php'; ?>
 <?php require __DIR__ . '/includes/context-menu.php'; ?>
 <?php require __DIR__ . '/includes/alert-dialog.php'; ?>
 
 <script src="js/desktop.js" defer></script>
+<script src="js/audio-theme.js" defer></script>
+<script src="js/windows.js" defer></script>
+<script src="js/icons.js" defer></script>
+<script src="js/menus.js" defer></script>
 </body>
 </html>

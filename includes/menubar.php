@@ -1,20 +1,19 @@
 <div class="menubar">
     <button type="button" class="mark" data-open="about" aria-label="About James Beckwith">
-      <img src="img/icons/jb.webp" width="20" height="20" alt="">
+      <img src="img/icons/jb-white.webp" width="20" height="20" alt="">
     </button>
 
     <div class="menus">
       <button class="menu-title" data-menu="m-file" aria-expanded="false" aria-haspopup="true">File</button>
       <button class="menu-title" data-menu="m-edit" aria-expanded="false" aria-haspopup="true">Listen</button>
       <button class="menu-title" data-menu="m-view" aria-expanded="false" aria-haspopup="true">View</button>
-      <button class="menu-title" data-menu="m-label" aria-expanded="false" aria-haspopup="true">Label</button>
       <button class="menu-title" data-menu="m-special" aria-expanded="false" aria-haspopup="true">Special</button>
     </div>
     <div class="status">
       <button class="status-btn" data-menu="m-app" aria-expanded="false" aria-haspopup="true" aria-label="Application menu">
         <svg viewBox="0 0 14 14" aria-hidden="true"><rect x="1" y="2" width="12" height="10" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M1 5h12" stroke="currentColor" stroke-width="1.4"/><rect x="3" y="7" width="3" height="3" fill="currentColor"/></svg>
       </button>
-      <button class="status-btn is-muted" data-menu="m-vol" aria-expanded="false" aria-haspopup="true" aria-label="Volume" id="status-vol">
+      <button class="status-btn" data-menu="m-vol" aria-expanded="false" aria-haspopup="true" aria-label="Volume" id="status-vol">
         <svg class="vol-icon" viewBox="0 0 16 14" aria-hidden="true">
           <path d="M2 5h3l4-3v10L5 9H2z" fill="currentColor"/>
           <g class="vol-waves" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
@@ -46,13 +45,17 @@
       <button data-submenu="m-labs" aria-haspopup="true" aria-expanded="false">Labs<span>&#9656;</span></button>
       <div class="menu submenu" id="m-labs" hidden>
         <button data-open="labs">Open Labs folder</button>
+        <a href="https://labs.jamesbeckwith.com/" target="_blank" rel="noopener">JB Labs</a>
         <hr>
+        <a href="https://labs.jamesbeckwith.com/metis/" target="_blank" rel="noopener">Metis</a>
         <a href="https://labs.jamesbeckwith.com/tubemap/demo.php" target="_blank" rel="noopener">Tube Symphony</a>
         <a href="https://labs.jamesbeckwith.com/gig-map/" target="_blank" rel="noopener">Gig Map</a>
         <a href="https://labs.jamesbeckwith.com/dead-venues/" target="_blank" rel="noopener">Dead Venues</a>
+        <a href="https://labs.jamesbeckwith.com/fantasy-football/" target="_blank" rel="noopener">FPL Maximizer</a>
         <a href="https://labs.jamesbeckwith.com/solar-system/" target="_blank" rel="noopener">Solar System</a>
         <a href="https://labs.jamesbeckwith.com/ganymede-synth-engine/" target="_blank" rel="noopener">Ganymede</a>
         <a href="https://labs.jamesbeckwith.com/flight-radar/" target="_blank" rel="noopener">Flight Radar</a>
+        <a href="https://labs.jamesbeckwith.com/ltd-company-tax/" target="_blank" rel="noopener">Director Tax</a>
         <hr>
         <a href="https://labs.jamesbeckwith.com/" target="_blank" rel="noopener">All experiments</a>
       </div>
@@ -65,7 +68,7 @@
   </div>
 
   <div class="menu" id="m-edit" hidden>
-    <button data-open="player">SE10.aiff</button>
+    <button data-open="music">Music</button>
     <hr>
     <a href="https://realmusic.london" target="_blank" rel="noopener">realmusic.london</a>
     <hr>
@@ -74,8 +77,6 @@
     <a href="https://music.apple.com/gb/artist/james-beckwith/1499185416" target="_blank" rel="noopener">Apple Music</a>
     <a href="https://tidal.com/artist/12732103" target="_blank" rel="noopener">Tidal</a>
     <a href="https://open.qobuz.com/artist/2999610" target="_blank" rel="noopener">Qobuz</a>
-    <hr>
-    <button data-open="music">Releases&hellip;</button>
   </div>
 
   <div class="menu" id="m-view" hidden>
@@ -88,15 +89,8 @@
     <hr>
     <button data-open="contact">contact.me</button>
     <button data-open="promo">promo.png</button>
+    <button data-open="se10-png">se10.png</button>
     <button data-open="trash">Trash</button>
-  </div>
-
-  <div class="menu" id="m-label" hidden>
-    <button type="button" data-tag="">None</button>
-    <hr>
-    <button type="button" data-tag="coral"><span class="swatch coral" aria-hidden="true"></span>Coral</button>
-    <button type="button" data-tag="blue"><span class="swatch blue" aria-hidden="true"></span>Blue</button>
-    <button type="button" data-tag="green"><span class="swatch green" aria-hidden="true"></span>Green</button>
   </div>
 
   <div class="menu" id="m-special" hidden>
@@ -123,14 +117,14 @@
   <div class="menu status-menu vol-menu" id="m-vol" hidden>
     <div class="vol-panel">
       <span class="vol-label">Sound</span>
-      <div class="vol-slider" role="slider" aria-valuemin="0" aria-valuemax="4" aria-valuenow="0" aria-label="Volume" tabindex="0">
+      <div class="vol-slider" role="slider" aria-valuemin="0" aria-valuemax="4" aria-valuenow="3" aria-label="Volume" tabindex="0">
         <div class="vol-rail">
           <i class="vol-fill"></i>
           <b class="vol-thumb"></b>
         </div>
         <div class="vol-ends" aria-hidden="true"><span>Max</span><span>Min</span></div>
       </div>
-      <button type="button" class="vol-mute checked" data-vol-mute>Mute</button>
+      <button type="button" class="vol-mute" data-vol-mute>Mute</button>
     </div>
   </div>
 

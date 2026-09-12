@@ -27,23 +27,7 @@
   else window.setTimeout(endBoot, 520);
 
   function beep() {
-    if (!D.volLevel) return;
-    try {
-      var AC = window.AudioContext || window.webkitAudioContext;
-      if (!AC) return;
-      if (!D.audioCtx) D.audioCtx = new AC();
-      if (D.audioCtx.state === 'suspended') D.audioCtx.resume();
-      var gains = { 1: 0.04, 2: 0.07, 3: 0.11, 4: 0.16 };
-      var o = D.audioCtx.createOscillator();
-      var g = D.audioCtx.createGain();
-      o.type = 'square';
-      o.frequency.value = 880;
-      g.gain.value = gains[D.volLevel] || 0.08;
-      o.connect(g); g.connect(D.audioCtx.destination);
-      o.start();
-      g.gain.exponentialRampToValueAtTime(0.0001, D.audioCtx.currentTime + 0.07);
-      o.stop(D.audioCtx.currentTime + 0.08);
-    } catch (err) {}
+    /* UI click sound removed */
   }
 
   function setVolume(level, playBeep) {
@@ -163,7 +147,7 @@
       volMenu.addEventListener('click', function (e) { e.stopPropagation(); });
       volMenu.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
     }
-    setVolume(0, false);
+    setVolume(3, false);
   }
   bindVolumeSlider();
 

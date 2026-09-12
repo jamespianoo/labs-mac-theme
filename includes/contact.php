@@ -1,8 +1,8 @@
-<template id="tpl-contact" data-title="contact.me" data-w="460" data-h="420" data-info="Mail|james@jamesbeckwith.com">
+<template id="tpl-contact" data-title="contact.me" data-w="360" data-h="480" data-info="Mail|james@jamesbeckwith.com">
   <div class="doc contact-doc">
     <h2>contact.me</h2>
     <p class="sub">Send a message</p>
-    <p class="contact-to"><strong>james@jamesbeckwith.com</strong></p>
+    <p class="contact-to"><a href="mailto:james@jamesbeckwith.com">james@jamesbeckwith.com</a></p>
 
     <div id="form-response" class="form-response" aria-live="polite"></div>
 
@@ -14,7 +14,7 @@
       <input type="email" id="contact-email" name="email" required autocomplete="email">
 
       <label for="contact-message">Message</label>
-      <textarea id="contact-message" name="message" rows="6" required></textarea>
+      <textarea id="contact-message" name="message" rows="5" required></textarea>
 
       <div class="mac-form-actions">
         <button type="submit" class="mac-btn default">Send</button>

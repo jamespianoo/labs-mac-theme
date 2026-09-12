@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="128" height="128">
+  <rect width="32" height="32" rx="7" fill="#181c22"/>
+  <!-- Calculator body -->
+  <rect x="7" y="5" width="18" height="22" rx="3" fill="#242b36" stroke="#48b082" stroke-width="1.3"/>
+  <!-- Display with tax label -->
+  <rect x="9.5" y="7.5" width="13" height="4.5" rx="1" fill="#0d1116"/>
+  <text x="20.5" y="11.2" font-family="system-ui,sans-serif" font-size="3.8" font-weight="bold" fill="#48b082" text-anchor="end">TAX</text>
+  <!-- Buttons -->
+  <circle cx="11.5" cy="15" r="1.2" fill="#8896a8"/>
+  <circle cx="16" cy="15" r="1.2" fill="#8896a8"/>
+  <circle cx="20.5" cy="15" r="1.2" fill="#8896a8"/>
+  <circle cx="11.5" cy="18.5" r="1.2" fill="#8896a8"/>
+  <circle cx="16" cy="18.5" r="1.2" fill="#8896a8"/>
+  <circle cx="20.5" cy="18.5" r="1.2" fill="#8896a8"/>
+  <circle cx="11.5" cy="22" r="1.2" fill="#8896a8"/>
+  <circle cx="16" cy="22" r="1.2" fill="#48b082"/>
+  <circle cx="20.5" cy="22" r="1.2" fill="#48b082"/>
+</svg>

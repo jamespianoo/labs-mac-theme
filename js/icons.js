@@ -8,6 +8,28 @@
     return label ? label.textContent.trim() : '';
   }
 
+  function isTrashCan(icon) {
+    return !!(icon && (icon.classList.contains('trash') || icon.getAttribute('data-trash') != null));
+  }
+
+  function isPinned(icon) {
+    if (!icon || !D.PINNED_IDS) return false;
+    var id = icon.dataset.id || icon.dataset.open;
+    return !!(id && D.PINNED_IDS[id]);
+  }
+
+  function ensureTrashOnDesktop() {
+    if (!D.iconsHost) return;
+    var can = D.trashIcon || document.querySelector('.icon.trash');
+    if (!can) return;
+    D.trashIcon = can;
+    if (can.parentNode !== D.iconsHost) {
+      D.iconsHost.appendChild(can);
+      delete can.dataset.trashId;
+      can.classList.remove('selected', 'dragging');
+    }
+  }
+
   function updateTrashAppearance() {
     if (!D.trashIcon) return;
     var img = D.trashIcon.querySelector('.art img');
@@ -22,7 +44,7 @@
     host.innerHTML = '';
     var items = D.trashed ? Array.prototype.slice.call(D.trashed.children) : [];
     if (!items.length) {
-      host.innerHTML = '<p class="empty-trash">The Trash is empty. Even the bad domain names are gone.</p>';
+      host.innerHTML = '<p class="empty-trash">The Trash is empty.</p>';
       return;
     }
     items.forEach(function (icon) {
@@ -33,6 +55,7 @@
       if (art) b.insertBefore(art.cloneNode(true), b.firstChild);
       b.querySelector('.label').textContent = name;
       host.appendChild(b);
+      bindTrashItemDrag(b, icon);
     });
   }
 
@@ -50,43 +73,61 @@
   }
 
   function moveToTrash(icon) {
-    if (!icon || icon.dataset.trash || !D.trashed) return;
+    if (!icon || isTrashCan(icon) || isPinned(icon) || !D.trashed) return;
     if (icon.classList.contains('renaming')) return;
     var winName = icon.dataset.open;
+    var prevShelf = icon.dataset.shelf;
     if (winName && D.open[winName] && winName !== 'trash') D.closeWindow(winName);
     if (!icon.dataset.trashId) icon.dataset.trashId = String(++D.trashSeq);
     icon.classList.remove('selected', 'dragging');
+    delete icon.dataset.shelf;
     D.trashed.appendChild(icon);
+    saveShelfState();
     updateTrashAppearance();
     refreshTrashWindow();
+    if (prevShelf) refreshFolderWindow(prevShelf);
     savePositions();
   }
 
   function emptyTrash() {
+    ensureTrashOnDesktop();
     if (!D.trashed || !D.trashed.children.length) return;
-    var items = Array.prototype.slice.call(D.trashed.children);
-    var count = items.length;
+    var items = Array.prototype.slice.call(D.trashed.children).filter(function (icon) {
+      return !isTrashCan(icon);
+    });
+    if (!items.length) return;
+    var count = 0;
     var names = [];
     var gone = readGone();
     var seeds = readClearedSeeds();
     items.forEach(function (icon) {
-      var id = icon.dataset.id;
+      if (icon.dataset.open && D.FOLDER_IDS && D.FOLDER_IDS[icon.dataset.open]) {
+        /* Protect core site folders from permanent destruction */
+        delete icon.dataset.trashId;
+        delete icon.dataset.shelf;
+        D.iconsHost.appendChild(icon);
+        icon.setAttribute('data-scatter', '');
+        return;
+      }
+      count++;
+      var id = iconKey(icon);
       var label = iconLabel(icon);
       if (label) names.push(label);
       if (id && gone.indexOf(id) === -1) gone.push(id);
       if (icon.dataset.trashId && String(icon.dataset.trashId).indexOf('seed-') === 0) {
         if (seeds.indexOf(icon.dataset.trashId) === -1) seeds.push(icon.dataset.trashId);
       }
+      icon.remove();
     });
     writeGone(gone);
     writeClearedSeeds(seeds);
     purgeGoneFromPositions(gone);
-    D.trashed.innerHTML = '';
+    saveShelfState();
     updateTrashAppearance();
     refreshTrashWindow();
     savePositions();
     if (typeof D.beep === 'function') D.beep();
-    showEgg(count, names);
+    if (count > 0) showEgg(count, names);
   }
 
   function readGone() {
@@ -117,9 +158,11 @@
   }
   function applyGoneState() {
     var gone = readGone();
-    if (D.iconsHost && gone.length) {
+    if (gone.length) {
       gone.forEach(function (id) {
-        var icon = D.iconsHost.querySelector('.icon[data-id="' + id + '"]');
+        if (D.PINNED_IDS && D.PINNED_IDS[id]) return;
+        var icon = (D.iconsHost && (D.iconsHost.querySelector('.icon[data-id="' + id + '"]') || D.iconsHost.querySelector('.icon[data-open="' + id + '"]')))
+          || (D.shelved && (D.shelved.querySelector('.icon[data-id="' + id + '"]') || D.shelved.querySelector('.icon[data-open="' + id + '"]')));
         if (icon) icon.remove();
       });
     }
@@ -152,29 +195,43 @@
     });
   }
 
-  function restoreFromTrash(id) {
+  function restoreFromTrash(id, clientX, clientY) {
     var icon = D.trashed && D.trashed.querySelector('[data-trash-id="' + id + '"]');
     if (!icon || !D.iconsHost) return;
+    delete icon.dataset.trashId;
+    delete icon.dataset.shelf;
     D.iconsHost.appendChild(icon);
     if (!icon.dataset.dragBound) {
       dragIcon(icon);
       icon.dataset.dragBound = '1';
     }
-    if (!icon.style.left || !icon.style.top) {
+    if (clientX != null && clientY != null && D.desktop) {
+      var desk = D.desktop.getBoundingClientRect();
+      var iw = icon.offsetWidth || 80;
+      var ih = icon.offsetHeight || 80;
+      var x = clientX - desk.left - iw / 2;
+      var y = clientY - desk.top - ih / 2;
+      var maxX = Math.max(0, D.desktop.clientWidth - iw);
+      var maxY = Math.max(0, D.desktop.clientHeight - ih);
+      icon.style.left = Math.max(0, Math.min(x, maxX)) + 'px';
+      icon.style.top = Math.max(0, Math.min(y, maxY)) + 'px';
+    } else if (!icon.style.left || !icon.style.top) {
       icon.style.left = (40 + Math.floor(Math.random() * 80)) + 'px';
       icon.style.top = (40 + Math.floor(Math.random() * 80)) + 'px';
     }
     if (!icon.dataset.id && !icon.dataset.open) {
-      icon.dataset.id = 'restored-' + (icon.dataset.trashId || Date.now());
+      icon.dataset.id = 'restored-' + Date.now();
     }
     icon.setAttribute('data-scatter', '');
     updateTrashAppearance();
     refreshTrashWindow();
+    saveShelfState();
     savePositions();
+    if (typeof D.beep === 'function') D.beep();
   }
 
   function duplicateIcon(icon) {
-    if (!icon || icon.dataset.trash) return;
+    if (!icon || isTrashCan(icon)) return;
     var clone = icon.cloneNode(true);
     clone.classList.remove('selected', 'dragging', 'renaming');
     delete clone.dataset.dragged;
@@ -191,7 +248,7 @@
   }
 
   function renameIcon(icon) {
-    if (!icon || icon.dataset.trash || icon.classList.contains('renaming')) return;
+    if (!icon || isTrashCan(icon) || icon.classList.contains('renaming')) return;
     var label = icon.querySelector('.label');
     if (!label) return;
     var prev = label.textContent;
@@ -227,7 +284,7 @@
   function getInfo(icon) {
     var name = icon ? iconLabel(icon) : 'Desktop';
     var kind = !icon ? 'Desktop'
-      : (icon.dataset.trash ? 'Trash'
+      : (isTrashCan(icon) ? 'Trash'
       : (/\.pdf$/i.test(name) ? 'PDF document'
       : (/\.png$/i.test(name) || icon.querySelector('.pagefile') ? 'PNG image'
       : (/\.txt$/i.test(name) ? 'Text document'
@@ -290,7 +347,7 @@
         left: parseInt(icon.style.left, 10) || 0,
         top: parseInt(icon.style.top, 10) || 0
       };
-      if (icon.dataset.trash && icon.dataset.moved) map[id].moved = 1;
+      if (isTrashCan(icon) && icon.dataset.moved) map[id].moved = 1;
     });
     try { localStorage.setItem(D.POS_KEY, JSON.stringify(map)); } catch (err) {}
   }
@@ -303,12 +360,12 @@
       var id = iconKey(icon);
       var pos = id && map[id];
       if (!pos || typeof pos.left !== 'number' || typeof pos.top !== 'number') {
-        if (!icon.dataset.trash) missing.push(icon);
+        if (!isTrashCan(icon)) missing.push(icon);
         return;
       }
       icon.style.left = pos.left + 'px';
       icon.style.top = pos.top + 'px';
-      if (icon.dataset.trash && pos.moved) icon.dataset.moved = '1';
+      if (isTrashCan(icon) && pos.moved) icon.dataset.moved = '1';
       applied++;
     });
     return { applied: applied, missing: missing };
@@ -585,9 +642,298 @@
   }
 
   function overTrash(x, y) {
-    if (!D.trashIcon) return false;
-    var r = D.trashIcon.getBoundingClientRect();
-    return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+    var t = dropTargetAt(x, y, null);
+    return !!(t && t.type === 'trash');
+  }
+
+  function isFolderAncestor(ancestorName, folderName) {
+    if (!ancestorName || !folderName) return false;
+    if (ancestorName === folderName) return true;
+    var cur = folderName;
+    var visited = {};
+    while (cur && !visited[cur]) {
+      visited[cur] = true;
+      var icon = findShelvedIcon(cur) || (D.iconsHost && (D.iconsHost.querySelector('.icon[data-open="' + cur + '"]') || D.iconsHost.querySelector('.icon[data-id="' + cur + '"]')));
+      if (!icon) break;
+      var parent = icon.dataset.shelf;
+      if (!parent) break;
+      if (parent === ancestorName) return true;
+      cur = parent;
+    }
+    return false;
+  }
+
+  function isFolderDropTarget(el) {
+    if (!el || isTrashCan(el)) return false;
+    var name = el.dataset.open || (el.dataset.unshelf && D.FOLDER_IDS && D.FOLDER_IDS[el.dataset.unshelf] ? el.dataset.unshelf : null);
+    return !!(name && D.FOLDER_IDS && D.FOLDER_IDS[name]);
+  }
+
+  function clearDropTargets() {
+    document.querySelectorAll('.drop-target').forEach(function (n) {
+      n.classList.remove('drop-target');
+    });
+  }
+
+  function dropTargetAt(x, y, dragging) {
+    var prev = dragging ? dragging.style.pointerEvents : '';
+    if (dragging) dragging.style.pointerEvents = 'none';
+    var el = document.elementFromPoint(x, y);
+    if (dragging) dragging.style.pointerEvents = prev;
+    if (!el) return null;
+
+    var draggingName = dragging ? (dragging.dataset.open || dragging.dataset.unshelf || '') : '';
+
+    /* 1. Desktop icon */
+    var deskIcon = el.closest('#icons .icon');
+    if (deskIcon && deskIcon !== dragging) {
+      if (isTrashCan(deskIcon)) return { type: 'trash', el: deskIcon };
+      var fName = deskIcon.dataset.open;
+      if (fName && D.FOLDER_IDS && D.FOLDER_IDS[fName]) {
+        if (draggingName && isFolderAncestor(draggingName, fName)) return null;
+        return { type: 'folder', name: fName, el: deskIcon };
+      }
+    }
+
+    /* 2. Folder item inside open window */
+    var winItem = el.closest('.win .item');
+    if (winItem && winItem !== dragging) {
+      var itemFolder = winItem.dataset.open || (winItem.dataset.unshelf && D.FOLDER_IDS && D.FOLDER_IDS[winItem.dataset.unshelf] ? winItem.dataset.unshelf : null);
+      if (itemFolder && D.FOLDER_IDS && D.FOLDER_IDS[itemFolder]) {
+        if (draggingName && isFolderAncestor(draggingName, itemFolder)) return null;
+        return { type: 'folder', name: itemFolder, el: winItem };
+      }
+    }
+
+    /* 3. Open window */
+    var win = el.closest('.win');
+    if (win && D.open) {
+      var name = null;
+      Object.keys(D.open).forEach(function (k) {
+        if (D.open[k] && D.open[k].el === win) name = k;
+      });
+      if (name === 'trash') return { type: 'trash', el: win };
+      if (name && D.FOLDER_IDS && D.FOLDER_IDS[name]) {
+        if (draggingName && isFolderAncestor(draggingName, name)) return null;
+        return { type: 'folder', name: name, el: win };
+      }
+    }
+    return null;
+  }
+
+  function highlightDropTarget(target) {
+    clearDropTargets();
+    if (target && target.el) target.el.classList.add('drop-target');
+  }
+
+  function readShelfMap() {
+    try {
+      var raw = localStorage.getItem(D.SHELF_KEY);
+      var map = raw ? JSON.parse(raw) : {};
+      return map && typeof map === 'object' ? map : {};
+    } catch (err) { return {}; }
+  }
+
+  function writeShelfMap(map) {
+    try { localStorage.setItem(D.SHELF_KEY, JSON.stringify(map)); } catch (err) {}
+  }
+
+  function saveShelfState() {
+    if (!D.shelved) return;
+    var map = {};
+    Array.prototype.forEach.call(D.shelved.children, function (icon) {
+      var folder = icon.dataset.shelf;
+      var id = iconKey(icon);
+      if (!folder || !id) return;
+      if (!map[folder]) map[folder] = [];
+      map[folder].push(id);
+    });
+    writeShelfMap(map);
+  }
+
+  function countShelved(folder) {
+    if (!D.shelved || !folder) return 0;
+    var count = 0;
+    for (var i = 0; i < D.shelved.children.length; i++) {
+      if (D.shelved.children[i].dataset.shelf === folder) count++;
+    }
+    return count;
+  }
+
+  function applyShelfState() {
+    if (!D.shelved || !D.iconsHost) return;
+    var raw = null;
+    try { raw = localStorage.getItem(D.SHELF_KEY); } catch (e) {}
+    if (raw === null) {
+      /* First run: HTML markup defines initial shelf positions */
+      return;
+    }
+    var map = readShelfMap();
+    var targetShelfForId = {};
+    Object.keys(map).forEach(function (folder) {
+      if (!D.FOLDER_IDS[folder]) return;
+      (map[folder] || []).forEach(function (id) {
+        if (D.PINNED_IDS && D.PINNED_IDS[id]) return;
+        targetShelfForId[id] = folder;
+      });
+    });
+
+    var allIcons = Array.prototype.slice.call(D.iconsHost.children).concat(
+      Array.prototype.slice.call(D.shelved.children)
+    );
+
+    allIcons.forEach(function (icon) {
+      if (isTrashCan(icon)) return;
+      var id = iconKey(icon);
+      if (!id) return;
+      var dest = targetShelfForId[id];
+      if (dest) {
+        icon.dataset.shelf = dest;
+        if (icon.parentNode !== D.shelved) D.shelved.appendChild(icon);
+      } else {
+        if (icon.dataset.shelf) delete icon.dataset.shelf;
+        if (icon.parentNode !== D.iconsHost) {
+          D.iconsHost.appendChild(icon);
+          if (!icon.dataset.dragBound) {
+            dragIcon(icon);
+            icon.dataset.dragBound = '1';
+          }
+        }
+      }
+    });
+  }
+
+  function refreshFolderWindow(name) {
+    if (!name || !D.open[name]) return;
+    var host = D.open[name].el.querySelector('#video-items') || D.open[name].el.querySelector('.items');
+    if (!host) return;
+    host.innerHTML = '';
+    fillFolderShelf(host, name);
+    var n = host.querySelectorAll('.item').length;
+    var bar = D.open[name].el.querySelector('.infobar');
+    if (bar && bar.firstElementChild) {
+      bar.firstElementChild.textContent = n + ' item' + (n === 1 ? '' : 's');
+    }
+  }
+
+  function fillFolderShelf(host, folderName) {
+    if (!host || !D.shelved || !folderName) return;
+    if (folderName === 'videos' || host.id === 'video-items') {
+      host.style.gridTemplateColumns = 'repeat(auto-fill,minmax(190px,1fr))';
+    }
+    Array.prototype.forEach.call(D.shelved.children, function (icon) {
+      if (icon.dataset.shelf !== folderName) return;
+      var id = iconKey(icon);
+      var art = icon.querySelector('.art');
+      var b = D.el('<button class="item" type="button"><span class="label"></span></button>');
+      b.dataset.unshelf = id;
+      if (icon.dataset.open) b.dataset.open = icon.dataset.open;
+      if (icon.dataset.href) b.dataset.href = icon.dataset.href;
+      if (icon.dataset.video) b.dataset.video = icon.dataset.video;
+      if (icon.dataset.tag) b.dataset.tag = icon.dataset.tag;
+
+      if (folderName === 'videos' || host.id === 'video-items' || icon.dataset.video) {
+        b.classList.add('video-item');
+        var thumb = art ? art.querySelector('img') : null;
+        var frame = D.el(
+          '<div class="video-thumb-frame">' +
+            '<span class="video-play-badge" aria-label="Play">' +
+              '<svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>' +
+            '</span>' +
+          '</div>'
+        );
+        if (thumb) {
+          var imgClone = thumb.cloneNode(true);
+          imgClone.className = 'thumb';
+          frame.insertBefore(imgClone, frame.firstChild);
+        }
+        b.insertBefore(frame, b.firstChild);
+      } else if (art) {
+        b.insertBefore(art.cloneNode(true), b.firstChild);
+      }
+      var labelText = (icon.dataset.video && D.YT_TITLES && D.YT_TITLES[icon.dataset.video]) || iconLabel(icon);
+      if (icon.dataset.video && D.YT_TITLES && D.YT_TITLES[icon.dataset.video]) {
+        var iconLbl = icon.querySelector('.label');
+        if (iconLbl) iconLbl.textContent = labelText;
+      }
+      b.querySelector('.label').textContent = labelText;
+      host.appendChild(b);
+      bindShelfItemDrag(b, icon);
+    });
+  }
+
+  function moveToFolder(icon, folderName) {
+    if (!icon || !folderName || !D.shelved || !D.FOLDER_IDS[folderName]) return;
+    if (isTrashCan(icon) || isPinned(icon)) return;
+    if (icon.dataset.open === folderName) return;
+    if (icon.dataset.open && isFolderAncestor(icon.dataset.open, folderName)) return;
+
+    var prevFolder = icon.dataset.shelf;
+    if (prevFolder === folderName) return;
+
+    var winName = icon.dataset.open;
+    if (winName && D.open[winName]) D.closeWindow(winName);
+
+    icon.classList.remove('selected', 'dragging', 'drop-target');
+    icon.dataset.shelf = folderName;
+    D.shelved.appendChild(icon);
+
+    saveShelfState();
+    savePositions();
+
+    if (prevFolder && prevFolder !== folderName) refreshFolderWindow(prevFolder);
+    refreshFolderWindow(folderName);
+    if (typeof D.beep === 'function') D.beep();
+  }
+
+  function unshelfToDesktop(icon, clientX, clientY) {
+    if (!icon || !D.iconsHost || !D.desktop) return;
+    var prevFolder = icon.dataset.shelf;
+    delete icon.dataset.shelf;
+    icon.classList.remove('selected', 'dragging', 'drop-target');
+    D.iconsHost.appendChild(icon);
+    if (!icon.dataset.dragBound) {
+      dragIcon(icon);
+      icon.dataset.dragBound = '1';
+    }
+    var desk = D.desktop.getBoundingClientRect();
+    var iw = icon.offsetWidth || 80;
+    var ih = icon.offsetHeight || 80;
+    var x = (clientX != null ? clientX - desk.left : 40) - iw / 2;
+    var y = (clientY != null ? clientY - desk.top : 40) - ih / 2;
+    var maxX = Math.max(0, D.desktop.clientWidth - iw);
+    var maxY = Math.max(0, D.desktop.clientHeight - ih);
+    icon.style.left = Math.max(0, Math.min(x, maxX)) + 'px';
+    icon.style.top = Math.max(0, Math.min(y, maxY)) + 'px';
+    icon.setAttribute('data-scatter', '');
+    saveShelfState();
+    savePositions();
+    if (prevFolder) refreshFolderWindow(prevFolder);
+    if (typeof D.beep === 'function') D.beep();
+  }
+
+  function findShelvedIcon(id) {
+    if (!D.shelved || !id) return null;
+    var icon = D.shelved.querySelector('.icon[data-id="' + id + '"]')
+      || D.shelved.querySelector('.icon[data-open="' + id + '"]');
+    if (icon) return icon;
+    for (var i = 0; i < D.shelved.children.length; i++) {
+      if (iconLabel(D.shelved.children[i]) === id) return D.shelved.children[i];
+    }
+    return null;
+  }
+
+  function applyDrop(icon, target, clientX, clientY) {
+    if (!icon || !target) return false;
+    if (target.type === 'trash') {
+      moveToTrash(icon);
+      return true;
+    }
+    if (target.type === 'folder' && target.name) {
+      moveToFolder(icon, target.name);
+      return true;
+    }
+    return false;
   }
 
   function clearSel() {
@@ -598,6 +944,10 @@
 
   function activate(node) {
     if (node.dataset.restore) return D.restoreFromTrash(node.dataset.restore);
+    if (node.dataset.unshelf) {
+      var shelved = findShelvedIcon(node.dataset.unshelf);
+      if (shelved) return activate(shelved);
+    }
     if (node.dataset.video) return D.openVideo(node.dataset.video);
     if (node.dataset.href) return window.open(node.dataset.href, '_blank', 'noopener');
     if (node.dataset.open) return D.openWindow(node.dataset.open);
@@ -626,20 +976,143 @@
       var maxY = Math.max(0, D.desktop.clientHeight - icon.offsetHeight);
       icon.style.left = Math.max(0, Math.min(ox + dx, maxX)) + 'px';
       icon.style.top = Math.max(0, Math.min(oy + dy, maxY)) + 'px';
+      highlightDropTarget(dropTargetAt(e.clientX, e.clientY, icon));
     });
     function end(e) {
       if (!on) return;
       on = false;
       icon.classList.remove('dragging');
       try { icon.releasePointerCapture(e.pointerId); } catch (err) {}
+      var target = moved ? dropTargetAt(e.clientX, e.clientY, icon) : null;
+      clearDropTargets();
       if (moved) {
         icon.dataset.dragged = '1';
-        if (icon.dataset.trash) icon.dataset.moved = '1';
-        if (!icon.dataset.trash && overTrash(e.clientX, e.clientY)) moveToTrash(icon);
-        savePositions();
+        if (isTrashCan(icon)) icon.dataset.moved = '1';
+        if (!isTrashCan(icon) && applyDrop(icon, target, e.clientX, e.clientY)) {
+          /* moved into trash or folder */
+        } else {
+          savePositions();
+        }
       }
     }
     ['pointerup', 'pointercancel'].forEach(function (t) { icon.addEventListener(t, end); });
+  }
+
+  function bindShelfItemDrag(itemBtn, icon) {
+    if (!itemBtn || !icon || itemBtn.dataset.shelfDragBound) return;
+    itemBtn.dataset.shelfDragBound = '1';
+    var on = false, moved = false, sx, sy, ghost = null;
+    itemBtn.addEventListener('pointerdown', function (e) {
+      if (D.small() || e.button > 0) return;
+      if (typeof D.hideMenus === 'function') D.hideMenus();
+      on = true; moved = false;
+      sx = e.clientX; sy = e.clientY;
+      itemBtn.setPointerCapture(e.pointerId);
+      e.preventDefault();
+      e.stopPropagation();
+    });
+    itemBtn.addEventListener('pointermove', function (e) {
+      if (!on) return;
+      var dx = e.clientX - sx, dy = e.clientY - sy;
+      if (!moved && dx * dx + dy * dy < 25) return;
+      if (!moved) {
+        moved = true;
+        ghost = itemBtn.cloneNode(true);
+        ghost.classList.add('shelf-drag');
+        var gw = itemBtn.offsetWidth || 100;
+        ghost.style.cssText = 'position:fixed;left:0;top:0;z-index:9999;pointer-events:none;margin:0;width:' + gw + 'px';
+        document.body.appendChild(ghost);
+        itemBtn.style.opacity = '0.35';
+      }
+      ghost.style.transform = 'translate(' + (e.clientX - (itemBtn.offsetWidth || 100) / 2) + 'px,' + (e.clientY - 40) + 'px)';
+      highlightDropTarget(dropTargetAt(e.clientX, e.clientY, ghost));
+    });
+    function end(e) {
+      if (!on) return;
+      on = false;
+      try { itemBtn.releasePointerCapture(e.pointerId); } catch (err) {}
+      itemBtn.style.opacity = '';
+      var target = moved ? dropTargetAt(e.clientX, e.clientY, ghost) : null;
+      clearDropTargets();
+      if (ghost && ghost.parentNode) ghost.remove();
+      ghost = null;
+      if (!moved) {
+        clearSel();
+        itemBtn.classList.add('selected');
+        itemBtn.dataset.justActivated = '1';
+        setTimeout(function () { delete itemBtn.dataset.justActivated; }, 150);
+        activate(itemBtn);
+        return;
+      }
+      itemBtn.dataset.dragged = '1';
+      var prevFolder = icon.dataset.shelf;
+      if (target && target.type === 'trash') {
+        moveToTrash(icon);
+      } else if (target && target.type === 'folder' && target.name) {
+        moveToFolder(icon, target.name);
+      } else {
+        /* drop on desktop / empty space → put back on desk */
+        unshelfToDesktop(icon, e.clientX, e.clientY);
+      }
+    }
+    ['pointerup', 'pointercancel'].forEach(function (t) { itemBtn.addEventListener(t, end); });
+  }
+
+  function bindTrashItemDrag(itemBtn, icon) {
+    if (!itemBtn || !icon || itemBtn.dataset.trashDragBound) return;
+    itemBtn.dataset.trashDragBound = '1';
+    var on = false, moved = false, sx, sy, ghost = null;
+    itemBtn.addEventListener('pointerdown', function (e) {
+      if (D.small() || e.button > 0) return;
+      if (typeof D.hideMenus === 'function') D.hideMenus();
+      on = true; moved = false;
+      sx = e.clientX; sy = e.clientY;
+      itemBtn.setPointerCapture(e.pointerId);
+      e.preventDefault();
+      e.stopPropagation();
+    });
+    itemBtn.addEventListener('pointermove', function (e) {
+      if (!on) return;
+      var dx = e.clientX - sx, dy = e.clientY - sy;
+      if (!moved && dx * dx + dy * dy < 25) return;
+      if (!moved) {
+        moved = true;
+        ghost = itemBtn.cloneNode(true);
+        ghost.classList.add('shelf-drag');
+        var gw = itemBtn.offsetWidth || 100;
+        ghost.style.cssText = 'position:fixed;left:0;top:0;z-index:9999;pointer-events:none;margin:0;width:' + gw + 'px';
+        document.body.appendChild(ghost);
+        itemBtn.style.opacity = '0.35';
+      }
+      ghost.style.transform = 'translate(' + (e.clientX - (itemBtn.offsetWidth || 100) / 2) + 'px,' + (e.clientY - 40) + 'px)';
+      highlightDropTarget(dropTargetAt(e.clientX, e.clientY, ghost));
+    });
+    function end(e) {
+      if (!on) return;
+      on = false;
+      try { itemBtn.releasePointerCapture(e.pointerId); } catch (err) {}
+      itemBtn.style.opacity = '';
+      var target = moved ? dropTargetAt(e.clientX, e.clientY, ghost) : null;
+      clearDropTargets();
+      if (ghost && ghost.parentNode) ghost.remove();
+      ghost = null;
+      var trashId = icon.dataset.trashId || itemBtn.dataset.restore;
+      if (!moved) {
+        if (trashId) restoreFromTrash(trashId);
+        return;
+      }
+      itemBtn.dataset.dragged = '1';
+      if (target && target.type === 'folder' && target.name) {
+        if (trashId) restoreFromTrash(trashId);
+        moveToFolder(icon, target.name);
+      } else if (target && target.type === 'trash') {
+        /* released in trash -> stays in trash */
+      } else {
+        /* dropped on desktop */
+        if (trashId) restoreFromTrash(trashId, e.clientX, e.clientY);
+      }
+    }
+    ['pointerup', 'pointercancel'].forEach(function (t) { itemBtn.addEventListener(t, end); });
   }
 
   function dragSticky(note) {
@@ -778,18 +1251,30 @@
   D.clearSel = clearSel;
   D.activate = activate;
   D.dragIcon = dragIcon;
+  D.countShelved = countShelved;
+  D.fillFolderShelf = fillFolderShelf;
+  D.moveToFolder = moveToFolder;
+  D.unshelfToDesktop = unshelfToDesktop;
+  D.isFolderAncestor = isFolderAncestor;
+  D.refreshFolderWindow = refreshFolderWindow;
   D.downloadSticky = downloadSticky;
   D.removeSticky = removeSticky;
   D.hideStickyAlert = hideStickyAlert;
   D.askCloseSticky = askCloseSticky;
 
   D.initIcons = function () {
-    document.querySelectorAll('#icons .icon').forEach(function (icon) {
-      dragIcon(icon);
-      icon.dataset.dragBound = '1';
-    });
+    ensureTrashOnDesktop();
+    if (!D.shelved) D.shelved = document.getElementById('shelved');
     updateTrashAppearance();
     applyGoneState();
+    applyShelfState();
+    applyGoneState();
+    document.querySelectorAll('#icons .icon').forEach(function (icon) {
+      if (!icon.dataset.dragBound) {
+        dragIcon(icon);
+        icon.dataset.dragBound = '1';
+      }
+    });
     updateTrashAppearance();
     scatterIcons(false);
     window.addEventListener('resize', function () {

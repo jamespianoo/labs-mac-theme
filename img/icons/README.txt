@@ -1,7 +1,7 @@
 Desktop icons
 
 All bitmap icons are 128×128 WebP, shown in one square slot
-(--icon-size: 104px desk / 80px narrow). Folders, apps, docs, sound,
+(--icon-size: 132px desk / 100px narrow). Folders, apps, docs, sound,
 and trash share that size. Pagefiles use the same slot with inner padding
 so the photo sits smaller inside the document frame.
 

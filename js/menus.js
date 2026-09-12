@@ -17,7 +17,7 @@
     }
     m.hidden = false;
     var r = btn.getBoundingClientRect();
-    var top = '29px';
+    var top = '35px';
     if (btn.closest('.status')) {
       m.style.left = Math.max(2, Math.min(r.right - m.offsetWidth, window.innerWidth - m.offsetWidth - 4)) + 'px';
     } else {
@@ -41,7 +41,7 @@
     var n = D.trashed ? D.trashed.children.length : 0;
     var html;
     if (target && target.classList.contains('icon')) {
-      if (target.dataset.trash) {
+      if (target.classList.contains('trash') || target.getAttribute('data-trash') != null) {
         html =
           '<button type="button" data-ctx="open">Open</button>' +
           '<button type="button" data-ctx="info">Get Info</button>' +
@@ -77,15 +77,48 @@
   D.showCtx = showCtx;
 
   D.initMenus = function () {
+    var leaveTimer = null;
+    function clearLeave() {
+      if (leaveTimer) { clearTimeout(leaveTimer); leaveTimer = null; }
+    }
+    function scheduleLeave() {
+      clearLeave();
+      leaveTimer = setTimeout(function () {
+        leaveTimer = null;
+        hideMenus();
+      }, 120);
+    }
+
     document.querySelectorAll('.menu-title, .status-btn[data-menu]').forEach(function (btn) {
       btn.addEventListener('click', function (e) {
         e.stopPropagation();
+        clearLeave();
         if (D.openMenu && D.openMenu.btn === btn) hideMenus();
         else showMenu(btn.dataset.menu, btn);
       });
-      // once a menu is open, sliding across the bar switches menus - as it did
       btn.addEventListener('mouseenter', function () {
-        if (D.openMenu && D.openMenu.btn !== btn && btn.dataset.menu) showMenu(btn.dataset.menu, btn);
+        if (!btn.dataset.menu) return;
+        clearLeave();
+        if (!D.openMenu || D.openMenu.btn !== btn) showMenu(btn.dataset.menu, btn);
+      });
+    });
+
+    var bar = document.querySelector('.menubar');
+    if (bar) {
+      bar.addEventListener('mouseleave', function (e) {
+        var to = e.relatedTarget;
+        if (to && (to.closest && (to.closest('.menu') || to.closest('.menubar')))) return;
+        scheduleLeave();
+      });
+      bar.addEventListener('mouseenter', clearLeave);
+    }
+    document.querySelectorAll('.menu').forEach(function (m) {
+      if (m.classList.contains('ctx') || m.classList.contains('submenu')) return;
+      m.addEventListener('mouseenter', clearLeave);
+      m.addEventListener('mouseleave', function (e) {
+        var to = e.relatedTarget;
+        if (to && (to.closest && (to.closest('.menu') || to.closest('.menubar')))) return;
+        scheduleLeave();
       });
     });
 
@@ -128,6 +161,7 @@
     document.addEventListener('click', function (e) {
       var node = e.target.closest('.icon,.item');
       if (node) {
+        if (node.dataset.justActivated) { delete node.dataset.justActivated; e.preventDefault(); return; }
         if (node.dataset.dragged) { delete node.dataset.dragged; e.preventDefault(); return; }
         if (node.closest && node.closest('.renaming')) return;
         D.clearSel();
@@ -217,4 +251,5 @@
 
   D.initMenus();
   if (typeof D.initIcons === 'function') D.initIcons();
+  if (typeof D.initRoute === 'function') D.initRoute();
 })(window.JBDesk);

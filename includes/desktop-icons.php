@@ -1,7 +1,7 @@
 <div id="icons">
       <!-- icons: see img/icons/README.txt -->
       <button class="icon" data-id="labs" data-open="labs" data-scatter>
-        <span class="art"><img src="img/icons/folder-labs.webp" width="128" height="128" alt=""></span>
+        <span class="art smooth folder"><img src="img/icons/folder-labs.webp" width="128" height="128" alt=""></span>
         <span class="label">Labs</span>
       </button>
       <button class="icon" data-id="labs-site" data-href="https://labs.jamesbeckwith.com/" data-scatter>
@@ -9,23 +9,23 @@
         <span class="label">jb-labs.html</span>
       </button>
       <button class="icon" data-id="maps" data-open="maps" data-scatter>
-        <span class="art"><img src="img/icons/folder-map.webp" width="128" height="128" alt=""></span>
+        <span class="art smooth folder"><img src="img/icons/folder-map.webp" width="128" height="128" alt=""></span>
         <span class="label">Maps</span>
       </button>
       <button class="icon" data-id="music" data-open="music" data-scatter data-tag="coral">
-        <span class="art"><img src="img/icons/folder-music.webp" width="128" height="128" alt=""></span>
+        <span class="art smooth folder"><img src="img/icons/folder-music.webp" width="128" height="128" alt=""></span>
         <span class="label">Music</span>
       </button>
       <button class="icon" data-id="videos" data-open="videos" data-scatter data-tag="blue">
-        <span class="art"><img src="img/icons/folder-videos.webp" width="128" height="128" alt=""></span>
+        <span class="art smooth folder"><img src="img/icons/folder-videos.webp" width="128" height="128" alt=""></span>
         <span class="label">Videos</span>
       </button>
       <button class="icon" data-id="piano" data-open="piano" data-scatter>
-        <span class="art"><img src="img/icons/folder-piano.webp" width="128" height="128" alt=""></span>
+        <span class="art smooth folder"><img src="img/icons/folder-piano.webp" width="128" height="128" alt=""></span>
         <span class="label">Piano Repair</span>
       </button>
       <button class="icon" data-id="football" data-open="football" data-scatter data-tag="green">
-        <span class="art"><img src="img/icons/folder-football.webp" width="128" height="128" alt=""></span>
+        <span class="art smooth folder"><img src="img/icons/folder-football.webp" width="128" height="128" alt=""></span>
         <span class="label">Football</span>
       </button>
       <button class="icon" data-id="about" data-open="about" data-scatter>
@@ -126,7 +126,7 @@
         <span class="label">long-distance.html</span>
       </button>
       <button class="icon" data-id="stream" data-open="stream" data-shelf="music">
-        <span class="art"><img src="img/icons/folder-stream.webp" width="128" height="128" alt=""></span>
+        <span class="art smooth folder"><img src="img/icons/folder-stream.webp" width="128" height="128" alt=""></span>
         <span class="label">Streaming</span>
       </button>
 

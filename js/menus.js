@@ -15,6 +15,12 @@
         b.classList.toggle('disabled', !sel);
       });
     }
+    if (id === 'm-theme') {
+      var curTheme = typeof D.currentTheme === 'function' ? D.currentTheme() : (document.documentElement.getAttribute('data-theme') || 'dark');
+      m.querySelectorAll('[data-theme-set]').forEach(function (b) {
+        b.classList.toggle('checked', b.getAttribute('data-theme-set') === curTheme);
+      });
+    }
     m.hidden = false;
     var r = btn.getBoundingClientRect();
     var top = '35px';
@@ -40,7 +46,19 @@
     D.ctxTarget = target || null;
     var n = D.trashed ? D.trashed.children.length : 0;
     var html;
-    if (target && target.classList.contains('icon')) {
+    if (target && (target.classList.contains('sticky') || target.hasAttribute('data-sticky'))) {
+      html =
+        '<button type="button" data-ctx="info">Get Info</button>' +
+        '<button type="button" data-ctx="save-note">Save as Text\u2026</button>' +
+        '<hr>' +
+        '<button type="button" data-ctx="close-note">Close Note</button>';
+    } else if (target && target.classList.contains('item')) {
+      html =
+        '<button type="button" data-ctx="open">Open</button>' +
+        '<button type="button" data-ctx="info">Get Info</button>' +
+        '<hr>' +
+        '<button type="button" data-ctx="trash">Move to Trash</button>';
+    } else if (target && target.classList.contains('icon')) {
       if (target.classList.contains('trash') || target.getAttribute('data-trash') != null) {
         html =
           '<button type="button" data-ctx="open">Open</button>' +
@@ -59,6 +77,8 @@
       }
     } else {
       html =
+        '<button type="button" data-ctx="reset">Reset Desktop</button>' +
+        '<hr>' +
         '<button type="button" data-ctx="cleanup">Clean Up</button>' +
         '<button type="button" data-ctx="byname">Arrange by Name</button>' +
         '<hr>' +
@@ -141,21 +161,70 @@
         hideMenus();
         if (act === 'open' && target) D.activate(target);
         else if (act === 'info') D.getInfo(target);
+        else if (act === 'save-note' && target) D.downloadSticky(target);
+        else if (act === 'close-note' && target) D.askCloseSticky(target);
         else if (act === 'rename' && target) D.renameIcon(target);
         else if (act === 'duplicate' && target) D.duplicateIcon(target);
         else if (act === 'trash' && target) D.moveToTrash(target);
         else if (act === 'empty') D.emptyTrash();
+        else if (act === 'reset') D.resetDesktop();
         else if (act === 'cleanup') D.arrangeIcons('clean');
         else if (act === 'byname') D.arrangeIcons('name');
       });
     }
 
+    function triggerGetInfo() {
+      var sel = document.querySelector('.icon.selected, .item.selected');
+      if (sel) {
+        D.getInfo(sel);
+        return;
+      }
+      var focused = document.activeElement;
+      var sticky = focused && focused.closest ? focused.closest('.sticky, [data-sticky]') : null;
+      if (sticky) {
+        D.getInfo(sticky);
+        return;
+      }
+      var openNames = Object.keys(D.open);
+      if (openNames.length) {
+        var topName = openNames[openNames.length - 1];
+        var iconEl = document.querySelector('.icon[data-open="' + topName + '"], .icon[data-id="' + topName + '"]');
+        if (iconEl) {
+          D.getInfo(iconEl);
+          return;
+        }
+      }
+      var note = document.querySelector('.sticky');
+      if (note) {
+        D.getInfo(note);
+        return;
+      }
+      D.getInfo(null);
+    }
+
+    document.querySelectorAll('[data-get-info]').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        hideMenus();
+        triggerGetInfo();
+      });
+    });
+
     document.addEventListener('contextmenu', function (e) {
-      if (e.target.closest('.menubar') || e.target.closest('.menu') || e.target.closest('.win')) return;
-      if (!e.target.closest('.hero') && !e.target.closest('#desktop')) return;
+      if (e.target.closest('.menubar') || e.target.closest('.menu')) return;
+      var sticky = e.target.closest('.sticky, [data-sticky]');
+      var item = e.target.closest('.item');
+      var icon = e.target.closest('#icons .icon, #trashed .icon, .icon');
+      var win = e.target.closest('.win');
+      if (win && !item) return;
+      if (!sticky && !item && !icon && !e.target.closest('.hero') && !e.target.closest('#desktop')) return;
       e.preventDefault();
-      var icon = e.target.closest('#icons .icon');
-      showCtx(e.clientX, e.clientY, icon || null);
+      var target = sticky || item || icon || null;
+      if (target && target.classList && (target.classList.contains('icon') || target.classList.contains('item'))) {
+        D.clearSel();
+        target.classList.add('selected');
+      }
+      showCtx(e.clientX, e.clientY, target);
     });
 
     document.addEventListener('click', function (e) {
@@ -207,6 +276,13 @@
         if (names.length) D.closeWindow(names[names.length - 1]);
         return;
       }
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'i' || e.key === 'I') && !e.shiftKey && !e.altKey) {
+        if (!e.target.closest('input,textarea,[contenteditable=true]')) {
+          e.preventDefault();
+          triggerGetInfo();
+          return;
+        }
+      }
       if ((e.key === 'Delete' || e.key === 'Backspace') && !e.target.closest('input,textarea,[contenteditable]')) {
         var sel = document.querySelector('#icons .icon.selected:not([data-trash])');
         if (sel) { e.preventDefault(); D.moveToTrash(sel); return; }
@@ -234,11 +310,30 @@
       }
       if (e.target.closest('.menu a')) hideMenus();
 
+      var themeSetBtn = e.target.closest('[data-theme-set]');
+      if (themeSetBtn) {
+        var newTheme = themeSetBtn.getAttribute('data-theme-set');
+        if (typeof D.setTheme === 'function') {
+          D.setTheme(newTheme);
+        }
+        hideMenus();
+        return;
+      }
+
       if (e.target.closest('[data-theme-toggle]')) {
         D.setTheme(D.currentTheme() === 'dark' ? 'light' : 'dark');
         hideMenus();
         return;
       }
+
+      if (e.target.closest('[data-reset-desk]')) {
+        hideMenus();
+        if (typeof D.resetDesktop === 'function') {
+          D.resetDesktop();
+        }
+        return;
+      }
+
       if (e.target.closest('[data-clock-fmt]')) {
         D.clock12 = !D.clock12;
         var fmtBtn = document.querySelector('[data-clock-fmt]');

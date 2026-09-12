@@ -10,22 +10,13 @@
       <button class="menu-title" data-menu="m-special" aria-expanded="false" aria-haspopup="true">Special</button>
     </div>
     <div class="status">
-      <button class="status-btn" data-menu="m-app" aria-expanded="false" aria-haspopup="true" aria-label="Application menu">
-        <svg viewBox="0 0 14 14" aria-hidden="true"><rect x="1" y="2" width="12" height="10" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M1 5h12" stroke="currentColor" stroke-width="1.4"/><rect x="3" y="7" width="3" height="3" fill="currentColor"/></svg>
-      </button>
-      <button class="status-btn" data-menu="m-vol" aria-expanded="false" aria-haspopup="true" aria-label="Volume" id="status-vol">
-        <svg class="vol-icon" viewBox="0 0 16 14" aria-hidden="true">
-          <path d="M2 5h3l4-3v10L5 9H2z" fill="currentColor"/>
-          <g class="vol-waves" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
-            <path d="M11 4.5c1.2 1 1.2 4 0 5"/>
-            <path d="M13 2.5c2.2 1.8 2.2 7 0 9"/>
-          </g>
-          <g class="vol-x" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-            <path d="M11 4l4 6M15 4l-4 6"/>
-          </g>
+      <button type="button" class="status-btn reset-menu-btn" data-menu="m-reset" aria-expanded="false" aria-haspopup="true" aria-label="Reset Desktop" title="Reset Desktop" id="status-reset">
+        <svg class="icon-reset" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+          <path fill="currentColor" fill-rule="evenodd" d="M8 3a5 5 0 1 1-4.546 2.914.75.75 0 0 0-1.36-.632A6.5 6.5 0 1 0 8 1.5V0L5 2.25 8 4.5V3z" clip-rule="evenodd"/>
         </svg>
+        <span class="reset-label">Reset</span>
       </button>
-      <button type="button" class="status-btn theme-toggle" id="theme-toggle" data-theme-toggle aria-label="Switch to light mode" title="Light mode">
+      <button type="button" class="status-btn theme-menu-btn" data-menu="m-theme" aria-expanded="false" aria-haspopup="true" aria-label="Appearance" title="Appearance" id="status-theme">
         <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true">
           <path fill="currentColor" d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.591a.75.75 0 101.06 1.06l1.591-1.591zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.591-1.591a.75.75 0 10-1.06 1.06l1.591 1.591zM12 18a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-2.25A.75.75 0 0112 18zM7.758 17.303a.75.75 0 00-1.061-1.06l-1.591 1.59a.75.75 0 001.06 1.061l1.591-1.59zM6 12a.75.75 0 01-.75.75H3a.75.75 0 010-1.5h2.25A.75.75 0 016 12zM6.697 7.757a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 00-1.061 1.06l1.59 1.591z"/>
         </svg>
@@ -33,13 +24,13 @@
           <path fill="currentColor" fill-rule="evenodd" d="M9.528 1.718a.75.75 0 01.162.819A8.97 8.97 0 009 6a9 9 0 009 9 8.97 8.97 0 003.463-.69.75.75 0 01.981.98 10.503 10.503 0 01-9.694 6.46c-5.799 0-10.5-4.7-10.5-10.5 0-4.368 2.667-8.112 6.46-9.694a.75.75 0 01.818.162z" clip-rule="evenodd"/>
         </svg>
       </button>
-      <button class="status-btn clock" data-menu="m-clock" aria-expanded="false" aria-haspopup="true" id="menubar-clock">00:00</button>
     </div>
   </div>
 
   <div class="menu" id="m-file" hidden>
     <button data-open="about">About James Beckwith</button>
     <button data-open="contact">Contact&hellip;</button>
+    <button type="button" data-get-info><span>Get Info</span><span class="shortcut">&#8984;I</span></button>
     <hr>
     <div class="submenu-wrap">
       <button data-submenu="m-labs" aria-haspopup="true" aria-expanded="false">Labs<span>&#9656;</span></button>
@@ -68,9 +59,8 @@
   </div>
 
   <div class="menu" id="m-edit" hidden>
-    <button data-open="music">Music</button>
-    <hr>
-    <a href="https://realmusic.london" target="_blank" rel="noopener">realmusic.london</a>
+    <a href="https://jamesbeckwith.bandcamp.com/album/se10" target="_blank" rel="noopener">SE10</a>
+    <a href="https://jamesbeckwith.bandcamp.com/album/long-distance" target="_blank" rel="noopener">Long Distance</a>
     <hr>
     <a href="https://jamesbeckwith.bandcamp.com" target="_blank" rel="noopener">Bandcamp</a>
     <a href="https://open.spotify.com/artist/2IKevWKWuhVBPlg7QtBDOd" target="_blank" rel="noopener">Spotify</a>
@@ -82,7 +72,6 @@
   <div class="menu" id="m-view" hidden>
     <button data-open="labs">Labs</button>
     <button data-open="maps">Maps</button>
-    <button data-open="music">Music</button>
     <button data-open="videos">Videos</button>
     <button data-open="football">Football</button>
     <button data-open="piano">Piano Repair</button>
@@ -98,6 +87,8 @@
     <a href="https://www.youtube.com/jamesbeckwith1" target="_blank" rel="noopener">YouTube</a>
     <a href="https://www.facebook.com/jamesbeckwith" target="_blank" rel="noopener">Facebook</a>
     <hr>
+    <button type="button" data-reset-desk>Reset Desktop</button>
+    <hr>
     <button data-cleanup>Clean Up</button>
     <button data-arrange-name>Arrange by Name</button>
     <hr>
@@ -107,29 +98,28 @@
     <button data-close-all>Close all windows</button>
   </div>
 
-  <div class="menu status-menu" id="m-app" hidden>
-    <button class="disabled" disabled>Finder</button>
+  <div class="menu status-menu reset-menu" id="m-reset" hidden>
+    <button type="button" data-reset-desk>Reset Desktop</button>
     <hr>
-    <button data-close-all>Hide others</button>
-    <button data-close-all>Close all windows</button>
+    <button type="button" data-cleanup>Clean Up</button>
+    <button type="button" data-arrange-name>Arrange by Name</button>
+    <hr>
+    <button type="button" data-close-all>Close all windows</button>
   </div>
 
-  <div class="menu status-menu vol-menu" id="m-vol" hidden>
-    <div class="vol-panel">
-      <span class="vol-label">Sound</span>
-      <div class="vol-slider" role="slider" aria-valuemin="0" aria-valuemax="4" aria-valuenow="3" aria-label="Volume" tabindex="0">
-        <div class="vol-rail">
-          <i class="vol-fill"></i>
-          <b class="vol-thumb"></b>
-        </div>
-        <div class="vol-ends" aria-hidden="true"><span>Max</span><span>Min</span></div>
-      </div>
-      <button type="button" class="vol-mute" data-vol-mute>Mute</button>
-    </div>
-  </div>
-
-  <div class="menu status-menu" id="m-clock" hidden>
-    <button type="button" id="menubar-date" class="disabled" disabled></button>
-    <hr>
-    <button type="button" data-clock-fmt>12-hour clock</button>
+  <div class="menu status-menu theme-menu" id="m-theme" hidden>
+    <button type="button" data-theme-set="light" class="theme-choice-btn">
+      <span class="theme-check" aria-hidden="true">&#10003;</span>
+      <svg class="theme-icon icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+        <path fill="currentColor" d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.591a.75.75 0 101.06 1.06l1.591-1.591zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.591-1.591a.75.75 0 10-1.06 1.06l1.591 1.591zM12 18a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-2.25A.75.75 0 0112 18zM7.758 17.303a.75.75 0 00-1.061-1.06l-1.591 1.59a.75.75 0 001.06 1.061l1.591-1.59zM6 12a.75.75 0 01-.75.75H3a.75.75 0 010-1.5h2.25A.75.75 0 016 12zM6.697 7.757a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 00-1.061 1.06l1.59 1.591z"/>
+      </svg>
+      <span class="theme-label">Light Mode</span>
+    </button>
+    <button type="button" data-theme-set="dark" class="theme-choice-btn">
+      <span class="theme-check" aria-hidden="true">&#10003;</span>
+      <svg class="theme-icon icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+        <path fill="currentColor" fill-rule="evenodd" d="M9.528 1.718a.75.75 0 01.162.819A8.97 8.97 0 009 6a9 9 0 009 9 8.97 8.97 0 003.463-.69.75.75 0 01.981.98 10.503 10.503 0 01-9.694 6.46c-5.799 0-10.5-4.7-10.5-10.5 0-4.368 2.667-8.112 6.46-9.694a.75.75 0 01.818.162z" clip-rule="evenodd"/>
+      </svg>
+      <span class="theme-label">Dark Mode</span>
+    </button>
   </div>

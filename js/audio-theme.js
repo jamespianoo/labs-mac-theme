@@ -11,11 +11,16 @@
     var next = theme === 'light' ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', next);
     try { localStorage.setItem('jb-theme', next); } catch (err) {}
-    var btn = document.getElementById('theme-toggle');
+    var btn = document.getElementById('status-theme') || document.getElementById('theme-toggle');
     if (btn) {
-      var toLight = next === 'dark';
-      btn.setAttribute('aria-label', toLight ? 'Switch to light mode' : 'Switch to dark mode');
-      btn.title = toLight ? 'Light mode' : 'Dark mode';
+      btn.setAttribute('aria-label', next === 'light' ? 'Appearance: Light mode' : 'Appearance: Dark mode');
+      btn.title = next === 'light' ? 'Appearance: Light mode' : 'Appearance: Dark mode';
+    }
+    var themeMenu = document.getElementById('m-theme');
+    if (themeMenu) {
+      themeMenu.querySelectorAll('[data-theme-set]').forEach(function (b) {
+        b.classList.toggle('checked', b.getAttribute('data-theme-set') === next);
+      });
     }
   }
   setTheme(currentTheme());
@@ -78,6 +83,7 @@
   }
 
   function tickClock() {
+    if (!D.clockEl && !D.dateEl) return;
     var now = new Date();
     if (D.clockEl) {
       D.clockEl.textContent = now.toLocaleTimeString(undefined, {

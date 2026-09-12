@@ -281,40 +281,210 @@
     input.addEventListener('blur', function () { finish(true); });
   }
 
-  function getInfo(icon) {
-    var name = icon ? iconLabel(icon) : 'Desktop';
-    var kind = !icon ? 'Desktop'
-      : (isTrashCan(icon) ? 'Trash'
-      : (/\.pdf$/i.test(name) ? 'PDF document'
-      : (/\.png$/i.test(name) || icon.querySelector('.pagefile') ? 'PNG image'
-      : (/\.txt$/i.test(name) ? 'Text document'
-      : (/\.aiff$/i.test(name) ? 'Sound'
-      : (/\.app$/i.test(name) ? 'Application'
-      : (/\.map$/i.test(name) ? 'Map document' : 'Folder')))))));
-    var where = icon && icon.parentNode === D.trashed ? 'Trash' : 'Desktop';
+  function escapeHtml(str) {
+    if (str == null) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function escapeAttr(str) {
+    return escapeHtml(str);
+  }
+
+  function inferKind(target, label, isTrash, isFolder) {
+    if (!target) return 'Desktop';
+    if (isTrash) return 'Trash';
+    if (isFolder) return 'Folder';
+    if (/\.pdf$/i.test(label)) return 'PDF document';
+    if (/\.png$/i.test(label) || (target.querySelector && target.querySelector('.pagefile'))) return 'PNG image';
+    if (/\.html$/i.test(label)) return 'Web Application';
+    if (/\.txt$/i.test(label)) return 'Text document';
+    if (/\.aiff$/i.test(label)) return 'Sound';
+    if (/\.app$/i.test(label)) return 'Application';
+    if (/\.map$/i.test(label)) return 'Map document';
+    if (target.dataset && target.dataset.video) return 'YouTube Video';
+    return 'Document';
+  }
+
+  function resolveTaxonomy(target) {
+    if (!target) {
+      return {
+        title: 'Desktop',
+        kind: 'Desktop',
+        where: 'Macintosh HD',
+        description: 'The System 7 / Platinum desktop workspace.'
+      };
+    }
+
+    var isSticky = target && target.nodeType === 1 && (target.classList.contains('sticky') || target.hasAttribute('data-sticky'));
+    if (isSticky) {
+      var noteId = (target.dataset && target.dataset.id) || 'welcome-note';
+      var noteTax = (D.TAXONOMY && D.TAXONOMY.notes && (D.TAXONOMY.notes[noteId] || D.TAXONOMY.notes['welcome-note'])) || null;
+      var title = (noteTax && noteTax.title) || stickyFileName(target) || 'Sticky Note';
+      var desc = (noteTax && noteTax.description) || stickyPlainText(target) || 'Desktop sticky note.';
+      return {
+        id: noteId,
+        title: title,
+        kind: (noteTax && noteTax.kind) || 'Sticky Note',
+        where: (noteTax && noteTax.where) || 'Desktop',
+        description: desc,
+        author: (noteTax && noteTax.author) || null,
+        credit: (noteTax && noteTax.credit) || null,
+        isSticky: true
+      };
+    }
+
+    var rawId = target.dataset ? (target.dataset.id || target.dataset.unshelf || target.dataset.open || target.dataset.video || '') : '';
+    var label = (target && target.nodeType === 1) ? (iconLabel(target) || (target.querySelector('.label') ? target.querySelector('.label').textContent.trim() : '')) : (typeof target === 'string' ? target : '');
+    var openName = target.dataset ? target.dataset.open : '';
+    var isFolder = !!(openName && D.FOLDER_IDS && D.FOLDER_IDS[openName]) || !!(rawId && D.FOLDER_IDS && D.FOLDER_IDS[rawId]);
+    var isTrash = isTrashCan(target) || rawId === 'trash';
+
+    var tax = null;
+    var taxData = D.TAXONOMY;
+    if (taxData) {
+      if (isTrash && taxData.folders && taxData.folders.trash) {
+        tax = taxData.folders.trash;
+      } else if (isFolder && taxData.folders && (taxData.folders[openName] || taxData.folders[rawId])) {
+        tax = taxData.folders[openName] || taxData.folders[rawId];
+      } else if (taxData.files && taxData.files[rawId]) {
+        tax = taxData.files[rawId];
+      }
+
+      if (!tax) {
+        var query = [rawId, openName, label, label.replace(/\.(html|png|pdf|me|txt|aiff)$/i, '')].filter(Boolean);
+        var categories = isFolder ? ['folders', 'files', 'notes'] : ['files', 'folders', 'notes'];
+        for (var c = 0; c < categories.length && !tax; c++) {
+          var catObj = taxData[categories[c]];
+          if (!catObj) continue;
+          for (var k in catObj) {
+            if (!catObj.hasOwnProperty(k)) continue;
+            var item = catObj[k];
+            if (item.id === rawId || item.title === label) {
+              tax = item;
+              break;
+            }
+            if (item.aliases) {
+              for (var a = 0; a < item.aliases.length; a++) {
+                var alias = item.aliases[a];
+                for (var q = 0; q < query.length; q++) {
+                  if (alias.toLowerCase() === query[q].toLowerCase()) {
+                    tax = item;
+                    break;
+                  }
+                }
+                if (tax) break;
+              }
+            }
+            if (tax) break;
+          }
+        }
+      }
+    }
+
+    if (!tax && /se10/i.test(label + ' ' + rawId)) {
+      tax = taxData && taxData.files && taxData.files.se10;
+    }
+    if (!tax && /promo/i.test(label + ' ' + rawId)) {
+      tax = taxData && taxData.files && taxData.files.promo;
+    }
+
+    var kind = (tax && tax.kind) || inferKind(target, label, isTrash, isFolder);
+
+    var shelf = target.dataset ? target.dataset.shelf : null;
+    var where = (tax && tax.where) || (shelf ? (shelf.charAt(0).toUpperCase() + shelf.slice(1)) : (target.parentNode === D.trashed ? 'Trash' : 'Desktop'));
+
+    var title = (tax && tax.title) || label || rawId || 'Item';
+    var desc = (tax && tax.description) || (isFolder ? 'Folder stored on the system.' : 'Item stored on the system.');
+    var credit = (tax && tax.credit) || null;
+
+    return {
+      id: (tax && tax.id) || rawId,
+      title: title,
+      kind: kind,
+      where: where,
+      description: desc,
+      credit: credit,
+      author: (tax && tax.author) || null,
+      isFolder: isFolder,
+      isTrash: isTrash
+    };
+  }
+
+  function getInfo(target) {
+    var tax = resolveTaxonomy(target);
+    var name = tax.title;
+    var kind = tax.kind;
+    var where = tax.where;
     var id = 'info-' + Date.now();
+
+    var artHtml = '';
+    if (tax.isSticky) {
+      artHtml = '<svg viewBox="0 0 24 24" width="44" height="44" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="1" fill="#f6e59a" stroke="#16171a" stroke-width="1.5"/><line x1="6" y1="8" x2="18" y2="8" stroke="#16171a" stroke-width="1.2"/><line x1="6" y1="12" x2="16" y2="12" stroke="#16171a" stroke-width="1.2"/><line x1="6" y1="16" x2="13" y2="16" stroke="#16171a" stroke-width="1.2"/></svg>';
+    } else if (target && target.querySelector && target.querySelector('.art')) {
+      artHtml = target.querySelector('.art').innerHTML;
+    } else if (tax.isFolder || (target && target.dataset && D.FOLDER_IDS && D.FOLDER_IDS[target.dataset.open])) {
+      artHtml = '<img src="img/icons/folder.webp" width="44" height="44" alt="">';
+    } else {
+      artHtml = '<img src="img/icons/document.webp" width="44" height="44" alt="">';
+    }
+
+    var contentsRow = '';
+    if (tax.isFolder) {
+      var folderKey = (target && (target.dataset.id || target.dataset.open)) || tax.id;
+      var count = 0;
+      if (folderKey && typeof countShelved === 'function') {
+        count = countShelved(folderKey);
+      } else if (tax.id === 'trash' && D.trashed) {
+        count = D.trashed.children.length;
+      }
+      contentsRow = '<dt>Contents:</dt><dd>' + count + ' item' + (count === 1 ? '' : 's') + '</dd>';
+    }
+
+    var creditRow = '';
+    if (tax.credit) {
+      var creditUrl = tax.credit.url || '';
+      var creditText = tax.credit.text || tax.credit.author || 'Credit';
+      if (creditUrl) {
+        creditRow = '<dt>Credit:</dt><dd class="info-credit"><a href="' + escapeAttr(creditUrl) + '" target="_blank" rel="noopener">' + escapeHtml(creditText) + ' &nearr;</a></dd>';
+      } else {
+        creditRow = '<dt>Credit:</dt><dd class="info-credit">' + escapeHtml(creditText) + '</dd>';
+      }
+    } else if (tax.author) {
+      creditRow = '<dt>Author:</dt><dd>' + escapeHtml(tax.author) + '</dd>';
+    }
+
     var tpl = document.createElement('template');
     tpl.id = 'tpl-' + id;
-    tpl.dataset.title = 'Info';
-    tpl.dataset.w = '360';
-    tpl.dataset.h = '280';
-    tpl.dataset.info = 'Get Info|' + name;
+    tpl.dataset.title = name + ' Info';
+    tpl.dataset.w = '420';
+    tpl.dataset.h = '350';
+    tpl.dataset.info = 'Info|' + kind;
     tpl.innerHTML =
       '<div class="doc info-doc">' +
-        '<h2></h2>' +
-        '<dl>' +
-          '<dt>Kind:</dt><dd></dd>' +
-          '<dt>Where:</dt><dd></dd>' +
-          '<dt>Created:</dt><dd>Monday, 7 September 2026</dd>' +
-          '<dt>Modified:</dt><dd>Monday, 7 September 2026</dd>' +
+        '<div class="info-header">' +
+          '<div class="info-art">' + artHtml + '</div>' +
+          '<div class="info-title-wrap">' +
+            '<h2 class="info-title">' + escapeHtml(name) + '</h2>' +
+            '<span class="info-badge">' + escapeHtml(kind) + '</span>' +
+          '</div>' +
+        '</div>' +
+        '<dl class="info-props">' +
+          '<dt>Kind:</dt><dd>' + escapeHtml(kind) + '</dd>' +
+          '<dt>Where:</dt><dd>' + escapeHtml(where) + '</dd>' +
+          contentsRow +
+          creditRow +
         '</dl>' +
+        '<div class="info-desc-section">' +
+          '<div class="info-desc-label">Description:</div>' +
+          '<div class="info-desc-box"><p>' + escapeHtml(tax.description) + '</p></div>' +
+        '</div>' +
       '</div>';
     document.body.appendChild(tpl);
-    var doc = tpl.content;
-    doc.querySelector('h2').textContent = name;
-    var dds = doc.querySelectorAll('dd');
-    dds[0].textContent = kind;
-    dds[1].textContent = where;
     D.openWindow(id);
   }
 
@@ -814,6 +984,9 @@
     if (bar && bar.firstElementChild) {
       bar.firstElementChild.textContent = n + ' item' + (n === 1 ? '' : 's');
     }
+    if (typeof D.updateScrollbars === 'function') {
+      D.updateScrollbars(D.open[name].el);
+    }
   }
 
   function fillFolderShelf(host, folderName) {
@@ -1133,12 +1306,30 @@
         zoom.setAttribute('aria-label', 'Zoom note');
         bar.appendChild(zoom);
       }
+      if (!bar.querySelector('.sticky-info')) {
+        var info = document.createElement('button');
+        info.type = 'button';
+        info.className = 'sticky-info';
+        info.setAttribute('aria-label', 'Get Info');
+        info.setAttribute('title', 'Get Info');
+        var zoomRef = bar.querySelector('.sticky-zoom');
+        if (zoomRef) bar.insertBefore(info, zoomRef);
+        else bar.appendChild(info);
+      }
       var closeBtn = bar.querySelector('.sticky-close');
       if (closeBtn && !closeBtn.dataset.bound) {
         closeBtn.dataset.bound = '1';
         closeBtn.addEventListener('click', function (e) {
           e.stopPropagation();
           askCloseSticky(note);
+        });
+      }
+      var infoBtn = bar.querySelector('.sticky-info');
+      if (infoBtn && !infoBtn.dataset.bound) {
+        infoBtn.dataset.bound = '1';
+        infoBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          getInfo(note);
         });
       }
       var zoomEl = bar.querySelector('.sticky-zoom');
@@ -1165,7 +1356,7 @@
       note.appendChild(body);
     }
     note.addEventListener('pointerdown', function (e) {
-      if (D.small() || e.button > 0 || e.target.closest('a,.sticky-close,.sticky-zoom')) return;
+      if (D.small() || e.button > 0 || e.target.closest('a,.sticky-close,.sticky-info,.sticky-zoom')) return;
       on = true; sx = e.clientX; sy = e.clientY;
       ox = note.offsetLeft; oy = note.offsetTop;
       note.setPointerCapture(e.pointerId);
@@ -1231,6 +1422,18 @@
     if (saveBtn) saveBtn.focus();
   }
 
+  function resetDesktop() {
+    try {
+      localStorage.removeItem(D.POS_KEY);
+      localStorage.removeItem(D.SHELF_KEY);
+      localStorage.removeItem(D.GONE_KEY);
+      localStorage.removeItem(D.SEED_KEY);
+    } catch (err) {}
+    if (typeof D.closeAll === 'function') D.closeAll();
+    if (typeof D.clearSel === 'function') D.clearSel();
+    window.location.reload();
+  }
+
   D.iconLabel = iconLabel;
   D.updateTrashAppearance = updateTrashAppearance;
   D.fillTrash = fillTrash;
@@ -1243,6 +1446,7 @@
   D.duplicateIcon = duplicateIcon;
   D.renameIcon = renameIcon;
   D.getInfo = getInfo;
+  D.resolveTaxonomy = resolveTaxonomy;
   D.placeTrashCorner = placeTrashCorner;
   D.savePositions = savePositions;
   D.scatterIcons = scatterIcons;
@@ -1261,6 +1465,7 @@
   D.removeSticky = removeSticky;
   D.hideStickyAlert = hideStickyAlert;
   D.askCloseSticky = askCloseSticky;
+  D.resetDesktop = resetDesktop;
 
   D.initIcons = function () {
     ensureTrashOnDesktop();

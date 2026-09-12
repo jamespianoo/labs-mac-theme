@@ -47,9 +47,9 @@ $pageTitle = isset($folderTitles[$initialSlug]) ? 'James Beckwith | ' . $folderT
 <meta name="robots" content="noindex, nofollow">
 <meta name="color-scheme" content="dark light">
 <title><?= htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') ?></title>
+<link rel="icon" href="img/icons/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="img/icons/favicon-32.png" type="image/png" sizes="32x32">
 <link rel="icon" href="img/icons/favicon-16.png" type="image/png" sizes="16x16">
-<link rel="icon" href="img/icons/jb.webp" type="image/webp" sizes="any">
 <link rel="apple-touch-icon" href="img/icons/apple-touch-icon.png">
 <script>
 (function () {
@@ -80,6 +80,10 @@ $pageTitle = isset($folderTitles[$initialSlug]) ? 'James Beckwith | ' . $folderT
 <?php require __DIR__ . '/includes/windows.php'; ?>
 <?php require __DIR__ . '/includes/context-menu.php'; ?>
 <?php require __DIR__ . '/includes/alert-dialog.php'; ?>
+
+<script id="jb-taxonomy" type="application/json">
+<?= file_get_contents(__DIR__ . '/data/taxonomy.json') ?>
+</script>
 
 <script src="js/desktop.js" defer></script>
 <script src="js/audio-theme.js" defer></script>

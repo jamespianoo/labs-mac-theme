@@ -40,6 +40,15 @@
   D.stickyPending = null;
   D.clockEl = document.getElementById('menubar-clock');
   D.dateEl = document.getElementById('menubar-date');
+  D.TAXONOMY = null;
+  try {
+    var taxScript = document.getElementById('jb-taxonomy');
+    if (taxScript && taxScript.textContent.trim()) {
+      D.TAXONOMY = JSON.parse(taxScript.textContent);
+    }
+  } catch (err) {
+    console.warn('Could not parse jb-taxonomy', err);
+  }
 
   D.small = function () {
     return window.matchMedia('(max-width:820px)').matches;

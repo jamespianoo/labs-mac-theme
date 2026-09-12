@@ -175,7 +175,8 @@
           '<div class="win-body"></div>' +
           '<div class="vbar" aria-hidden="true"><i></i><u><b></b></u><i></i></div>' +
         '</div>' +
-        '<div class="hbar" aria-hidden="true"><i></i><u><b></b></u><i></i><span class="corner"></span></div>' +
+        '<div class="hbar" aria-hidden="true"><i></i><u><b></b></u><i></i></div>' +
+        '<span class="corner" aria-hidden="true"></span>' +
       '</section>'
     );
     frame.querySelector('.tb-title span').textContent = title;
@@ -288,6 +289,10 @@
     if (w.el && typeof w.el._cleanupMediaPlayer === 'function') {
       try { w.el._cleanupMediaPlayer(); } catch (err) {}
     }
+    if (w.el && w.el._scrollRO) {
+      try { w.el._scrollRO.disconnect(); } catch (err) {}
+      delete w.el._scrollRO;
+    }
     w.el.remove(); delete D.open[name];
     var rest = Object.keys(D.open);
     if (rest.length) {
@@ -329,6 +334,7 @@
       f.style.left = w.prev.left; f.style.top = w.prev.top;
       f.style.width = w.prev.width; f.style.height = w.prev.height;
       w.prev = null;
+      updateScrollbars(f);
       return;
     }
     w.prev = { left: f.style.left, top: f.style.top, width: f.style.width, height: f.style.height };
@@ -339,6 +345,7 @@
     f.style.height = fit.h + 'px';
     f.style.left = left + 'px';
     f.style.top = top + 'px';
+    updateScrollbars(f);
   }
 
   /* System 7 zoom: size to content / folder icons, not the whole desktop */
@@ -348,8 +355,8 @@
     var maxH = Math.max(160, D.desktop.clientHeight - 24);
     var minW = 280;
     var minH = 160;
-    var chromeW = Math.max(16, frame.offsetWidth - (body ? body.clientWidth : frame.clientWidth));
-    var chromeH = Math.max(44, frame.offsetHeight - (body ? body.clientHeight : frame.clientHeight));
+    var chromeW = Math.max(4, frame.offsetWidth - (body ? body.clientWidth : frame.clientWidth));
+    var chromeH = Math.max(24, frame.offsetHeight - (body ? body.clientHeight : frame.clientHeight));
     var w = minW;
     var h = minH;
 
@@ -373,8 +380,8 @@
         /* verify against real scroll size after applying grid */
         frame.style.width = Math.min(w, maxW) + 'px';
         frame.style.height = Math.min(h, maxH) + 'px';
-        w = Math.max(w, body.scrollWidth + chromeW);
-        h = Math.max(h, body.scrollHeight + chromeH);
+        w = Math.max(w, body.scrollWidth + chromeW + 2);
+        h = Math.max(h, body.scrollHeight + chromeH + 4);
       }
     } else {
       var tpl = document.getElementById('tpl-' + name);
@@ -394,7 +401,7 @@
         var padY = cs ? (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0) : 40;
         var cw = content ? Math.max(content.scrollWidth, content.offsetWidth) : probeW - padX;
         var ch = content ? Math.max(content.scrollHeight, content.offsetHeight) : 200;
-        h = Math.ceil(ch + padY + chromeH + 2);
+        h = Math.ceil(ch + padY + chromeH + 4);
         if (name === 'contact' || (content && content.classList && content.classList.contains('contact-doc'))) {
           w = Math.ceil(cw + padX + chromeW);
         } else {
@@ -409,16 +416,212 @@
     };
   }
 
+  function updateScrollbars(frame) {
+    if (!frame) return;
+    var body = frame.querySelector('.win-body');
+    if (!body) return;
+
+    var canScrollY = body.scrollHeight > (body.clientHeight + 2);
+    var canScrollX = body.scrollWidth > (body.clientWidth + 2);
+
+    frame.classList.toggle('has-vbar', canScrollY);
+    frame.classList.toggle('has-hbar', canScrollX);
+
+    if (canScrollY) updateVThumb(frame, body);
+    if (canScrollX) updateHThumb(frame, body);
+  }
+
+  function updateVThumb(frame, body) {
+    var v = frame.querySelector('.vbar');
+    if (!v) return;
+    var track = v.querySelector('u');
+    var thumb = track ? track.querySelector('b') : null;
+    if (!track || !thumb) return;
+
+    var trackH = track.clientHeight;
+    if (trackH <= 0) return;
+
+    var sH = body.scrollHeight;
+    var cH = body.clientHeight;
+    var sT = body.scrollTop;
+
+    if (sH <= cH + 2) {
+      thumb.style.display = 'none';
+      return;
+    }
+    thumb.style.display = 'block';
+
+    var ratio = cH / sH;
+    var thumbH = Math.max(16, Math.min(trackH - 4, Math.round(trackH * ratio)));
+    var maxScroll = sH - cH;
+    var maxTrack = trackH - thumbH;
+    var top = maxScroll > 0 ? Math.round((sT / maxScroll) * maxTrack) : 0;
+    top = Math.max(0, Math.min(top, maxTrack));
+
+    thumb.style.height = thumbH + 'px';
+    thumb.style.top = top + 'px';
+  }
+
+  function updateHThumb(frame, body) {
+    var h = frame.querySelector('.hbar');
+    if (!h) return;
+    var track = h.querySelector('u');
+    var thumb = track ? track.querySelector('b') : null;
+    if (!track || !thumb) return;
+
+    var trackW = track.clientWidth;
+    if (trackW <= 0) return;
+
+    var sW = body.scrollWidth;
+    var cW = body.clientWidth;
+    var sL = body.scrollLeft;
+
+    if (sW <= cW + 2) {
+      thumb.style.display = 'none';
+      return;
+    }
+    thumb.style.display = 'block';
+
+    var ratio = cW / sW;
+    var thumbW = Math.max(16, Math.min(trackW - 4, Math.round(trackW * ratio)));
+    var maxScroll = sW - cW;
+    var maxTrack = trackW - thumbW;
+    var left = maxScroll > 0 ? Math.round((sL / maxScroll) * maxTrack) : 0;
+    left = Math.max(0, Math.min(left, maxTrack));
+
+    thumb.style.width = thumbW + 'px';
+    thumb.style.left = left + 'px';
+  }
+
   function bindScrollbars(frame) {
     var body = frame.querySelector('.win-body');
     var v = frame.querySelector('.vbar');
     var h = frame.querySelector('.hbar');
     if (!body || !v || !h) return;
-    var step = 40;
-    v.children[0].addEventListener('click', function (e) { e.stopPropagation(); body.scrollTop -= step; });
-    v.children[2].addEventListener('click', function (e) { e.stopPropagation(); body.scrollTop += step; });
-    h.children[0].addEventListener('click', function (e) { e.stopPropagation(); body.scrollLeft -= step; });
-    h.children[2].addEventListener('click', function (e) { e.stopPropagation(); body.scrollLeft += step; });
+
+    var step = 48;
+    var vUp = v.firstElementChild;
+    var vDown = v.lastElementChild;
+    var vTrack = v.querySelector('u');
+    var vThumb = vTrack ? vTrack.querySelector('b') : null;
+
+    var hLeft = h.firstElementChild;
+    var hRight = h.lastElementChild;
+    var hTrack = h.querySelector('u');
+    var hThumb = hTrack ? hTrack.querySelector('b') : null;
+
+    if (vUp) vUp.addEventListener('click', function (e) { e.stopPropagation(); body.scrollTop -= step; });
+    if (vDown) vDown.addEventListener('click', function (e) { e.stopPropagation(); body.scrollTop += step; });
+    if (hLeft) hLeft.addEventListener('click', function (e) { e.stopPropagation(); body.scrollLeft -= step; });
+    if (hRight) hRight.addEventListener('click', function (e) { e.stopPropagation(); body.scrollLeft += step; });
+
+    if (vTrack) {
+      vTrack.addEventListener('pointerdown', function (e) {
+        if (e.target.closest('b')) return;
+        e.stopPropagation();
+        var rect = vTrack.getBoundingClientRect();
+        var clickY = e.clientY - rect.top;
+        var thumbTop = vThumb ? vThumb.offsetTop : 0;
+        var pageSize = Math.max(step, body.clientHeight - 40);
+        if (clickY < thumbTop) {
+          body.scrollTop -= pageSize;
+        } else {
+          body.scrollTop += pageSize;
+        }
+      });
+    }
+
+    if (hTrack) {
+      hTrack.addEventListener('pointerdown', function (e) {
+        if (e.target.closest('b')) return;
+        e.stopPropagation();
+        var rect = hTrack.getBoundingClientRect();
+        var clickX = e.clientX - rect.left;
+        var thumbLeft = hThumb ? hThumb.offsetLeft : 0;
+        var pageSize = Math.max(step, body.clientWidth - 40);
+        if (clickX < thumbLeft) {
+          body.scrollLeft -= pageSize;
+        } else {
+          body.scrollLeft += pageSize;
+        }
+      });
+    }
+
+    if (vThumb) {
+      var draggingV = false, startY = 0, startScrollY = 0;
+      vThumb.addEventListener('pointerdown', function (e) {
+        if (e.button > 0) return;
+        e.stopPropagation();
+        e.preventDefault();
+        draggingV = true;
+        startY = e.clientY;
+        startScrollY = body.scrollTop;
+        vThumb.setPointerCapture(e.pointerId);
+      });
+      vThumb.addEventListener('pointermove', function (e) {
+        if (!draggingV) return;
+        var trackH = vTrack.clientHeight;
+        var thumbH = vThumb.offsetHeight;
+        var maxTrack = trackH - thumbH;
+        var maxScroll = body.scrollHeight - body.clientHeight;
+        if (maxTrack <= 0 || maxScroll <= 0) return;
+        var delta = e.clientY - startY;
+        body.scrollTop = startScrollY + (delta / maxTrack) * maxScroll;
+      });
+      var endV = function (e) {
+        if (!draggingV) return;
+        draggingV = false;
+        try { vThumb.releasePointerCapture(e.pointerId); } catch (err) {}
+      };
+      vThumb.addEventListener('pointerup', endV);
+      vThumb.addEventListener('pointercancel', endV);
+    }
+
+    if (hThumb) {
+      var draggingH = false, startX = 0, startScrollX = 0;
+      hThumb.addEventListener('pointerdown', function (e) {
+        if (e.button > 0) return;
+        e.stopPropagation();
+        e.preventDefault();
+        draggingH = true;
+        startX = e.clientX;
+        startScrollX = body.scrollLeft;
+        hThumb.setPointerCapture(e.pointerId);
+      });
+      hThumb.addEventListener('pointermove', function (e) {
+        if (!draggingH) return;
+        var trackW = hTrack.clientWidth;
+        var thumbW = hThumb.offsetWidth;
+        var maxTrack = trackW - thumbW;
+        var maxScroll = body.scrollWidth - body.clientWidth;
+        if (maxTrack <= 0 || maxScroll <= 0) return;
+        var delta = e.clientX - startX;
+        body.scrollLeft = startScrollX + (delta / maxTrack) * maxScroll;
+      });
+      var endH = function (e) {
+        if (!draggingH) return;
+        draggingH = false;
+        try { hThumb.releasePointerCapture(e.pointerId); } catch (err) {}
+      };
+      hThumb.addEventListener('pointerup', endH);
+      hThumb.addEventListener('pointercancel', endH);
+    }
+
+    body.addEventListener('scroll', function () {
+      updateScrollbars(frame);
+    });
+
+    if (window.ResizeObserver) {
+      var ro = new ResizeObserver(function () {
+        updateScrollbars(frame);
+      });
+      ro.observe(body);
+      frame._scrollRO = ro;
+    }
+
+    requestAnimationFrame(function () {
+      updateScrollbars(frame);
+    });
   }
 
   function drag(frame, name) {
@@ -463,11 +666,13 @@
       var maxH = Math.max(160, D.desktop.clientHeight - frame.offsetTop);
       frame.style.width = Math.max(260, Math.min(ow + (e.clientX - sx), maxW)) + 'px';
       frame.style.height = Math.max(160, Math.min(oh + (e.clientY - sy), maxH)) + 'px';
+      updateScrollbars(frame);
     });
     ['pointerup', 'pointercancel'].forEach(function (t) {
       handle.addEventListener(t, function (e) {
         on = false; frame.classList.remove('resizing');
         try { handle.releasePointerCapture(e.pointerId); } catch (err) {}
+        updateScrollbars(frame);
       });
     });
   }
@@ -842,6 +1047,7 @@
   D.zoom = zoom;
   D.fillVideos = fillVideos;
   D.openVideo = openVideo;
+  D.updateScrollbars = updateScrollbars;
   D.bindContactForm = bindContactForm;
   D.initRoute = initRoute;
   D.updateRoute = updateRoute;

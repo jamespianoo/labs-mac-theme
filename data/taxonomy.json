@@ -1,0 +1,400 @@
+{
+  "folders": {
+    "labs": {
+      "id": "labs",
+      "title": "Labs",
+      "kind": "Folder",
+      "where": "Desktop",
+      "description": "Interactive web experiments, audio engines, and generative cartography created by James Beckwith."
+    },
+    "maps": {
+      "id": "maps",
+      "title": "Maps",
+      "kind": "Folder",
+      "where": "Desktop",
+      "description": "Cartographic explorations mapping London Underground lines, live music venues, and historical gig spaces."
+    },
+    "music": {
+      "id": "music",
+      "title": "Music",
+      "kind": "Folder",
+      "where": "Desktop",
+      "description": "Original jazz albums, studio recordings, synthesiser compositions, and releases by James Beckwith."
+    },
+    "stream": {
+      "id": "stream",
+      "title": "Streaming",
+      "kind": "Folder",
+      "where": "Music",
+      "description": "Direct gateways to James Beckwith's full discography on major streaming services."
+    },
+    "videos": {
+      "id": "videos",
+      "title": "Videos",
+      "kind": "Folder",
+      "where": "Desktop",
+      "description": "Live keyboard sessions, Fender Rhodes demos, vocoder performances, and timelapses on YouTube."
+    },
+    "football": {
+      "id": "football",
+      "title": "Football",
+      "kind": "Folder",
+      "where": "Desktop",
+      "description": "Single-serving mathematical utilities and trackers crafted for the Arsenal football community."
+    },
+    "piano": {
+      "id": "piano",
+      "title": "Piano Repair",
+      "kind": "Folder",
+      "where": "Desktop",
+      "description": "Workshop servicing vintage electric pianos (Fender Rhodes, Wurlitzer, Hohner Clavinet) and tuning acoustic pianos."
+    },
+    "trash": {
+      "id": "trash",
+      "title": "Trash",
+      "kind": "Folder",
+      "where": "Desktop",
+      "description": "Recycle bin holding discarded files, draft documents, voice memos, and scratchpad synth patches."
+    }
+  },
+  "files": {
+    "se10": {
+      "id": "se10",
+      "aliases": ["se10.png", "se10-png", "se10.html", "item-se10"],
+      "title": "se10.png",
+      "kind": "PNG image",
+      "where": "Desktop",
+      "description": "Album cover artwork for SE10, recorded and composed in Greenwich, South East London.",
+      "credit": {
+        "text": "Artwork by Jack Richardson",
+        "author": "Jack Richardson",
+        "url": "https://www.jackrichardsonillustration.com/"
+      }
+    },
+    "promo": {
+      "id": "promo",
+      "aliases": ["promo.png", "promo"],
+      "title": "promo.png",
+      "kind": "PNG image",
+      "where": "Desktop",
+      "description": "Official portrait photograph of James Beckwith at the acoustic piano in London.",
+      "credit": {
+        "text": "Photo by James Drew Turner",
+        "author": "James Drew Turner",
+        "url": "https://www.jamesdrewturner.com/"
+      }
+    },
+    "about": {
+      "id": "about",
+      "aliases": ["about-me.pdf", "about"],
+      "title": "about-me.pdf",
+      "kind": "PDF document",
+      "where": "Desktop",
+      "description": "Biography, background, education at Leeds College of Music and Trinity Laban, and performance résumé."
+    },
+    "contact": {
+      "id": "contact",
+      "aliases": ["contact.me", "contact"],
+      "title": "contact.me",
+      "kind": "Stationery document",
+      "where": "Desktop",
+      "description": "Direct message stationery to send enquiries regarding live bookings, compositions, or piano servicing."
+    },
+    "labs-site": {
+      "id": "labs-site",
+      "aliases": ["jb-labs.html", "labs-site"],
+      "title": "jb-labs.html",
+      "kind": "HTML document",
+      "where": "Desktop",
+      "description": "Direct portal to James Beckwith Labs — home of interactive musical maps and generative sound experiments."
+    },
+    "item-metis": {
+      "id": "item-metis",
+      "aliases": ["metis.html", "metis"],
+      "title": "metis.html",
+      "kind": "Web Application",
+      "where": "Labs",
+      "description": "Dynamic color palette generator and algorithmic visual canvas built for digital artists."
+    },
+    "item-tube-symphony-lab": {
+      "id": "item-tube-symphony-lab",
+      "aliases": ["tube-symphony.html", "tube-symphony"],
+      "title": "tube-symphony.html",
+      "kind": "Web Application",
+      "where": "Labs",
+      "description": "Interactive musical cartography converting the London Underground rail network into a polyphonic synthesiser."
+    },
+    "item-dead-venues-lab": {
+      "id": "item-dead-venues-lab",
+      "aliases": ["dead-venues.html", "dead-venues"],
+      "title": "dead-venues.html",
+      "kind": "Web Application",
+      "where": "Labs",
+      "description": "Historical archive and interactive map documenting lost and vanished grassroots live music venues across London."
+    },
+    "item-gig-map-lab": {
+      "id": "item-gig-map-lab",
+      "aliases": ["gig-map.html", "gig-map"],
+      "title": "gig-map.html",
+      "kind": "Web Application",
+      "where": "Labs",
+      "description": "Live gig guide and map highlighting concerts and independent music venues across the capital."
+    },
+    "item-fpl": {
+      "id": "item-fpl",
+      "aliases": ["fpl-maximizer.html", "fpl-maximizer"],
+      "title": "fpl-maximizer.html",
+      "kind": "Web Application",
+      "where": "Labs",
+      "description": "Fantasy Premier League fixture analysis, rotation planning, and captaincy optimisation engine."
+    },
+    "item-flight-radar": {
+      "id": "item-flight-radar",
+      "aliases": ["flight-radar.html", "flight-radar"],
+      "title": "flight-radar.html",
+      "kind": "Web Application",
+      "where": "Labs",
+      "description": "Real-time air traffic visualizer plotting commercial flight vectors from live radar transponders."
+    },
+    "item-ganymede": {
+      "id": "item-ganymede",
+      "aliases": ["ganymede.html", "ganymede"],
+      "title": "ganymede.html",
+      "kind": "Web Application",
+      "where": "Labs",
+      "description": "Browser-based Web Audio synthesiser engine with custom wavetable oscillators and resonance filters."
+    },
+    "item-solar-system": {
+      "id": "item-solar-system",
+      "aliases": ["solar-system.html", "solar-system"],
+      "title": "solar-system.html",
+      "kind": "Web Application",
+      "where": "Labs",
+      "description": "Astronomical simulation translating orbital planetary periods into musical overtone ratios."
+    },
+    "item-ltd-tax": {
+      "id": "item-ltd-tax",
+      "aliases": ["director-tax.html", "director-tax"],
+      "title": "director-tax.html",
+      "kind": "Web Application",
+      "where": "Labs",
+      "description": "UK company director salary, dividend extraction, corporation tax, and take-home calculator."
+    },
+    "item-mac-theme": {
+      "id": "item-mac-theme",
+      "aliases": ["mac-theme.html", "mac-theme"],
+      "title": "mac-theme.html",
+      "kind": "Web Application",
+      "where": "Labs",
+      "description": "Classic Macintosh System 7 / Platinum desktop operating system lovingly implemented in pure HTML, CSS, and JS."
+    },
+    "item-realmusic": {
+      "id": "item-realmusic",
+      "aliases": ["realmusic.html", "realmusic"],
+      "title": "realmusic.html",
+      "kind": "Web Link",
+      "where": "Maps",
+      "description": "Curated index and interactive map of London's authentic live music establishments."
+    },
+    "item-tube-symphony": {
+      "id": "item-tube-symphony",
+      "aliases": ["tube-symphony.html"],
+      "title": "tube-symphony.html",
+      "kind": "Web Application",
+      "where": "Maps",
+      "description": "Musical London Underground map turning train routes and transit interchanges into harmonic sequences."
+    },
+    "item-gig-map": {
+      "id": "item-gig-map",
+      "aliases": ["gig-map.html"],
+      "title": "gig-map.html",
+      "kind": "Web Application",
+      "where": "Maps",
+      "description": "Geographical guide to grassroots live jazz, soul, and acoustic venues in London."
+    },
+    "item-dead-venues": {
+      "id": "item-dead-venues",
+      "aliases": ["dead-venues.html"],
+      "title": "dead-venues.html",
+      "kind": "Web Application",
+      "where": "Maps",
+      "description": "Cartographic tribute preserving the memory of closed London live music institutions."
+    },
+    "item-se10": {
+      "id": "item-se10",
+      "aliases": ["se10.html"],
+      "title": "se10.html",
+      "kind": "Album",
+      "where": "Music",
+      "description": "Debut studio album by James Beckwith, melding acoustic grand piano, vintage synthesisers, and cinematic grooves.",
+      "credit": {
+        "text": "Artwork by Jack Richardson",
+        "author": "Jack Richardson",
+        "url": "https://www.jackrichardsonillustration.com/"
+      }
+    },
+    "item-long-distance": {
+      "id": "item-long-distance",
+      "aliases": ["long-distance.html", "long-distance"],
+      "title": "long-distance.html",
+      "kind": "Album",
+      "where": "Music",
+      "description": "Sophomore album exploring expansive contemporary jazz arrangements, rhodes textures, and acoustic interplay."
+    },
+    "item-spotify": {
+      "id": "item-spotify",
+      "aliases": ["spotify.html", "spotify"],
+      "title": "spotify.html",
+      "kind": "Streaming Service",
+      "where": "Streaming",
+      "description": "James Beckwith artist discography, verified profile, and top tracks on Spotify."
+    },
+    "item-apple-music": {
+      "id": "item-apple-music",
+      "aliases": ["apple-music.html", "apple-music"],
+      "title": "apple-music.html",
+      "kind": "Streaming Service",
+      "where": "Streaming",
+      "description": "James Beckwith releases, albums, and curated playlists on Apple Music."
+    },
+    "item-tidal": {
+      "id": "item-tidal",
+      "aliases": ["tidal.html", "tidal"],
+      "title": "tidal.html",
+      "kind": "Streaming Service",
+      "where": "Streaming",
+      "description": "Lossless Master audio streams and high-resolution albums on Tidal."
+    },
+    "item-qobuz": {
+      "id": "item-qobuz",
+      "aliases": ["qobuz.html", "qobuz"],
+      "title": "qobuz.html",
+      "kind": "Streaming Service",
+      "where": "Streaming",
+      "description": "Studio-quality 24-bit Hi-Res audio downloads and streams on Qobuz."
+    },
+    "video-qpRMLR7VkO8": {
+      "id": "video-qpRMLR7VkO8",
+      "aliases": ["qpRMLR7VkO8"],
+      "title": "A Time-Lapse Map of Every Death From the Coronavirus Pandemic (Up to July 2020)",
+      "kind": "YouTube Video",
+      "where": "Videos",
+      "description": "Global cartographic data visualization and timelapse tracking pandemic mortality up to July 2020."
+    },
+    "video-QeW5kR0EGok": {
+      "id": "video-QeW5kR0EGok",
+      "aliases": ["QeW5kR0EGok"],
+      "title": "Land Of The \"Freer\": A Music Timelapse of US Election 2020 (Lift Every Voice and Sing)",
+      "kind": "YouTube Video",
+      "where": "Videos",
+      "description": "Musical arrangement of 'Lift Every Voice and Sing' synchronized to the state-by-state 2020 US Election results."
+    },
+    "video-OR9yKC8f1Zs": {
+      "id": "video-OR9yKC8f1Zs",
+      "aliases": ["OR9yKC8f1Zs"],
+      "title": "How To Play: Harder Better Faster Stronger on Vocoder (Daft Punk)",
+      "kind": "YouTube Video",
+      "where": "Videos",
+      "description": "Step-by-step breakdown and live performance of Daft Punk's vocoder harmonies on hardware synthesizers."
+    },
+    "video-6REtACtGSJE": {
+      "id": "video-6REtACtGSJE",
+      "aliases": ["6REtACtGSJE"],
+      "title": "Celeste - James Beckwith",
+      "kind": "YouTube Video",
+      "where": "Videos",
+      "description": "Live performance of original jazz composition 'Celeste' featuring acoustic grand piano and rhythm section."
+    },
+    "video-hacDUIS12Ho": {
+      "id": "video-hacDUIS12Ho",
+      "aliases": ["hacDUIS12Ho"],
+      "title": "Everybody Loves the Sunshine on a Rhodes MK8",
+      "kind": "YouTube Video",
+      "where": "Videos",
+      "description": "Soulful rendition of Roy Ayers' classic played on the flagship electro-mechanical Fender Rhodes MK8."
+    },
+    "video-ity7KgKlNbE": {
+      "id": "video-ity7KgKlNbE",
+      "aliases": ["ity7KgKlNbE"],
+      "title": "Her Name Is Covid (feat. James Copus) - James Beckwith",
+      "kind": "YouTube Video",
+      "where": "Videos",
+      "description": "Original composition featuring acclaimed British jazz trumpeter James Copus, recorded live in London."
+    },
+    "item-st-totteringham": {
+      "id": "item-st-totteringham",
+      "aliases": ["st-totteringhams-day.html", "st-totteringham"],
+      "title": "st-totteringhams-day.html",
+      "kind": "Web Application",
+      "where": "Football",
+      "description": "Formula calculator tracking the exact date Tottenham Hotspur cannot mathematically surpass Arsenal."
+    },
+    "item-invincibles": {
+      "id": "item-invincibles",
+      "aliases": ["invincibles-day.html", "invincibles"],
+      "title": "invincibles-day.html",
+      "kind": "Web Application",
+      "where": "Football",
+      "description": "Annual tracker celebrating the defeat of the final unbeaten club in the English Premier League season."
+    },
+    "item-jupiter": {
+      "id": "item-jupiter",
+      "aliases": ["jupiter.html", "jupiter"],
+      "title": "jupiter.html",
+      "kind": "Service Link",
+      "where": "Piano Repair",
+      "description": "Jupiter Vintage Pianos — specialist restoration workshop for Fender Rhodes, Wurlitzer 200A, and Hohner Clavinet."
+    },
+    "item-greenwich-piano": {
+      "id": "item-greenwich-piano",
+      "aliases": ["greenwich-piano.html", "greenwich-piano"],
+      "title": "greenwich-piano.html",
+      "kind": "Service Link",
+      "where": "Piano Repair",
+      "description": "Greenwich Piano Services — concert-standard acoustic piano tuning, pitch raising, and mechanical regulation."
+    },
+    "seed-1": {
+      "id": "seed-1",
+      "aliases": ["Untitled Synth Patch 47"],
+      "title": "Untitled Synth Patch 47",
+      "kind": "Synthesizer Patch",
+      "where": "Trash",
+      "description": "Divergent analog poly-synth patch draft with excessive chorus and runaway LFO feedback."
+    },
+    "seed-2": {
+      "id": "seed-2",
+      "aliases": ["whenisarsenalinthenextworldcup.com"],
+      "title": "whenisarsenalinthenextworldcup.com",
+      "kind": "Draft Document",
+      "where": "Trash",
+      "description": "Unregistered joke domain concept conceived during an international break."
+    },
+    "seed-3": {
+      "id": "seed-3",
+      "aliases": ["Rhodes_scratch.aiff"],
+      "title": "Rhodes_scratch.aiff",
+      "kind": "Audio Recording",
+      "where": "Trash",
+      "description": "Late-night scratch audio memo testing pickup balance on an early 1973 Rhodes Mark I."
+    },
+    "seed-4": {
+      "id": "seed-4",
+      "aliases": ["todo-finish-later.txt"],
+      "title": "todo-finish-later.txt",
+      "kind": "Text Document",
+      "where": "Trash",
+      "description": "Checklist of pending workshop tasks: replace damper felts, re-solder ground wire, re-voice treble tines."
+    }
+  },
+  "notes": {
+    "welcome-note": {
+      "id": "welcome-note",
+      "aliases": ["welcome-note", "Welcome to the desk.", "Welcome to the desk"],
+      "title": "Welcome to the desk",
+      "kind": "Sticky Note",
+      "where": "Desktop",
+      "description": "Desktop sticky note welcoming visitors with an introduction to James Beckwith's music, workshop, and web experiments.",
+      "author": "James Beckwith"
+    }
+  }
+}

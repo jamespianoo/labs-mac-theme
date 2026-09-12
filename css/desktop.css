@@ -716,6 +716,8 @@ html[data-theme="dark"] .item .art.album > img{filter:none}
 .item > img{width:var(--icon-size);height:var(--icon-size)}
 .item img.thumb{width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;border:2px solid var(--ink);
   image-rendering:auto}
+.item .art > img[src*="folder"],.item > img[src*="folder"],.item .art.smooth > img{
+  image-rendering:auto;-ms-interpolation-mode:bicubic}
 .video-thumb-frame{
   position:relative;
   width:100%;

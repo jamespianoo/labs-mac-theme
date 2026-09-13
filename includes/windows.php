@@ -35,6 +35,7 @@
 
 <?php require __DIR__ . '/about.php'; ?>
 <?php require __DIR__ . '/contact.php'; ?>
+<?php require __DIR__ . '/field-settings.php'; ?>
 
 <template id="tpl-trash" data-title="Trash" data-w="480" data-h="340" data-info="0 items|Desktop">
   <div class="items" id="trash-items">

@@ -34,7 +34,7 @@
     if (!D.trashIcon) return;
     var img = D.trashIcon.querySelector('.art img');
     var n = D.trashed ? D.trashed.children.length : 0;
-    if (img) img.src = n ? 'img/icons/trash-full.webp' : 'img/icons/trash.webp';
+    if (img) img.src = n ? 'img/icons/trash-ra-full.svg' : 'img/icons/trash-ra.svg';
     var emptyBtn = document.querySelector('[data-empty-trash]');
     if (emptyBtn) emptyBtn.classList.toggle('disabled', !n);
   }
@@ -570,12 +570,22 @@
     return false;
   }
 
+  var liveWordmarkZone = null;
+
   function wordmarkZone(W, H) {
-    /* Keep clear of the centred JAMES BECKWITH hero */
+    if (liveWordmarkZone) {
+      return {
+        x0: Math.max(0, liveWordmarkZone.x0),
+        x1: Math.min(W, liveWordmarkZone.x1),
+        y0: Math.max(0, liveWordmarkZone.y0),
+        y1: Math.min(H, liveWordmarkZone.y1)
+      };
+    }
+    /* Keep clear of the centred JAMES BECKWITH + subtitle pixel wordmark */
     return {
-      x0: W * 0.20,
-      x1: W * 0.80,
-      y0: H * 0.30,
+      x0: W * 0.16,
+      x1: W * 0.84,
+      y0: H * 0.28,
       y1: H * 0.58
     };
   }
@@ -1306,30 +1316,12 @@
         zoom.setAttribute('aria-label', 'Zoom note');
         bar.appendChild(zoom);
       }
-      if (!bar.querySelector('.sticky-info')) {
-        var info = document.createElement('button');
-        info.type = 'button';
-        info.className = 'sticky-info';
-        info.setAttribute('aria-label', 'Get Info');
-        info.setAttribute('title', 'Get Info');
-        var zoomRef = bar.querySelector('.sticky-zoom');
-        if (zoomRef) bar.insertBefore(info, zoomRef);
-        else bar.appendChild(info);
-      }
       var closeBtn = bar.querySelector('.sticky-close');
       if (closeBtn && !closeBtn.dataset.bound) {
         closeBtn.dataset.bound = '1';
         closeBtn.addEventListener('click', function (e) {
           e.stopPropagation();
           askCloseSticky(note);
-        });
-      }
-      var infoBtn = bar.querySelector('.sticky-info');
-      if (infoBtn && !infoBtn.dataset.bound) {
-        infoBtn.dataset.bound = '1';
-        infoBtn.addEventListener('click', function (e) {
-          e.stopPropagation();
-          getInfo(note);
         });
       }
       var zoomEl = bar.querySelector('.sticky-zoom');
@@ -1356,7 +1348,7 @@
       note.appendChild(body);
     }
     note.addEventListener('pointerdown', function (e) {
-      if (D.small() || e.button > 0 || e.target.closest('a,.sticky-close,.sticky-info,.sticky-zoom')) return;
+      if (D.small() || e.button > 0 || e.target.closest('a,.sticky-close,.sticky-zoom')) return;
       on = true; sx = e.clientX; sy = e.clientY;
       ox = note.offsetLeft; oy = note.offsetTop;
       note.setPointerCapture(e.pointerId);
@@ -1468,6 +1460,19 @@
   D.resetDesktop = resetDesktop;
 
   D.initIcons = function () {
+    window.addEventListener('jb-pixel-grid', function (e) {
+      var d = e.detail || {};
+      if (!D.desktop) return;
+      var rect = D.desktop.getBoundingClientRect();
+      var padX = (d.width || rect.width * 0.5) * 0.08;
+      var padY = (d.height || 80) * 0.25;
+      liveWordmarkZone = {
+        x0: (d.x || 0) - rect.left - padX,
+        y0: (d.y || 0) - rect.top - padY,
+        x1: (d.x || 0) - rect.left + (d.width || rect.width * 0.6) + padX,
+        y1: (d.y || 0) - rect.top + (d.height || 100) + padY
+      };
+    });
     ensureTrashOnDesktop();
     if (!D.shelved) D.shelved = document.getElementById('shelved');
     updateTrashAppearance();

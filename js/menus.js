@@ -202,14 +202,6 @@
       D.getInfo(null);
     }
 
-    document.querySelectorAll('[data-get-info]').forEach(function (btn) {
-      btn.addEventListener('click', function (e) {
-        e.stopPropagation();
-        hideMenus();
-        triggerGetInfo();
-      });
-    });
-
     document.addEventListener('contextmenu', function (e) {
       if (e.target.closest('.menubar') || e.target.closest('.menu')) return;
       var sticky = e.target.closest('.sticky, [data-sticky]');

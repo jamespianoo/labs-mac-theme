@@ -198,6 +198,9 @@
     }
     if (name === 'egg' && typeof D.bindEgg === 'function') D.bindEgg(frame);
     if (name === 'contact') bindContactForm(body);
+    if (name === 'field-settings' && window.JBField && typeof window.JBField.bindPanel === 'function') {
+      window.JBField.bindPanel(body.querySelector('[data-field-settings]') || body);
+    }
 
     if (!D.small()) {
       var w = Math.min(parseInt(tpl.dataset.w || '560', 10), D.desktop.clientWidth - 40);

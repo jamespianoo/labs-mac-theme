@@ -6,15 +6,14 @@
     <div class="menus">
       <button class="menu-title" data-menu="m-file" aria-expanded="false" aria-haspopup="true">File</button>
       <button class="menu-title" data-menu="m-edit" aria-expanded="false" aria-haspopup="true">Listen</button>
-      <button class="menu-title" data-menu="m-view" aria-expanded="false" aria-haspopup="true">View</button>
-      <button class="menu-title" data-menu="m-special" aria-expanded="false" aria-haspopup="true">Special</button>
+      <button class="menu-title" data-menu="m-go" aria-expanded="false" aria-haspopup="true">Go</button>
+      <button class="menu-title" data-menu="m-socials" aria-expanded="false" aria-haspopup="true">Socials</button>
     </div>
     <div class="status">
       <button type="button" class="status-btn reset-menu-btn" data-menu="m-reset" aria-expanded="false" aria-haspopup="true" aria-label="Reset Desktop" title="Reset Desktop" id="status-reset">
-        <svg class="icon-reset" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
-          <path fill="currentColor" fill-rule="evenodd" d="M8 3a5 5 0 1 1-4.546 2.914.75.75 0 0 0-1.36-.632A6.5 6.5 0 1 0 8 1.5V0L5 2.25 8 4.5V3z" clip-rule="evenodd"/>
+        <svg class="icon-reset" viewBox="0 0 16 16" width="20" height="20" aria-hidden="true">
+          <path fill="currentColor" fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.75.75 0 0 1 1.36-.632A6.5 6.5 0 1 1 8 1.5V0l3 2.25-3 2.25V3z" clip-rule="evenodd"/>
         </svg>
-        <span class="reset-label">Reset</span>
       </button>
       <button type="button" class="status-btn theme-menu-btn" data-menu="m-theme" aria-expanded="false" aria-haspopup="true" aria-label="Appearance" title="Appearance" id="status-theme">
         <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true">
@@ -30,7 +29,7 @@
   <div class="menu" id="m-file" hidden>
     <button data-open="about">About James Beckwith</button>
     <button data-open="contact">Contact&hellip;</button>
-    <button type="button" data-get-info><span>Get Info</span><span class="shortcut">&#8984;I</span></button>
+    <button data-open="field-settings">Pixel Field&hellip;</button>
     <hr>
     <div class="submenu-wrap">
       <button data-submenu="m-labs" aria-haspopup="true" aria-expanded="false">Labs<span>&#9656;</span></button>
@@ -56,6 +55,12 @@
     <hr>
     <a href="https://www.whenissttotteringhamsday.com" target="_blank" rel="noopener">St Totteringham&#39;s Day</a>
     <a href="https://www.whenisinvinciblesday.com" target="_blank" rel="noopener">Invincibles Day</a>
+    <hr>
+    <button type="button" data-cleanup>Clean Up</button>
+    <button type="button" data-arrange-name>Arrange by Name</button>
+    <button type="button" data-close-all>Close all windows</button>
+    <hr>
+    <button type="button" data-empty-trash>Empty Trash</button>
   </div>
 
   <div class="menu" id="m-edit" hidden>
@@ -69,7 +74,7 @@
     <a href="https://open.qobuz.com/artist/2999610" target="_blank" rel="noopener">Qobuz</a>
   </div>
 
-  <div class="menu" id="m-view" hidden>
+  <div class="menu" id="m-go" hidden>
     <button data-open="labs">Labs</button>
     <button data-open="maps">Maps</button>
     <button data-open="videos">Videos</button>
@@ -79,32 +84,17 @@
     <button data-open="contact">contact.me</button>
     <button data-open="promo">promo.png</button>
     <button data-open="se10-png">se10.png</button>
-    <button data-open="trash">Trash</button>
   </div>
 
-  <div class="menu" id="m-special" hidden>
+  <div class="menu" id="m-socials" hidden>
     <a href="https://www.instagram.com/iamjamesbeckwith" target="_blank" rel="noopener">Instagram</a>
     <a href="https://www.youtube.com/jamesbeckwith1" target="_blank" rel="noopener">YouTube</a>
     <a href="https://www.facebook.com/jamesbeckwith" target="_blank" rel="noopener">Facebook</a>
-    <hr>
-    <button type="button" data-reset-desk>Reset Desktop</button>
-    <hr>
-    <button data-cleanup>Clean Up</button>
-    <button data-arrange-name>Arrange by Name</button>
-    <hr>
-    <button data-open="trash">Open Trash</button>
-    <button data-empty-trash>Empty Trash</button>
-    <hr>
-    <button data-close-all>Close all windows</button>
+    <a href="https://jamesbeckwith.bandcamp.com" target="_blank" rel="noopener">Bandcamp</a>
   </div>
 
   <div class="menu status-menu reset-menu" id="m-reset" hidden>
     <button type="button" data-reset-desk>Reset Desktop</button>
-    <hr>
-    <button type="button" data-cleanup>Clean Up</button>
-    <button type="button" data-arrange-name>Arrange by Name</button>
-    <hr>
-    <button type="button" data-close-all>Close all windows</button>
   </div>
 
   <div class="menu status-menu theme-menu" id="m-theme" hidden>

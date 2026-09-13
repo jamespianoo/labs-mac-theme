@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 210" fill="none">
+  <!-- Soft shadow — offset down-left like RA -->
+  <path d="M34 48h138c6 0 10 3 14 9l16 24h40c14 0 24 10 24 24v78c0 14-10 24-24 24H34c-14 0-24-10-24-24V72c0-14 10-24 24-24z"
+        fill="#000" opacity=".3" transform="translate(-2 10)"/>
+
+  <!-- Back panel + right tab -->
+  <path d="M30 40h132c5.5 0 9.5 2.5 13 8.5L190 76h38c13 0 24 11 24 24v78c0 13-11 24-24 24H30c-13 0-24-11-24-24V64c0-13 11-24 24-24z"
+        fill="#fff" stroke="#111" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+
+  <!-- Pocket papers (two thick bars) -->
+  <path d="M48 64h152" stroke="#111" stroke-width="7" stroke-linecap="square"/>
+  <path d="M56 78h136" stroke="#111" stroke-width="7" stroke-linecap="square"/>
+
+  <!-- Front face — lower panel for glyph + label -->
+  <path d="M18 88h224v86c0 13-11 24-24 24H42c-13 0-24-11-24-24V88z"
+        fill="#fff" stroke="#111" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+</svg>

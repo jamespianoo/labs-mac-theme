@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="2.4 1.4 19.2 19.2" role="img" aria-label="Tube Symphony">
+  <!-- No background plate. viewBox is a square cropped to the train's bounds
+       (5,2)-(19,20) plus a 0.6 margin, so the train fills the icon. -->
+  <path fill="#e6b800" d="M12 2c-4 0-7 1.2-7 4v9.5A2.5 2.5 0 0 0 7.5 18H8a2 2 0 1 0 4 0h0a2 2 0 1 0 4 0h.5A2.5 2.5 0 0 0 19 15.5V6c0-2.8-3-4-7-4zM7.5 7h9v3.5h-9V7zm1.75 9.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm6 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2zM8 12.5h8V14H8v-1.5z"/>
+</svg>

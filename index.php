@@ -45,7 +45,7 @@ $pageTitle = isset($folderTitles[$initialSlug]) ? 'James Beckwith | ' . $folderT
 <base href="<?= htmlspecialchars($baseHref, ENT_QUOTES, 'UTF-8') ?>">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<meta name="color-scheme" content="dark light">
+<meta name="color-scheme" content="light dark">
 <title><?= htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') ?></title>
 <link rel="icon" href="img/icons/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="img/icons/favicon-32.png" type="image/png" sizes="32x32">
@@ -90,5 +90,6 @@ $pageTitle = isset($folderTitles[$initialSlug]) ? 'James Beckwith | ' . $folderT
 <script src="js/windows.js" defer></script>
 <script src="js/icons.js" defer></script>
 <script src="js/menus.js" defer></script>
+<script src="js/pixel-field.js" defer></script>
 </body>
 </html>

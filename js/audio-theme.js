@@ -4,13 +4,14 @@
   if (!D) return;
 
   function currentTheme() {
-    return document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+    return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
   }
 
   function setTheme(theme) {
     var next = theme === 'light' ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', next);
     try { localStorage.setItem('jb-theme', next); } catch (err) {}
+    try { window.dispatchEvent(new CustomEvent('jb-theme', { detail: { theme: next } })); } catch (err2) {}
     var btn = document.getElementById('status-theme') || document.getElementById('theme-toggle');
     if (btn) {
       btn.setAttribute('aria-label', next === 'light' ? 'Appearance: Light mode' : 'Appearance: Dark mode');

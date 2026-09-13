@@ -1,7 +1,11 @@
 <div id="icons">
-      <!-- icons: see img/icons/README.txt -->
+      <!-- icons: RA-style folders + files — see img/icons/README.txt -->
       <button class="icon" data-id="labs" data-open="labs" data-scatter>
-        <span class="art smooth folder"><img src="img/icons/folder-labs.webp" width="128" height="128" alt=""></span>
+        <span class="art ra-folder folder smooth">
+          <img class="ra-shell" src="img/icons/folder-ra-shell.svg?v=3" width="160" height="140" alt="">
+          <img class="ra-glyph" src="img/icons/glyph-labs.webp" width="48" height="48" alt="">
+          <span class="ra-caption">LABS</span>
+        </span>
         <span class="label">Labs</span>
       </button>
       <button class="icon" data-id="labs-site" data-href="https://labs.jamesbeckwith.com/" data-scatter>
@@ -9,31 +13,51 @@
         <span class="label">jb-labs.html</span>
       </button>
       <button class="icon" data-id="maps" data-open="maps" data-scatter>
-        <span class="art smooth folder"><img src="img/icons/folder-map.webp" width="128" height="128" alt=""></span>
+        <span class="art ra-folder folder smooth">
+          <img class="ra-shell" src="img/icons/folder-ra-shell.svg?v=3" width="160" height="140" alt="">
+          <img class="ra-glyph" src="img/icons/glyph-map.webp" width="48" height="48" alt="">
+          <span class="ra-caption">MAPS</span>
+        </span>
         <span class="label">Maps</span>
       </button>
       <button class="icon" data-id="music" data-open="music" data-scatter data-tag="coral">
-        <span class="art smooth folder"><img src="img/icons/folder-music.webp" width="128" height="128" alt=""></span>
+        <span class="art ra-folder folder smooth">
+          <img class="ra-shell" src="img/icons/folder-ra-shell.svg?v=3" width="160" height="140" alt="">
+          <img class="ra-glyph" src="img/icons/glyph-note.webp" width="48" height="48" alt="">
+      <span class="ra-caption">MUSIC</span>
+        </span>
         <span class="label">Music</span>
       </button>
       <button class="icon" data-id="videos" data-open="videos" data-scatter data-tag="blue">
-        <span class="art smooth folder"><img src="img/icons/folder-videos.webp" width="128" height="128" alt=""></span>
+        <span class="art ra-folder folder smooth">
+          <img class="ra-shell" src="img/icons/folder-ra-shell.svg?v=3" width="160" height="140" alt="">
+          <img class="ra-glyph" src="img/icons/glyph-video.webp" width="48" height="48" alt="">
+          <span class="ra-caption">VIDEOS</span>
+        </span>
         <span class="label">Videos</span>
       </button>
       <button class="icon" data-id="piano" data-open="piano" data-scatter>
-        <span class="art smooth folder"><img src="img/icons/folder-piano.webp" width="128" height="128" alt=""></span>
+        <span class="art ra-folder folder smooth">
+          <img class="ra-shell" src="img/icons/folder-ra-shell.svg?v=3" width="160" height="140" alt="">
+          <img class="ra-glyph" src="img/icons/glyph-tuning-fork.webp" width="48" height="48" alt="">
+          <span class="ra-caption">PIANO REPAIR</span>
+        </span>
         <span class="label">Piano Repair</span>
       </button>
       <button class="icon" data-id="football" data-open="football" data-scatter data-tag="green">
-        <span class="art smooth folder"><img src="img/icons/folder-football.webp" width="128" height="128" alt=""></span>
+        <span class="art ra-folder folder smooth">
+          <img class="ra-shell" src="img/icons/folder-ra-shell.svg?v=3" width="160" height="140" alt="">
+          <img class="ra-glyph" src="img/icons/glyph-football.webp" width="48" height="48" alt="">
+          <span class="ra-caption">FOOTBALL</span>
+        </span>
         <span class="label">Football</span>
       </button>
       <button class="icon" data-id="about" data-open="about" data-scatter>
-        <span class="art"><img src="img/icons/document-pdf.webp" width="128" height="128" alt=""></span>
+        <span class="art ra-file"><img src="img/icons/file-ra-pdf.svg?v=2" width="128" height="160" alt=""></span>
         <span class="label">about-me.pdf</span>
       </button>
       <button class="icon" data-id="contact" data-open="contact" data-scatter>
-        <span class="art"><img src="img/icons/textfile.webp" width="128" height="128" alt=""></span>
+        <span class="art ra-file"><img src="img/icons/file-ra-at.svg?v=2" width="128" height="160" alt=""></span>
         <span class="label">contact.me</span>
       </button>
       <button class="icon" data-id="promo" data-open="promo" data-scatter>
@@ -45,7 +69,7 @@
         <span class="label">se10.png</span>
       </button>
       <button class="icon trash" data-id="trash" data-open="trash" data-trash="1">
-        <span class="art"><img src="img/icons/trash.webp" width="128" height="128" alt=""></span>
+        <span class="art ra-trash"><img src="img/icons/trash-ra.svg" width="128" height="148" alt=""></span>
         <span class="label">Trash</span>
       </button>
     </div>
@@ -58,43 +82,43 @@
     <div id="shelved" hidden>
       <!-- Labs items -->
       <button class="icon" data-id="item-metis" data-href="https://labs.jamesbeckwith.com/metis/" data-shelf="labs">
-        <span class="art site smooth"><img src="img/icons/sites/metis.webp" width="128" height="128" alt=""></span>
+        <span class="art site smooth"><img src="img/icons/sites/metis.svg" width="128" height="128" alt=""></span>
         <span class="label">metis.html</span>
       </button>
       <button class="icon" data-id="item-tube-symphony-lab" data-href="https://labs.jamesbeckwith.com/tube-map/" data-shelf="labs">
-        <span class="art site smooth"><img src="img/icons/sites/tube-symphony.webp" width="128" height="128" alt=""></span>
+        <span class="art site smooth"><img src="img/icons/sites/tube-symphony.png" width="128" height="128" alt=""></span>
         <span class="label">tube-symphony.html</span>
       </button>
       <button class="icon" data-id="item-dead-venues-lab" data-href="https://labs.jamesbeckwith.com/dead-venues/" data-shelf="labs">
-        <span class="art site smooth"><img src="img/icons/sites/dead-venues.webp" width="128" height="128" alt=""></span>
+        <span class="art site smooth"><img src="img/icons/sites/dead-venues.png" width="128" height="128" alt=""></span>
         <span class="label">dead-venues.html</span>
       </button>
       <button class="icon" data-id="item-gig-map-lab" data-href="https://labs.jamesbeckwith.com/gig-map/" data-shelf="labs">
-        <span class="art site smooth"><img src="img/icons/sites/gig-map.webp" width="128" height="128" alt=""></span>
+        <span class="art site smooth"><img src="img/icons/sites/gig-map.png" width="128" height="128" alt=""></span>
         <span class="label">gig-map.html</span>
       </button>
       <button class="icon" data-id="item-fpl" data-href="https://labs.jamesbeckwith.com/fantasy-football/" data-shelf="labs">
-        <span class="art site smooth"><img src="img/icons/sites/fpl.webp" width="128" height="128" alt=""></span>
+        <span class="art site smooth"><img src="img/icons/sites/fpl.svg" width="128" height="128" alt=""></span>
         <span class="label">fpl-maximizer.html</span>
       </button>
       <button class="icon" data-id="item-flight-radar" data-href="https://labs.jamesbeckwith.com/flight-radar/" data-shelf="labs">
-        <span class="art site smooth"><img src="img/icons/sites/flight-radar.webp" width="128" height="128" alt=""></span>
+        <span class="art site smooth"><img src="img/icons/sites/flight-radar.svg" width="128" height="128" alt=""></span>
         <span class="label">flight-radar.html</span>
       </button>
       <button class="icon" data-id="item-ganymede" data-href="https://labs.jamesbeckwith.com/ganymede-synth-engine/" data-shelf="labs">
-        <span class="art site smooth"><img src="img/icons/sites/ganymede.webp" width="128" height="128" alt=""></span>
+        <span class="art site smooth"><img src="img/icons/sites/ganymede.svg" width="128" height="128" alt=""></span>
         <span class="label">ganymede.html</span>
       </button>
       <button class="icon" data-id="item-solar-system" data-href="https://labs.jamesbeckwith.com/solar-system/" data-shelf="labs">
-        <span class="art site smooth"><img src="img/icons/sites/solar-system.webp" width="128" height="128" alt=""></span>
+        <span class="art site smooth"><img src="img/icons/sites/solar-system.svg" width="128" height="128" alt=""></span>
         <span class="label">solar-system.html</span>
       </button>
       <button class="icon" data-id="item-ltd-tax" data-href="https://labs.jamesbeckwith.com/ltd-company-tax/" data-shelf="labs">
-        <span class="art site smooth"><img src="img/icons/sites/ltd-tax.webp" width="128" height="128" alt=""></span>
+        <span class="art site smooth"><img src="img/icons/sites/ltd-tax.svg" width="128" height="128" alt=""></span>
         <span class="label">director-tax.html</span>
       </button>
       <button class="icon" data-id="item-mac-theme" data-href="https://labs.jamesbeckwith.com/mac-theme/" data-shelf="labs">
-        <span class="art site smooth"><img src="img/icons/sites/mac-theme.webp" width="128" height="128" alt=""></span>
+        <span class="art site smooth"><img src="img/icons/sites/mac-theme.svg" width="128" height="128" alt=""></span>
         <span class="label">mac-theme.html</span>
       </button>
 
@@ -104,15 +128,15 @@
         <span class="label">realmusic.html</span>
       </button>
       <button class="icon" data-id="item-tube-symphony" data-href="https://labs.jamesbeckwith.com/tubemap/demo.php" data-shelf="maps">
-        <span class="art site smooth"><img src="img/icons/sites/tube-symphony.webp" width="128" height="128" alt=""></span>
+        <span class="art site smooth"><img src="img/icons/sites/tube-symphony.png" width="128" height="128" alt=""></span>
         <span class="label">tube-symphony.html</span>
       </button>
       <button class="icon" data-id="item-gig-map" data-href="https://labs.jamesbeckwith.com/gig-map/" data-shelf="maps">
-        <span class="art site smooth"><img src="img/icons/sites/gig-map.webp" width="128" height="128" alt=""></span>
+        <span class="art site smooth"><img src="img/icons/sites/gig-map.png" width="128" height="128" alt=""></span>
         <span class="label">gig-map.html</span>
       </button>
       <button class="icon" data-id="item-dead-venues" data-href="https://labs.jamesbeckwith.com/dead-venues/" data-shelf="maps">
-        <span class="art site smooth"><img src="img/icons/sites/dead-venues.webp" width="128" height="128" alt=""></span>
+        <span class="art site smooth"><img src="img/icons/sites/dead-venues.png" width="128" height="128" alt=""></span>
         <span class="label">dead-venues.html</span>
       </button>
 
@@ -126,7 +150,11 @@
         <span class="label">long-distance.html</span>
       </button>
       <button class="icon" data-id="stream" data-open="stream" data-shelf="music">
-        <span class="art smooth folder"><img src="img/icons/folder-stream.webp" width="128" height="128" alt=""></span>
+        <span class="art ra-folder folder smooth">
+          <img class="ra-shell" src="img/icons/folder-ra-shell.svg?v=3" width="160" height="140" alt="">
+          <img class="ra-glyph" src="img/icons/glyph-stream.svg" width="48" height="48" alt="">
+          <span class="ra-caption">STREAMING</span>
+        </span>
         <span class="label">Streaming</span>
       </button>
 

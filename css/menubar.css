@@ -14,10 +14,8 @@
 .status-btn { display:flex; align-items:center; justify-content:center; gap:0; padding:0 12px; height:100%; background:none; border:0; color:inherit; font:500 13px/1 var(--sys); cursor:default; -webkit-font-smoothing:antialiased; }
 .status-btn svg { width:18px; height:18px; display:block; }
 .status-btn svg[hidden] { display:none; }
-.status-btn.theme-menu-btn, .status-btn.theme-toggle { position:relative; width:42px; cursor:pointer; }
-.status-btn.reset-menu-btn { gap:6px; padding:0 10px; font-size:14px; font-weight:500; cursor:pointer; }
-.status-btn.reset-menu-btn .icon-reset { width:14px; height:14px; display:block; flex:none; }
-.status-btn.theme-menu-btn .icon-sun, .status-btn.theme-menu-btn .icon-moon, .status-btn.theme-toggle .icon-sun, .status-btn.theme-toggle .icon-moon { width:20px; height:20px; }
+.status-btn.reset-menu-btn, .status-btn.theme-menu-btn, .status-btn.theme-toggle { position:relative; width:42px; padding:0; cursor:pointer; }
+.status-btn.reset-menu-btn .icon-reset, .status-btn.theme-menu-btn .icon-sun, .status-btn.theme-menu-btn .icon-moon, .status-btn.theme-toggle .icon-sun, .status-btn.theme-toggle .icon-moon { width:20px; height:20px; display:block; flex:none; }
 html[data-theme="dark"] .status-btn.theme-menu-btn .icon-sun { display:none; }
 html[data-theme="dark"] .status-btn.theme-menu-btn .icon-moon { display:block; }
 html[data-theme="light"] .status-btn.theme-menu-btn .icon-moon { display:none; }

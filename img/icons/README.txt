@@ -1,34 +1,24 @@
 Desktop icons
 
-All bitmap icons are 128×128 WebP, shown in one square slot
-(--icon-size: 132px desk / 100px narrow). Folders, apps, docs, sound,
-and trash share that size. Pagefiles use the same slot with inner padding
-so the photo sits smaller inside the document frame.
+RA-style folders (uniform shell + glyph + caption):
+  folder-ra-shell.svg   white thick-outline RA folder shell (shared)
+  glyph-*.webp / glyph-stream.svg   face marks
+  Captions are rendered in HTML (.ra-caption)
 
-Modern macOS Blue Folders (Big Sur / Sonoma aesthetic with white document sliver):
+Folded-paper files:
+  file-ra-pdf.svg       about-me.pdf
+  file-ra-at.svg        contact.me (@)
 
-  folder-blank.webp     plain modern blue folder base
-  folder.webp           plain modern blue folder base (for window/tax rendering)
-  folder-stream.webp    plain modern blue folder base (Streaming folder)
-  folder-labs.webp      flask glyph
-  folder-music.webp     music note glyph
-  folder-videos.webp    video / play badge
-  folder-football.webp  football / soccer ball emblem
-  folder-piano.webp     tuning fork glyph
-  folder-map.webp       Google Maps pin + color map badge
+Trash (same thick-outline graphic family):
+  trash-ra.svg          empty
+  trash-ra-full.svg     full
 
-Other desktop icons:
+Legacy Mac folder webps remain for reference but desktop uses RA composites.
 
-  document.webp, document-pdf.webp, sound.webp, textfile.webp,
-  trash.webp, trash-full.webp
+All bitmap icons historically 128×128 WebP in one square slot
+(--icon-size: 132px desk / 100px narrow).
 
-  jb.webp, jb-white.webp, jb-coral.webp   identity marks (menubar)
-  favicon.svg, favicon-16.png, favicon-32.png, favicon.ico, apple-touch-icon.png (coral piano, transparent bg)
-
-Website favicons (img/icons/sites/) — used as file icons for external links:
-
-  realmusic.webp, tube-symphony.webp, gig-map.webp, dead-venues.webp,
-  labs-app.webp, st-totteringham.webp, invincibles.webp,
-  jupiter.webp, greenwich-piano.webp
+Website favicons (img/icons/sites/) — used as file icons for lab / site links.
 
 Personal UI homage — not Apple product branding.
+

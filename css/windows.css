@@ -78,12 +78,12 @@
 .item .label { padding:1px 5px 2px; border:1px solid transparent; font-family:var(--sys); font-weight:500; font-size:13px; line-height:1.2; text-align:center; color:var(--ink); -webkit-font-smoothing:antialiased; }
 .item.selected .art { background:var(--accent); }
 .item.selected .art > img { mix-blend-mode:darken; }
-.item.selected .art.site, .item.selected .art.album, .item.selected .art.photo { background:var(--rm-bg); }
+.item.selected .art.site, .item.selected .art.album, .item.selected .art.photo { background:transparent; }
 .item.selected .art.site > img, .item.selected .art.album > img, .item.selected .art.photo > img { mix-blend-mode:normal; filter:none; }
 .item.selected .label { background:var(--accent); color:var(--on-accent); border-color:transparent; }
-.item:hover { background:var(--icon-hover); }
+.item:hover { background:transparent; }
 .item:hover .label { background:var(--accent); color:var(--on-accent); border-color:transparent; }
-.item:hover .art.site, .item:hover .art.album, .item:hover .art.photo { background:var(--rm-bg); }
+.item:hover .art.site, .item:hover .art.album, .item:hover .art.photo { background:transparent; }
 .item:focus-visible .label { outline:2px solid var(--ink); outline-offset:2px; }
 .doc { max-width:62ch; font-size:15px; line-height:1.55; }
 .doc::after { content:""; display:table; clear:both; }

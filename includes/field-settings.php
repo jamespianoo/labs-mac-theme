@@ -47,6 +47,13 @@
       <input type="range" min="3" max="12" step="1" data-fs="gridCells">
     </label>
     <label class="field-row">
+      <span>EQ visualiser</span>
+      <select data-fs="showEq">
+        <option value="show">Show</option>
+        <option value="hide">Hide</option>
+      </select>
+    </label>
+    <label class="field-row">
       <span>Hi-fi EQ <em data-fs-val="music"></em></span>
       <input type="range" min="0" max="2" step="0.05" data-fs="music">
     </label>

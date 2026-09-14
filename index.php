@@ -38,6 +38,15 @@ $folderTitles = [
     'trash' => 'Trash',
 ];
 $pageTitle = isset($folderTitles[$initialSlug]) ? 'James Beckwith | ' . $folderTitles[$initialSlug] : 'James Beckwith';
+
+// Cache-bust local CSS/JS with the file's mtime so edits show up without a
+// manual version bump or a user having to hard-refresh their browser.
+function asset(string $path): string
+{
+    $full = __DIR__ . '/' . ltrim($path, '/');
+    $v = is_file($full) ? filemtime($full) : time();
+    return $path . '?v=' . $v;
+}
 ?><!doctype html>
 <html lang="en" data-theme="dark">
 <head>
@@ -102,7 +111,7 @@ $pageTitle = isset($folderTitles[$initialSlug]) ? 'James Beckwith | ' . $folderT
   document.documentElement.setAttribute('data-theme', resolve(mode()));
 })();
 </script>
-<link rel="stylesheet" href="css/desktop.css">
+<link rel="stylesheet" href="<?= asset('css/desktop.css') ?>">
 </head>
 <body class="booting" data-initial-slug="<?= htmlspecialchars($initialSlug, ENT_QUOTES, 'UTF-8') ?>" data-base-href="<?= htmlspecialchars($baseHref, ENT_QUOTES, 'UTF-8') ?>">
 
@@ -126,14 +135,14 @@ $pageTitle = isset($folderTitles[$initialSlug]) ? 'James Beckwith | ' . $folderT
 <?= file_get_contents(__DIR__ . '/data/taxonomy.json') ?>
 </script>
 
-<script src="js/desktop.js" defer></script>
-<script src="js/audio-theme.js" defer></script>
-<script src="js/windows.js" defer></script>
-<script src="js/icons.js" defer></script>
-<script src="js/menus.js" defer></script>
-<script src="js/pixel-glyphs.js" defer></script>
-<script src="js/pixel-effects.js" defer></script>
-<script src="js/pixel-music.js" defer></script>
-<script src="js/pixel-field.js" defer></script>
+<script src="<?= asset('js/desktop.js') ?>" defer></script>
+<script src="<?= asset('js/audio-theme.js') ?>" defer></script>
+<script src="<?= asset('js/windows.js') ?>" defer></script>
+<script src="<?= asset('js/icons.js') ?>" defer></script>
+<script src="<?= asset('js/menus.js') ?>" defer></script>
+<script src="<?= asset('js/pixel-glyphs.js') ?>" defer></script>
+<script src="<?= asset('js/pixel-effects.js') ?>" defer></script>
+<script src="<?= asset('js/pixel-music.js') ?>" defer></script>
+<script src="<?= asset('js/pixel-field.js') ?>" defer></script>
 </body>
 </html>

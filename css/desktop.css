@@ -29,7 +29,7 @@ html[data-theme="light"]{
   --sticky-ink:#16171a;
   --boot:#efe6d6;
 
-  --icon-hover:rgba(0, 0, 0, 0.28);
+  --icon-hover:rgba(120,130,160,0.35);
   --rm-bg:#2c2c30;
 
   /* Light raised chrome — matches Media Player dock */
@@ -76,7 +76,7 @@ html[data-theme="dark"]{
   --sticky-ink:#16171a;
   --boot:#0b0e11;
 
-  --icon-hover:rgba(0, 0, 0, 0.45);
+  --icon-hover:rgba(160,170,200,0.25);
   --rm-bg:#2c2c30;
 
   /* Dark chrome — slate-blue scale, distinct from pure black */
@@ -322,8 +322,8 @@ html[data-theme="light"] .status-btn.theme-toggle .icon-sun{display:none}
   image-rendering:pixelated;pointer-events:none;filter:none !important}
 .icon .art.ra-folder .ra-glyph,
 .item .art.ra-folder .ra-glyph{
-  position:absolute;left:60%;top:66%;width:26%;height:26%;
-  transform:translate(-50%,-50%);object-fit:contain;pointer-events:none;
+  position:absolute;left:36%;top:54%;width:28%;height:28%;
+  transform:translate(-50%,-50%) skewY(26deg) scaleX(0.76);object-fit:contain;pointer-events:none;
   filter:brightness(0) !important;image-rendering:auto}
 /* Multi-tone badges (not a flat silhouette) — brightness(0) would crush them to a blob */
 .icon .art.ra-folder .ra-glyph[src*="glyph-video"],
@@ -338,20 +338,19 @@ html[data-theme="light"] .status-btn.theme-toggle .icon-sun{display:none}
   position:absolute;inset:0;width:100%;height:100%;object-fit:contain;
   image-rendering:pixelated;pointer-events:none;filter:none !important}
 .icon .art.ra-file .ra-glyph{
-  position:absolute;left:50%;top:62%;width:34%;height:34%;
+  position:absolute;left:50%;top:50%;width:48%;height:48%;
   transform:translate(-50%,-50%);object-fit:contain;pointer-events:none;
   filter:brightness(0) !important;image-rendering:auto}
-/* Multi-tone badge (not a flat silhouette) — brightness(0) would crush it to a blob */
-.icon .art.ra-file .ra-glyph[src*="sys9-acrobat"]{filter:none !important;image-rendering:pixelated}
+/* PDF / @ badges carry their own dark-grey ink — don't crush it to pure black */
+.icon .art.ra-file .ra-glyph[src*="glyph-pdf"],
+.icon .art.ra-file .ra-glyph[src*="glyph-at"]{filter:none !important}
 .icon.trash .art.ra-trash > img{width:100%;height:100%;image-rendering:pixelated;filter:none !important}
 .icon.trash .art.ra-trash{
-  filter:drop-shadow(4px 5px 0 rgba(0,0,0,.35))}
-.item:hover .art.ra-folder,
+  filter:drop-shadow(2px 3px 0 rgba(0,0,0,.35));
+  display:flex;align-items:center;justify-content:center}
 .item.selected .art.ra-folder,
-.item:hover .art.ra-file,
 .item.selected .art.ra-file,
-.item:hover .art.ra-trash,
-.item.selected .art.ra-trash{background:transparent !important}
+.item.selected .art.ra-trash{background:var(--icon-hover) !important}
 /* Site favicons: smooth scale; pagefiles keep photo inset */
 .icon .art.site > img,.item .art.site > img,
 .icon .art.smooth > img,.item .art.smooth > img,
@@ -391,6 +390,9 @@ html[data-theme="dark"] .item .art.album > img{filter:none}
   box-shadow:1px 1px 0 var(--ink);font-family:var(--sys);font-weight:500;font-size:13px;line-height:1.2;letter-spacing:.01em;
   text-align:center;max-width:120px;color:var(--ink);box-decoration-break:clone;-webkit-box-decoration-break:clone;
   -webkit-font-smoothing:antialiased}
+/* The folder shape (and its drop shadow) sits left of the icon box's true
+   centre, so its label needs to shift left to read as centred under it */
+.icon:has(.art.ra-folder) .label{transform:translateX(-7px)}
 .icon:hover{background:transparent}
 .icon:hover .art{background:var(--icon-hover)}
 .item:hover .art.folder{background:transparent}
@@ -401,7 +403,8 @@ html[data-theme="dark"] .item .art.album > img{filter:none}
 .icon:hover .art.ra-folder,
 .icon:hover .art.ra-file,
 .icon:hover .art.ra-trash{background:var(--icon-hover)}
-.icon:hover .label{background:var(--accent);color:var(--on-accent);box-shadow:1px 1px 0 var(--ink)}
+.icon:hover .label{background:var(--accent);color:var(--on-accent);box-shadow:none}
+.icon:active .label{transform:translate(1px,1px);box-shadow:none}
 /* Selection: soft accent mix (Media Player is-playing) */
 .icon.selected .art{background:var(--icon-hover)}
 .icon.selected .art.folder,
@@ -423,7 +426,7 @@ html[data-theme="dark"] .item .art.album > img{filter:none}
 .icon.selected:hover .label{
   background:var(--selected-face);color:var(--ink);box-shadow:1px 1px 0 var(--ink)}
 .icon.selected:hover .label{
-  background:var(--accent);color:var(--on-accent)}
+  background:var(--accent);color:var(--on-accent);box-shadow:none}
 .icon:focus-visible .label{outline:2px solid var(--ink);outline-offset:2px}
 .icon.renaming{cursor:url('../img/cursors/os9-arrow.png') 1 1,default;cursor:-webkit-image-set(url('../img/cursors/os9-arrow.png') 1x,url('../img/cursors/os9-arrow@2x.png') 2x) 1 1,default;z-index:60}
 .icon.renaming .label,.icon.renaming input.rename{
@@ -561,7 +564,7 @@ html[data-theme="dark"] .item .art.album > img{filter:none}
   --w-muted:var(--dim);
   position:absolute;z-index:100;display:flex;flex-direction:column;
   background:var(--w-face);color:var(--w-ink);
-  border:1px solid var(--ink);border-radius:7px 7px 0 0;overflow:hidden;
+  border:1px solid var(--ink);border-radius:0;overflow:hidden;
   box-shadow:inset 0 1px 0 var(--white), inset 0 -1px 0 var(--mid), 3px 3px 0 var(--ink)
 }
 .win[hidden]{display:none}
@@ -863,9 +866,10 @@ html[data-theme="dark"] .item .art.album > img{filter:none}
 .item.selected .art.site > img,
 .item.selected .art.album > img,
 .item.selected .art.photo > img{mix-blend-mode:normal;filter:none}
-.item.selected .label{background:var(--accent);color:var(--on-accent);border-color:transparent}
+.item.selected .label{background:var(--selected-face);color:var(--ink);border-color:transparent}
 .item:hover{background:transparent}
-.item:hover .label{background:var(--accent);color:var(--on-accent);border-color:transparent}
+.item:hover .art{background:var(--icon-hover)}
+.item:hover .label{background:var(--selected-face);color:var(--ink);border-color:transparent}
 .item:hover .art.site,
 .item:hover .art.album,
 .item:hover .art.photo{background:transparent}

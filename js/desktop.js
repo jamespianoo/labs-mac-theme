@@ -31,8 +31,8 @@
   D.POS_KEY = 'jb-desk-pos-v2';
   D.GONE_KEY = 'jb-desk-gone-v2';
   D.SEED_KEY = 'jb-trash-seeds-cleared';
-  D.SHELF_KEY = 'jb-desk-shelf-v5';
-  D.FOLDER_IDS = { labs: 1, maps: 1, music: 1, stream: 1, videos: 1, piano: 1, football: 1 };
+  D.SHELF_KEY = 'jb-desk-shelf-v6';
+  D.FOLDER_IDS = { projects: 1, labs: 1, maps: 1, music: 1, stream: 1, videos: 1, piano: 1, football: 1 };
   /* Only Trash is pinned / cannot be shelved into folders */
   D.PINNED_IDS = { trash: 1 };
   D.clock12 = true;

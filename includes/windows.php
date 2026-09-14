@@ -1,4 +1,8 @@
 <!-- ================================ windows =============================== -->
+<template id="tpl-projects" data-title="Projects" data-w="560" data-h="340" data-info="3 items|Maps, Piano Repair &amp; Football">
+  <div class="items"></div>
+</template>
+
 <template id="tpl-labs" data-title="Labs" data-w="680" data-h="460" data-info="10 items|Experiments">
   <div class="items"></div>
 </template>

@@ -1,0 +1,30 @@
+<svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+  <!-- shadow (lower-right, matching folder) -->
+  <ellipse cx="72" cy="118" rx="36" ry="6" fill="rgba(0,0,0,0.35)"/>
+
+  <!-- top depth strip (goes upper-right from top of front face) -->
+  <polygon points="22,22 78,22 90,12 34,12" fill="#d0d0cc"/>
+  <line x1="22" y1="22" x2="34" y2="12" stroke="#2a2a2a" stroke-width="1.5"/>
+  <line x1="34" y1="12" x2="90" y2="12" stroke="#2a2a2a" stroke-width="1.5"/>
+
+  <!-- right depth strip (goes lower-right from right edge) -->
+  <polygon points="98,40 108,32 108,118 98,108" fill="#a8a8a4"/>
+  <line x1="98" y1="40" x2="108" y2="32" stroke="#2a2a2a" stroke-width="1.5"/>
+  <line x1="108" y1="32" x2="108" y2="118" stroke="#2a2a2a" stroke-width="1.5"/>
+  <line x1="108" y1="118" x2="98" y2="108" stroke="#2a2a2a" stroke-width="1.5"/>
+
+  <!-- corner join between top and right strips -->
+  <polygon points="78,22 98,40 108,32 90,12" fill="#bbbbb6"/>
+  <line x1="90" y1="12" x2="108" y2="32" stroke="#2a2a2a" stroke-width="1.5"/>
+
+  <!-- main paper face (dog-eared top-right) -->
+  <polygon points="22,22 78,22 98,40 98,108 22,108" fill="#f6f5f0"/>
+
+  <!-- dog ear fold triangle -->
+  <polygon points="78,22 98,40 78,40" fill="#d8d7d0"/>
+
+  <!-- face outline -->
+  <polyline points="22,22 78,22 98,40 98,108 22,108 22,22" fill="none" stroke="#2a2a2a" stroke-width="2" stroke-linejoin="round"/>
+  <line x1="78" y1="22" x2="78" y2="40" stroke="#2a2a2a" stroke-width="1.5"/>
+  <line x1="78" y1="40" x2="98" y2="40" stroke="#2a2a2a" stroke-width="1.5"/>
+</svg>

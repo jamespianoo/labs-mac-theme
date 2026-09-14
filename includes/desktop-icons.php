@@ -1,15 +1,11 @@
 <div id="icons">
       <!-- icons: file/folder base art + type glyphs — see img/icons/README.txt -->
-      <button class="icon" data-id="labs-site" data-href="https://labs.jamesbeckwith.com/" data-scatter>
-        <span class="art smooth"><img src="img/icons/sites/labs.webp" width="128" height="128" alt=""></span>
-        <span class="label">jb-labs.html</span>
-      </button>
-      <button class="icon" data-id="maps" data-open="maps" data-scatter>
+      <button class="icon" data-id="projects" data-open="projects" data-scatter>
         <span class="art ra-folder folder smooth">
           <img class="ra-shell" src="img/icons/sys9-folder.png" width="128" height="128" alt="">
-          <img class="ra-glyph" src="img/icons/glyph-map.webp" width="48" height="48" alt="">
+          <img class="ra-glyph" src="img/icons/glyph-labs.webp" width="48" height="48" alt="">
         </span>
-        <span class="label">Maps</span>
+        <span class="label">Projects</span>
       </button>
       <button class="icon" data-id="music" data-open="music" data-scatter data-tag="coral">
         <span class="art ra-folder folder smooth">
@@ -25,30 +21,16 @@
         </span>
         <span class="label">Videos</span>
       </button>
-      <button class="icon" data-id="piano" data-open="piano" data-scatter>
-        <span class="art ra-folder folder smooth">
-          <img class="ra-shell" src="img/icons/sys9-folder.png" width="128" height="128" alt="">
-          <img class="ra-glyph" src="img/icons/glyph-tuning-fork.webp" width="48" height="48" alt="">
-        </span>
-        <span class="label">Piano Repair</span>
-      </button>
-      <button class="icon" data-id="football" data-open="football" data-scatter data-tag="green">
-        <span class="art ra-folder folder smooth">
-          <img class="ra-shell" src="img/icons/sys9-folder.png" width="128" height="128" alt="">
-          <img class="ra-glyph" src="img/icons/glyph-football.webp" width="48" height="48" alt="">
-        </span>
-        <span class="label">Football</span>
-      </button>
       <button class="icon" data-id="about" data-open="about" data-scatter>
         <span class="art ra-file">
-          <img class="ra-shell" src="img/icons/sys9-generic.png" width="128" height="128" alt="">
-          <img class="ra-glyph" src="img/icons/sys9-acrobat.png" width="48" height="48" alt="">
+          <img class="ra-shell" src="img/icons/sys9-document.png" width="128" height="128" alt="">
+          <img class="ra-glyph" src="img/icons/glyph-pdf.svg" width="48" height="48" alt="">
         </span>
         <span class="label">about-me.pdf</span>
       </button>
       <button class="icon" data-id="contact" data-open="contact" data-scatter>
         <span class="art ra-file">
-          <img class="ra-shell" src="img/icons/sys9-generic.png" width="128" height="128" alt="">
+          <img class="ra-shell" src="img/icons/sys9-document.png" width="128" height="128" alt="">
           <img class="ra-glyph" src="img/icons/glyph-at.svg" width="48" height="48" alt="">
         </span>
         <span class="label">contact.me</span>
@@ -73,6 +55,29 @@
       <button class="icon" data-trash-id="seed-4" type="button"><span class="art"><img src="img/icons/textfile.webp" width="128" height="128" alt=""></span><span class="label">todo-finish-later.txt</span></button>
     </div>
     <div id="shelved" hidden>
+      <!-- Projects items -->
+      <button class="icon" data-id="maps" data-open="maps" data-shelf="projects">
+        <span class="art ra-folder folder smooth">
+          <img class="ra-shell" src="img/icons/sys9-folder.png" width="128" height="128" alt="">
+          <img class="ra-glyph" src="img/icons/glyph-map.webp" width="48" height="48" alt="">
+        </span>
+        <span class="label">Maps</span>
+      </button>
+      <button class="icon" data-id="piano" data-open="piano" data-shelf="projects">
+        <span class="art ra-folder folder smooth">
+          <img class="ra-shell" src="img/icons/sys9-folder.png" width="128" height="128" alt="">
+          <img class="ra-glyph" src="img/icons/glyph-tuning-fork.webp" width="48" height="48" alt="">
+        </span>
+        <span class="label">Piano Repair</span>
+      </button>
+      <button class="icon" data-id="football" data-open="football" data-shelf="projects">
+        <span class="art ra-folder folder smooth">
+          <img class="ra-shell" src="img/icons/sys9-folder.png" width="128" height="128" alt="">
+          <img class="ra-glyph" src="img/icons/glyph-football.webp" width="48" height="48" alt="">
+        </span>
+        <span class="label">Football</span>
+      </button>
+
       <!-- Labs items -->
       <button class="icon" data-id="item-metis" data-href="https://labs.jamesbeckwith.com/metis/" data-shelf="labs">
         <span class="art site smooth"><img src="img/icons/sites/metis.svg" width="128" height="128" alt=""></span>

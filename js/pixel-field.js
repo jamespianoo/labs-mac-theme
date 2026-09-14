@@ -28,7 +28,8 @@
     twinkle: 1,          /* per-pixel shimmer */
     cursor: 1,           /* cursor glow strength and reach */
     stampSize: 1,        /* the held piano's largest size */
-    music: 1,            /* hi-fi EQ display; 0 hides it */
+    showEq: 'show',      /* hi-fi EQ visibility: show / hide */
+    music: 1,            /* hi-fi EQ display intensity */
     grid: 1,             /* graph-paper grid strength; 0 hides it */
     gridCells: 6,        /* field cells per grid square */
     nameShade: 'gradient',
@@ -40,6 +41,7 @@
     stampSize: [0.5, 2], music: [0, 2], grid: [0, 2], gridCells: [3, 12], entranceSpeed: [0.4, 2.5]
   };
   var CHOICES = {
+    showEq: ['show', 'hide'],
     nameShade: ['gradient', 'ivory', 'solid'],
     entrance: ['random', 'none'].concat(FX ? FX.list().map(function (e) { return e.id; }) : [])
   };
@@ -262,10 +264,11 @@
 
   /* -------------------------------------------------------------- the name */
   var NAME = 'JAMES BECKWITH';
+  var SUB_RED_IDX = Math.floor(Math.random() * 3); /* 0=PIANO 1=COMPOSITION 2=TECHNICIAN */
   var SUB = [
-    { text: 'PIANO', ink: 'text' }, { text: '/', ink: 'hover' },
-    { text: 'COMPOSITION', ink: 'text' }, { text: '/', ink: 'hover' },
-    { text: 'TECHNICIAN', ink: 'hover' }, { text: '/', ink: 'hover' },
+    { text: 'PIANO',       ink: SUB_RED_IDX === 0 ? 'hover' : 'text' }, { text: '/', ink: 'hover' },
+    { text: 'COMPOSITION', ink: SUB_RED_IDX === 1 ? 'hover' : 'text' }, { text: '/', ink: 'hover' },
+    { text: 'TECHNICIAN',  ink: SUB_RED_IDX === 2 ? 'hover' : 'text' }, { text: '/', ink: 'hover' },
     { text: 'LABS', ink: 'text' }
   ];
   var SUB_WORD_GAP = 6;
@@ -274,7 +277,8 @@
 
   var EQ_BAR_W = 2;       /* cells per bar */
   var EQ_GAP = 1;         /* cells between bars */
-  var EQ_SEGS = 10;       /* LED segments per bar, one cell each with a gap */
+  var EQ_SEGS = 6;        /* LED segments per bar: square, EQ_BAR_W cells a side */
+  var EQ_SEG_GAP = 1;     /* cells between segments */
   var EQ_FOOT = 1;        /* cells between the display and the bottom edge */
   var EQ_RISE = 0.55, EQ_FALL = 0.04;
   var PEAK_HOLD = 650, PEAK_GRAVITY = 0.004;
@@ -385,7 +389,7 @@
     eqBox = null;
     if (bars >= 8) {
       var eqCols = bars * (EQ_BAR_W + EQ_GAP) - EQ_GAP;
-      var eqRows = EQ_SEGS * 2 - 1;
+      var eqRows = EQ_SEGS * (EQ_BAR_W + EQ_SEG_GAP) - EQ_SEG_GAP;
       var bottomRow = Math.floor((H - oy) / cw) - 1 - EQ_FOOT;
       if (eqLevel.length < bars) {
         eqLevel = new Float32Array(bars);
@@ -442,9 +446,11 @@
   var CURSOR_CELLS = 12;
   var HUSH_REACH = 96;
   var CLICK_MS = 160;              /* a press shorter than this is a click */
-  var GATHER_S = 0.9;              /* swarm to fully formed piano */
-  var GROW_S = 3.2;                /* smallest to largest while held */
-  var PIANO_FROM = 0.75, PIANO_MAX = 3; /* field cells per piano pixel */
+  var GATHER_S = 0.7;              /* how long particles take to leave the swarm */
+  var GROW_S = 3.2;                /* smallest keyboard to largest while held */
+  var KEY_PITCH_FROM = 3;          /* cells per white key (with its line) at first */
+  var KEY_PITCH_MAX = 4;           /* ...and at full size, times the Piano size setting */
+  var SWARM_CELLS = 9;             /* radius of the swarm a hold starts from */
   var PARTICLE_CAP = 1800;
   var BANDS = MUSIC ? MUSIC.BANDS : 32;
 
@@ -508,70 +514,176 @@
 
   /* ---------------------------------------------------------------- draw */
   var glows = [];
-  var piano = stamps.keys;
   var pianoBox = null;    /* cells covered by a formed piano, kept clear of dust */
 
   function easeOut(n) { return 1 - Math.pow(1 - n, 3); }
   function clamp01(n) { return n < 0 ? 0 : n > 1 ? 1 : n; }
 
-  /* Every lit piano pixel gets a swarm particle: where it orbits the press
-     before gathering, and how late it arrives. */
-  function makeSwarm() {
-    var list = [], lx, ly;
-    for (ly = 0; ly < piano.height; ly++) {
-      for (lx = 0; lx < piano.width; lx++) {
-        var code = piano.rows[ly].charCodeAt(lx);
-        if (code === 48) continue;
-        list.push({
-          lx: lx, ly: ly, fill: code - 48,
-          angle: Math.random() * Math.PI * 2,
-          radius: 0.25 + Math.random() * 0.55,
-          spin: (Math.random() < 0.5 ? -1 : 1) * (0.6 + Math.random() * 0.9),
-          delay: Math.random(),
-          phase: Math.random() * 6.283
-        });
+  /* One octave drawn at a key pitch in cells: a 1-cell frame, a line
+     between each white key, and five black keys of equal width. Pixels are
+     always single field cells; a bigger keyboard just has more of them.
+     Returns [col, row, fill] offsets from the top-left, row by row. */
+  var keyboards = {};
+  function keyboard(pitch) {
+    if (keyboards[pitch]) return keyboards[pitch];
+    var w = 7 * pitch + 1;
+    var h = Math.round(w * 0.52);
+    var blackW = Math.max(2, pitch - 1);
+    var blackH = Math.round((h - 2) * 0.62);
+    var BLACK = [1, 2, 4, 5, 6];
+    var cells = [], r, c, k;
+    for (r = 0; r < h; r++) {
+      for (c = 0; c < w; c++) {
+        var frame = r === 0 || r === h - 1 || c === 0 || c === w - 1;
+        var black = false;
+        if (r >= 1 && r <= blackH) {
+          for (k = 0; k < BLACK.length; k++) {
+            var bx = BLACK[k] * pitch - Math.floor(blackW / 2);
+            if (c >= bx && c < bx + blackW) { black = true; break; }
+          }
+        }
+        var line = c % pitch === 0;
+        if (black) cells.push([c, r, 2]);
+        else if (frame || line) cells.push([c, r, 1]);
       }
+    }
+    keyboards[pitch] = { cells: cells, width: w, height: h };
+    return keyboards[pitch];
+  }
+
+  /* A hold starts as a swarm the size of the cursor glow. Rather than
+     spawning fresh dots out of nowhere, it first looks for resting dust
+     cells already lit near the press and pulls the swarm from those —
+     the cloud gathers itself out of what was already there instead of
+     popping in over it. Any particles left over (not enough dust nearby)
+     fall back to a random start, same as before. */
+  function nearbyDustCells(cc, cr, now) {
+    var t = now / 1000;
+    var R = SWARM_CELLS;
+    var c0 = Math.round(cc - R), c1 = Math.round(cc + R);
+    var r0 = Math.round(cr - R), r1 = Math.round(cr + R);
+    var density = settings.density * 0.62;
+    var out = [], col, row;
+    for (row = r0; row <= r1; row++) {
+      var localR = row - rMin;
+      if (localR < 0 || localR >= rows) continue;
+      var inWordRow = row >= 0 && row < word.height;
+      var inStrapRow = strapBox && row >= strapBox.r0 - 1 && row < strapBox.r1 + 1;
+      for (col = c0; col <= c1; col++) {
+        var dc = col - cc, dr = row - cr;
+        if (dc * dc + dr * dr > R * R) continue;
+        if (inWordRow && col >= 0 && col < word.width && word.mask[row * word.width + col]) continue;
+        if (inStrapRow && col >= strapBox.c0 - 1 && col < strapBox.c1 + 1) continue;
+        var localC = col - cMin;
+        if (localC < 0 || localC >= cols) continue;
+        var shade = ramp[localR * cols + localC];
+        if (shade <= 0.002) continue;
+        var u = col / 9, v = row / 9;
+        var base = 0.6 * sample(u - t * 0.12, v - t * 0.04) + 0.4 * sample(u * 0.55 + t * 0.07, v * 0.55 + t * 0.05);
+        var lum = shade * (0.3 + 0.52 * base * base) * density;
+        var threshold = 0.78 * ((BAYER[(row & 7) * 8 + (col & 7)] + 0.5) / 64) + 0.22 * jitter[(row & 63) * 64 + (col & 63)];
+        if (lum <= threshold) continue;
+        out.push(dc, dr);
+      }
+    }
+    /* Shuffle the (dc, dr) pairs so the same handful of nearby cells
+       aren't always the first ones claimed */
+    var pairs = out.length / 2, i, j;
+    for (i = pairs - 1; i > 0; i--) {
+      j = Math.floor(Math.random() * (i + 1));
+      var tx = out[i * 2], ty = out[i * 2 + 1];
+      out[i * 2] = out[j * 2]; out[i * 2 + 1] = out[j * 2 + 1];
+      out[j * 2] = tx; out[j * 2 + 1] = ty;
+    }
+    return out;
+  }
+
+  function makeSwarm(cx, cy, now) {
+    var count = keyboard(KEY_PITCH_FROM).cells.length;
+    var cc = (cx - ox) / cw, cr = (cy - oy) / cw;
+    var dust = nearbyDustCells(cc, cr, now);
+    var dustPairs = dust.length / 2;
+    var list = [], i;
+    for (i = 0; i < count; i++) {
+      var pc, pr;
+      if (i < dustPairs) {
+        pc = dust[i * 2]; pr = dust[i * 2 + 1];
+      } else {
+        var ang = Math.random() * Math.PI * 2, rad = Math.sqrt(Math.random()) * SWARM_CELLS;
+        pc = Math.cos(ang) * rad; pr = Math.sin(ang) * rad * 0.8;
+      }
+      list.push({
+        c: pc, r: pr,
+        share: (i + Math.random()) / count,
+        orbit: 0.3 + Math.random() * 0.7,
+        spin: (Math.random() < 0.5 ? -1 : 1) * (0.4 + Math.random() * 0.8),
+        delay: Math.random(),
+        phase: Math.random() * 6.283,
+        home: false
+      });
     }
     return list;
   }
 
-  /* The held piano this frame. Piano pixels are a whole number of device
-     pixels, so every key is the same width at every size while it grows
-     smoothly; stray swarm particles stay on the field lattice.
-     Calls fn(x, y, size, ink) in device px for every pixel. */
-  function eachPianoPixel(time, fn) {
+  /* Move the swarm one frame and report each particle's cell.
+     Calls fn(col, row, ink) with lattice cells. */
+  function stepSwarm(time, fn) {
     var held = (time - holding.start - CLICK_MS) / 1000;
     if (held < 0) return null;
+    var dt = Math.min(0.1, Math.max(0, (time - (holding.stepAt || time)) / 1000));
+    holding.stepAt = time;
+    var t = time / 1000;
     var g = clamp01(held / GROW_S);
-    var grow = g * g * (3 - 2 * g);
-    var maxK = PIANO_MAX * settings.stampSize;
-    var pw = Math.max(2, Math.round(cw * (PIANO_FROM + (maxK - PIANO_FROM) * grow)));
-    var x0 = Math.round(holding.x - (piano.width * pw) / 2);
-    var y0 = Math.round(holding.y - (piano.height * pw) / 2);
-    var spread = piano.width * pw * 0.75 + 6 * cw;
-    var t = time / 1000, formed = 0, i;
+    var maxPitch = Math.max(KEY_PITCH_FROM, Math.round(KEY_PITCH_MAX * settings.stampSize));
+    /* Continuous size: pitch0 stays a solid, settled keyboard while pitch0+1's
+       extra cells grow in from a point (see the render step in draw()) —
+       the keyboard gets bigger by gaining pixels, not by rescaling. */
+    var pitchF = KEY_PITCH_FROM + (maxPitch - KEY_PITCH_FROM) * g * g * (3 - 2 * g);
+    var pitch0 = Math.min(maxPitch, Math.floor(pitchF));
+    var pitch1 = Math.min(maxPitch, pitch0 + 1);
+    var frac = pitch1 > pitch0 ? pitchF - pitch0 : 0;
+    var kb = keyboard(pitch0);
+    var kb1 = pitch1 > pitch0 ? keyboard(pitch1) : kb;
+    var cc = (holding.x - ox) / cw, cr = (holding.y - oy) / cw;
+    var c0 = Math.round(cc - kb.width / 2), r0 = Math.round(cr - kb.height / 2);
+    var c0b = Math.round(cc - kb1.width / 2), r0b = Math.round(cr - kb1.height / 2);
+    var pull = 1 - Math.exp(-dt * 11);
+    var home = 0, i;
     for (i = 0; i < holding.swarm.length; i++) {
       var q = holding.swarm[i];
-      var a = easeOut(clamp01((held - q.delay * GATHER_S * 0.45) / (GATHER_S * 0.55)));
-      if (a >= 1) {
-        formed++;
-        fn(x0 + q.lx * pw, y0 + q.ly * pw, pw, q.fill === 2 ? 'hover' : 'lit');
-        continue;
+      var goalC, goalR, ink;
+      if (held < q.delay * GATHER_S) {
+        /* Still in the swarm: a lazy orbit around the press */
+        var ang = Math.atan2(q.r, q.c) + dt * q.spin;
+        var rad = Math.sqrt(q.c * q.c + q.r * q.r);
+        goalC = cc + Math.cos(ang) * rad + Math.sin(t * 2 + q.phase) * q.orbit;
+        goalR = cr + Math.sin(ang) * rad + Math.cos(t * 1.7 + q.phase) * q.orbit;
+        q.home = false;
+        ink = 'mid';
+      } else {
+        var cell = kb.cells[Math.min(kb.cells.length - 1, Math.floor(q.share * kb.cells.length))];
+        goalC = c0 + cell[0]; goalR = r0 + cell[1];
+        ink = cell[2] === 2 ? 'hover' : 'lit';
       }
-      var ang = q.angle + t * q.spin;
-      var sx = holding.x + Math.cos(ang) * q.radius * spread;
-      var sy = holding.y + Math.sin(ang) * q.radius * spread * 0.6;
-      var tx = x0 + (q.lx + 0.5) * pw, ty = y0 + (q.ly + 0.5) * pw;
-      var wob = (1 - a) * 1.5 * cw;
-      /* Snap the travelling particle to the lattice */
-      var col = Math.round((sx + (tx - sx) * a + Math.sin(t * 5 + q.phase) * wob - ox) / cw - 0.5);
-      var row = Math.round((sy + (ty - sy) * a + Math.cos(t * 4 + q.phase) * wob - oy) / cw - 0.5);
-      var xl = ox + col * cw, yt = oy + row * cw;
-      fn(Math.round(xl), Math.round(yt), Math.round(xl + cw) - Math.round(xl), a > 0.5 ? 'lit' : 'mid');
+      var absC = cc + q.c, absR = cr + q.r;
+      absC += (goalC - absC) * pull;
+      absR += (goalR - absR) * pull;
+      q.c = absC - cc; q.r = absR - cr;
+      var col = Math.round(absC), row = Math.round(absR);
+      var there = ink !== 'mid' && Math.abs(absC - goalC) < 0.5 && Math.abs(absR - goalR) < 0.5;
+      if (there) { col = goalC; row = goalR; home++; }
+      fn(col, row, there ? ink : ink === 'mid' ? 'mid' : 'lit');
     }
+    /* Once the swarm has first settled the whole keyboard is drawn, and
+       stays drawn through each growth step while particles re-home */
+    if (home / holding.swarm.length > 0.6) holding.settled = true;
+    var bc0 = Math.min(c0, c0b), br0 = Math.min(r0, r0b);
+    var bc1 = Math.max(c0 + kb.width, c0b + kb1.width), br1 = Math.max(r0 + kb.height, r0b + kb1.height);
     return {
-      x0: x0, y0: y0, x1: x0 + piano.width * pw, y1: y0 + piano.height * pw,
-      formed: formed / holding.swarm.length
+      c0: bc0, r0: br0, c1: bc1, r1: br1,
+      kb: kb, kc0: c0, kr0: r0,
+      kb1: kb1, kc1: c0b, kr1: r0b, frac: frac,
+      formed: holding.settled ? 1 : 0
     };
   }
 
@@ -594,18 +706,29 @@
     spawn(cx, cy, 0, 0, 0.12, cw * 2, 'crest', now);
   }
 
-  /* Release: every piano pixel flies outward from where it is now */
+  /* Release: every swarm particle and keyboard cell flies outward */
   function pianoBurst(now) {
     var hx = holding.x, hy = holding.y;
-    eachPianoPixel(now, function (x, y, size, ink) {
-      var mx = x + size / 2, my = y + size / 2;
+    var seen = {};
+    function fling(col, row, ink) {
+      var key = col + ',' + row;
+      if (seen[key]) return;
+      seen[key] = 1;
+      var mx = ox + (col + 0.5) * cw, my = oy + (row + 0.5) * cw;
       var dx = mx - hx, dy = my - hy;
       var d = Math.sqrt(dx * dx + dy * dy) || 1;
-      var speed = (6 + Math.random() * 14) * cw + d * 0.35;
+      var speed = (5 + Math.random() * 12) * cw + d * 0.5;
       spawn(mx, my, (dx / d + (Math.random() - 0.5) * 0.6) * speed,
         (dy / d + (Math.random() - 0.5) * 0.6) * speed,
-        0.45 + Math.random() * 0.45, size, ink === 'hover' ? 'crest' : 'hover', now);
-    });
+        0.45 + Math.random() * 0.45, cw, ink === 'hover' ? 'crest' : 'hover', now);
+    }
+    var box = stepSwarm(now, fling);
+    if (box && box.formed > 0.6) {
+      box.kb.cells.forEach(function (cell) { fling(box.kc0 + cell[0], box.kr0 + cell[1], cell[2] === 2 ? 'hover' : 'lit'); });
+      if (box.frac > 0.001 && box.kb1 !== box.kb) {
+        box.kb1.cells.forEach(function (cell) { fling(box.kc1 + cell[0], box.kr1 + cell[1], cell[2] === 2 ? 'hover' : 'lit'); });
+      }
+    }
     clickBurst(hx, hy, now);
   }
 
@@ -711,12 +834,14 @@
       var lit = reduced ? 0 : Math.round(eqLevel[i] * EQ_SEGS);
       var peak = reduced ? -1 : Math.min(EQ_SEGS - 1, Math.round(eqPeak[i] * EQ_SEGS) - 1);
       for (sg = 0; sg < EQ_SEGS; sg++) {
-        var row = eqBox.r0 + eqBox.rows - 1 - sg * 2;
+        var row = eqBox.r0 + eqBox.rows - EQ_BAR_W - sg * (EQ_BAR_W + EQ_SEG_GAP);
         var ink;
-        if (sg < lit) ink = sg >= EQ_SEGS - 2 ? 'crest' : sg >= EQ_SEGS - 4 ? 'hover' : 'lit';
+        if (sg < lit) ink = sg >= EQ_SEGS - 1 ? 'crest' : sg >= EQ_SEGS - 3 ? 'hover' : 'lit';
         else if (sg === peak && peak >= lit) ink = 'text';
         else continue;
-        for (dx = 0; dx < EQ_BAR_W; dx++) cellRect(ink, c0 + dx, row);
+        for (dx = 0; dx < EQ_BAR_W; dx++) {
+          for (var dy = 0; dy < EQ_BAR_W; dy++) cellRect(ink, c0 + dx, row + dy);
+        }
       }
     }
   }
@@ -733,7 +858,7 @@
     strength += (targetStrength - strength) * 0.3;
 
     /* Hi-fi EQ ballistics: fast attack, steady fall, peaks hold then drop */
-    var showEq = eqBox && MUSIC && settings.music > 0.01;
+    var showEq = eqBox && MUSIC && settings.showEq !== 'hide' && settings.music > 0.01;
     if (showEq && !reduced) {
       var heard = MUSIC.sample(time);
       var i, n = eqBox.bars;
@@ -770,8 +895,9 @@
     var density = settings.density * 0.62;
     var twinkle = settings.twinkle * 0.18;
     pianoBox = null;
+    var swarmCells = [];
     if (holding) {
-      var formed = eachPianoPixel(time, function () {});
+      var formed = stepSwarm(time, function (col, row, ink) { swarmCells.push(col, row, ink); });
       if (formed && formed.formed > 0.6) pianoBox = formed;
     }
     var r, c;
@@ -789,8 +915,7 @@
         var col = cMin + c;
         if (inWordRow && col >= 0 && col < word.width && word.mask[row * word.width + col]) continue;
         if (inStrapRow && col >= strapBox.c0 - 1 && col < strapBox.c1 + 1) continue;
-        if (pianoBox && ox + (col + 1) * cw > pianoBox.x0 && ox + col * cw < pianoBox.x1 &&
-            yTop + cw > pianoBox.y0 && yTop < pianoBox.y1) continue;
+        if (pianoBox && col >= pianoBox.c0 && col < pianoBox.c1 && row >= pianoBox.r0 && row < pianoBox.r1) continue;
 
         var shade = ramp[r * cols + c];
         var lum = 0;
@@ -807,7 +932,12 @@
         /* The glow replaces the drifting dust rather than adding to it, so
            the pixels under the cursor hold steady instead of flickering */
         var glow = glows.length ? glowAt(cx, cy) : 0;
-        if (glow * 0.6 > lum) lum = glow * 0.6;
+        if (glow > 0) {
+          /* A slow drift through the glow keeps it gently alive when the
+             pointer rests, without the whole patch pulsing */
+          glow *= 0.45 + 0.85 * sample(col * 0.45 + t * 2.2, row * 0.45 - t * 1.6);
+          if (glow * 0.6 > lum) lum = glow * 0.6;
+        }
 
         /* Bayer keeps structure where energy is high; the jitter tile
            scatters the resting dust so it never reads as a lattice. */
@@ -838,8 +968,34 @@
     }
 
     /* The held piano and any bursts fly over everything */
-    if (holding) {
-      eachPianoPixel(time, function (x, y, size, ink) { push(ink, x, y, size, size); });
+    /* Particles show while gathering; once formed the keyboard is drawn
+       clean, and steps up in size without stragglers across the keys */
+    if (!pianoBox) {
+      for (var sc = 0; sc < swarmCells.length; sc += 3) cellRect(swarmCells[sc + 2], swarmCells[sc], swarmCells[sc + 1]);
+    }
+    if (pianoBox) {
+      pianoBox.kb.cells.forEach(function (cell) {
+        cellRect(cell[2] === 2 ? 'hover' : 'lit', pianoBox.kc0 + cell[0], pianoBox.kr0 + cell[1]);
+      });
+      /* New keys at the edge grow in from a point rather than popping to
+         full size — the keyboard gets bigger by gaining pixels, matching
+         how the rest of the field animates, not by rescaling a shape */
+      if (pianoBox.frac > 0.001 && pianoBox.kb1 !== pianoBox.kb) {
+        var seen = {};
+        pianoBox.kb.cells.forEach(function (cell) {
+          seen[(pianoBox.kc0 + cell[0]) + ',' + (pianoBox.kr0 + cell[1])] = 1;
+        });
+        var gsize = Math.max(1, Math.round(cw * pianoBox.frac));
+        var goff = Math.round((cw - gsize) / 2);
+        pianoBox.kb1.cells.forEach(function (cell) {
+          var col = pianoBox.kc1 + cell[0], row = pianoBox.kr1 + cell[1];
+          var key = col + ',' + row;
+          if (seen[key]) return;
+          seen[key] = 1;
+          var xl = ox + col * cw, yt = oy + row * cw;
+          push(cell[2] === 2 ? 'hover' : 'lit', Math.round(xl) + goff, Math.round(yt) + goff, gsize, gsize);
+        });
+      }
     }
     if (particles.length) drawParticles(time);
 
@@ -912,7 +1068,8 @@
     wordPress = false;
     if (reduced) return;
     targetStrength = 0;
-    holding = { x: p.x, y: p.y, start: performance.now(), swarm: makeSwarm() };
+    var startNow = performance.now();
+    holding = { x: p.x, y: p.y, start: startNow, swarm: makeSwarm(p.x, p.y, startNow) };
   }
 
   function onPointerUp(e) {

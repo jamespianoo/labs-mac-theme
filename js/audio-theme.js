@@ -7,24 +7,53 @@
     return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
   }
 
-  function setTheme(theme) {
-    var next = theme === 'light' ? 'light' : 'dark';
+  var A = window.JBAppearance;
+
+  function themeMode() {
+    return A ? A.mode() : currentTheme();
+  }
+
+  /* choice: 'auto' | 'light' | 'dark'. Auto follows daylight. */
+  function setTheme(choice, quiet) {
+    var mode = choice === 'light' || choice === 'dark' ? choice : 'auto';
+    if (A) {
+      try { localStorage.setItem(A.KEY, mode); } catch (err) {}
+    }
+    applyTheme(A ? A.resolve(mode) : (mode === 'light' ? 'light' : 'dark'), mode, quiet);
+  }
+
+  function applyTheme(next, mode, quiet) {
+    var changed = currentTheme() !== next;
     document.documentElement.setAttribute('data-theme', next);
-    try { localStorage.setItem('jb-theme', next); } catch (err) {}
-    try { window.dispatchEvent(new CustomEvent('jb-theme', { detail: { theme: next } })); } catch (err2) {}
+    if (changed && !quiet) {
+      try { window.dispatchEvent(new CustomEvent('jb-theme', { detail: { theme: next, mode: mode } })); } catch (err2) {}
+    }
+    var label = 'Appearance: ' + (mode === 'auto' ? 'Auto (' + (next === 'light' ? 'Light' : 'Dark') + ')' : next === 'light' ? 'Light mode' : 'Dark mode');
     var btn = document.getElementById('status-theme') || document.getElementById('theme-toggle');
     if (btn) {
-      btn.setAttribute('aria-label', next === 'light' ? 'Appearance: Light mode' : 'Appearance: Dark mode');
-      btn.title = next === 'light' ? 'Appearance: Light mode' : 'Appearance: Dark mode';
+      btn.setAttribute('aria-label', label);
+      btn.title = label;
+      btn.classList.toggle('is-auto', mode === 'auto');
     }
     var themeMenu = document.getElementById('m-theme');
     if (themeMenu) {
       themeMenu.querySelectorAll('[data-theme-set]').forEach(function (b) {
-        b.classList.toggle('checked', b.getAttribute('data-theme-set') === next);
+        b.classList.toggle('checked', b.getAttribute('data-theme-set') === mode);
       });
     }
   }
-  setTheme(currentTheme());
+  setTheme(themeMode(), true);
+
+  /* In auto, cross over at sunrise and sunset while the page is open */
+  function recheckAuto() {
+    if (!A || themeMode() !== 'auto') return;
+    var next = A.resolve('auto');
+    if (next !== currentTheme()) applyTheme(next, 'auto', false);
+  }
+  setInterval(recheckAuto, 60000);
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden) recheckAuto();
+  });
 
   function endBoot() {
     document.body.classList.remove('booting');
@@ -159,6 +188,7 @@
   bindVolumeSlider();
 
   D.currentTheme = currentTheme;
+  D.themeMode = themeMode;
   D.setTheme = setTheme;
   D.beep = beep;
   D.setVolume = setVolume;

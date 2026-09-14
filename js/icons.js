@@ -34,7 +34,7 @@
     if (!D.trashIcon) return;
     var img = D.trashIcon.querySelector('.art img');
     var n = D.trashed ? D.trashed.children.length : 0;
-    if (img) img.src = n ? 'img/icons/trash-ra-full.svg' : 'img/icons/trash-ra.svg';
+    if (img) img.src = n ? 'img/icons/sys9-trash-full.png' : 'img/icons/sys9-trash-empty.png';
     var emptyBtn = document.querySelector('[data-empty-trash]');
     if (emptyBtn) emptyBtn.classList.toggle('disabled', !n);
   }
@@ -428,7 +428,7 @@
     } else if (target && target.querySelector && target.querySelector('.art')) {
       artHtml = target.querySelector('.art').innerHTML;
     } else if (tax.isFolder || (target && target.dataset && D.FOLDER_IDS && D.FOLDER_IDS[target.dataset.open])) {
-      artHtml = '<img src="img/icons/folder.webp" width="44" height="44" alt="">';
+      artHtml = '<img src="img/icons/sys9-folder.png" width="44" height="44" alt="">';
     } else {
       artHtml = '<img src="img/icons/document.webp" width="44" height="44" alt="">';
     }

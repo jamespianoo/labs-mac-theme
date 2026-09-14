@@ -52,13 +52,54 @@ $pageTitle = isset($folderTitles[$initialSlug]) ? 'James Beckwith | ' . $folderT
 <link rel="icon" href="img/icons/favicon-16.png" type="image/png" sizes="16x16">
 <link rel="apple-touch-icon" href="img/icons/apple-touch-icon.png">
 <script>
+/* Appearance: 'auto' (default) follows daylight where the visitor is,
+   'light' and 'dark' are fixed. Runs before first paint so there is no flash. */
 (function () {
-  try {
-    var t = localStorage.getItem('jb-theme');
-    document.documentElement.setAttribute('data-theme', t === 'light' ? 'light' : 'dark');
-  } catch (e) {
-    document.documentElement.setAttribute('data-theme', 'dark');
+  var KEY = 'jb-appearance';
+
+  /* Local sunrise and sunset in clock hours, estimated from the date and the
+     device's time zone alone: no location permission needed. Longitude comes
+     from the standard UTC offset; latitude is a mid-latitude guess, flipped
+     for southern-hemisphere zones. */
+  function sunTimes(now) {
+    var y = now.getFullYear();
+    var jan = new Date(y, 0, 1).getTimezoneOffset();
+    var jul = new Date(y, 6, 1).getTimezoneOffset();
+    var dst = (Math.max(jan, jul) - now.getTimezoneOffset()) / 60;
+    var zone = '';
+    try { zone = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) {}
+    var south = jan < jul ||
+      /^(Australia|Antarctica|Pacific\/(Auckland|Chatham|Fiji)|America\/(Argentina|Santiago|Sao_Paulo|Montevideo|Asuncion|Punta_Arenas)|Africa\/(Johannesburg|Maputo|Windhoek|Gaborone|Maseru|Mbabane)|Indian\/(Mauritius|Reunion))/.test(zone);
+    var lat = (south ? -48 : 48) * Math.PI / 180;
+    var day = Math.floor((now - new Date(y, 0, 0)) / 864e5);
+    var decl = 23.44 * Math.PI / 180 * Math.sin(2 * Math.PI * (284 + day) / 365);
+    var b = 2 * Math.PI * (day - 81) / 364;
+    var eot = 9.87 * Math.sin(2 * b) - 7.53 * Math.cos(b) - 1.5 * Math.sin(b);
+    var noon = 12 + dst - eot / 60;
+    var cosH = (Math.sin(-0.833 * Math.PI / 180) - Math.sin(lat) * Math.sin(decl)) / (Math.cos(lat) * Math.cos(decl));
+    var half = Math.acos(Math.max(-1, Math.min(1, cosH))) * 12 / Math.PI;
+    return { rise: noon - half, set: noon + half };
   }
+
+  function mode() {
+    try {
+      var m = localStorage.getItem(KEY);
+      return m === 'light' || m === 'dark' ? m : 'auto';
+    } catch (e) {
+      return 'auto';
+    }
+  }
+
+  function resolve(m, now) {
+    if (m === 'light' || m === 'dark') return m;
+    now = now || new Date();
+    var sun = sunTimes(now);
+    var h = now.getHours() + now.getMinutes() / 60;
+    return h >= sun.rise && h < sun.set ? 'light' : 'dark';
+  }
+
+  window.JBAppearance = { KEY: KEY, mode: mode, resolve: resolve, sunTimes: sunTimes };
+  document.documentElement.setAttribute('data-theme', resolve(mode()));
 })();
 </script>
 <link rel="stylesheet" href="css/desktop.css">

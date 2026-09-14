@@ -16,9 +16,7 @@
         </svg>
       </button>
       <button type="button" class="status-btn theme-menu-btn" data-menu="m-theme" aria-expanded="false" aria-haspopup="true" aria-label="Appearance" title="Appearance" id="status-theme">
-        <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true">
-          <path fill="currentColor" d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.591a.75.75 0 101.06 1.06l1.591-1.591zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.591-1.591a.75.75 0 10-1.06 1.06l1.591 1.591zM12 18a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-2.25A.75.75 0 0112 18zM7.758 17.303a.75.75 0 00-1.061-1.06l-1.591 1.59a.75.75 0 001.06 1.061l1.591-1.59zM6 12a.75.75 0 01-.75.75H3a.75.75 0 010-1.5h2.25A.75.75 0 016 12zM6.697 7.757a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 00-1.061 1.06l1.59 1.591z"/>
-        </svg>
+        <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5.5" fill="currentColor"/><path fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" d="M12 1.8v2.7M12 19.5v2.7M1.8 12h2.7M19.5 12h2.7M4.8 4.8l1.9 1.9M17.3 17.3l1.9 1.9M4.8 19.2l1.9-1.9M17.3 6.7l1.9-1.9"/></svg>
         <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true">
           <path fill="currentColor" fill-rule="evenodd" d="M9.528 1.718a.75.75 0 01.162.819A8.97 8.97 0 009 6a9 9 0 009 9 8.97 8.97 0 003.463-.69.75.75 0 01.981.98 10.503 10.503 0 01-9.694 6.46c-5.799 0-10.5-4.7-10.5-10.5 0-4.368 2.667-8.112 6.46-9.694a.75.75 0 01.818.162z" clip-rule="evenodd"/>
         </svg>
@@ -98,11 +96,16 @@
   </div>
 
   <div class="menu status-menu theme-menu" id="m-theme" hidden>
+    <button type="button" data-theme-set="auto" class="theme-choice-btn">
+      <span class="theme-check" aria-hidden="true">&#10003;</span>
+      <svg class="theme-icon icon-auto" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+        <path fill="currentColor" fill-rule="evenodd" d="M12 2.25a9.75 9.75 0 100 19.5 9.75 9.75 0 000-19.5zM3.75 12A8.25 8.25 0 0112 3.75v16.5A8.25 8.25 0 013.75 12z" clip-rule="evenodd"/>
+      </svg>
+      <span class="theme-label">Auto</span>
+    </button>
     <button type="button" data-theme-set="light" class="theme-choice-btn">
       <span class="theme-check" aria-hidden="true">&#10003;</span>
-      <svg class="theme-icon icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-        <path fill="currentColor" d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.591a.75.75 0 101.06 1.06l1.591-1.591zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.591-1.591a.75.75 0 10-1.06 1.06l1.591 1.591zM12 18a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-2.25A.75.75 0 0112 18zM7.758 17.303a.75.75 0 00-1.061-1.06l-1.591 1.59a.75.75 0 001.06 1.061l1.591-1.59zM6 12a.75.75 0 01-.75.75H3a.75.75 0 010-1.5h2.25A.75.75 0 016 12zM6.697 7.757a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 00-1.061 1.06l1.59 1.591z"/>
-      </svg>
+      <svg class="theme-icon icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="5.5" fill="currentColor"/><path fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" d="M12 1.8v2.7M12 19.5v2.7M1.8 12h2.7M19.5 12h2.7M4.8 4.8l1.9 1.9M17.3 17.3l1.9 1.9M4.8 19.2l1.9-1.9M17.3 6.7l1.9-1.9"/></svg>
       <span class="theme-label">Light Mode</span>
     </button>
     <button type="button" data-theme-set="dark" class="theme-choice-btn">

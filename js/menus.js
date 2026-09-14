@@ -16,7 +16,7 @@
       });
     }
     if (id === 'm-theme') {
-      var curTheme = typeof D.currentTheme === 'function' ? D.currentTheme() : (document.documentElement.getAttribute('data-theme') || 'dark');
+      var curTheme = typeof D.themeMode === 'function' ? D.themeMode() : (document.documentElement.getAttribute('data-theme') || 'dark');
       m.querySelectorAll('[data-theme-set]').forEach(function (b) {
         b.classList.toggle('checked', b.getAttribute('data-theme-set') === curTheme);
       });

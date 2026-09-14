@@ -39,6 +39,14 @@
       <input type="range" min="0" max="2" step="0.05" data-fs="twinkle">
     </label>
     <label class="field-row">
+      <span>Grid <em data-fs-val="grid"></em></span>
+      <input type="range" min="0" max="2" step="0.05" data-fs="grid">
+    </label>
+    <label class="field-row">
+      <span>Grid square <em data-fs-val="gridCells"></em></span>
+      <input type="range" min="3" max="12" step="1" data-fs="gridCells">
+    </label>
+    <label class="field-row">
       <span>Hi-fi EQ <em data-fs-val="music"></em></span>
       <input type="range" min="0" max="2" step="0.05" data-fs="music">
     </label>
@@ -49,15 +57,7 @@
       <input type="range" min="0" max="2" step="0.05" data-fs="cursor">
     </label>
     <label class="field-row">
-      <span>Click stamp</span>
-      <select data-fs="stamp">
-        <option value="keys">Piano octave</option>
-        <option value="note">Quaver</option>
-        <option value="monogram">JB monogram</option>
-      </select>
-    </label>
-    <label class="field-row">
-      <span>Stamp size <em data-fs-val="stampSize"></em></span>
+      <span>Piano size <em data-fs-val="stampSize"></em></span>
       <input type="range" min="0.5" max="2" step="0.05" data-fs="stampSize">
     </label>
 

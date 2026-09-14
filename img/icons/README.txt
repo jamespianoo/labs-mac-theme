@@ -1,26 +1,31 @@
 Desktop icons
 
 Folders (shared base art + type glyph):
-  folder.svg / folder-solid.svg   base folder shape — light / dark
+  sys9-folder.png   base folder shape, from a Mac OS 9 icon set
   glyph-*.webp / glyph-stream.svg   type marks (labs, maps, music, video, etc.)
   Folder name is shown via the normal .label under the icon.
 
-Files (shared base art + type glyph):
-  file.svg / file-solid.svg   base file shape — light / dark
-  glyph-pdf-note.svg   about-me.pdf
-  glyph-at.svg         contact.me (@)
+Files (shared base art + badge, same tilted 3D shape as the folder):
+  sys9-generic.png + sys9-acrobat.png badge   about-me.pdf
+  sys9-generic.png + glyph-at.svg badge       contact.me (@)
 
-Light/dark: each icon renders two shell <img> (.ra-shell-light / .ra-shell-dark),
-toggled by html[data-theme] in css/desktop.css. Type glyphs are a single image
-whose color is set with a CSS filter (brightness(0) for light theme,
-brightness(0) invert(1) for dark theme) rather than separate glyph assets.
+sys9-generic.png is the same isometric/tilted perspective as sys9-folder.png
+(both come from the same Mac OS 9 icon set), so files and folders read as
+one consistent 3D desktop. sys9-acrobat.png is a flat front-on icon, not
+tilted, so it's used as a badge/overlay only, never as the file base art.
 
-Trash (same thick-outline graphic family, white-faced so it works unchanged in
-both themes):
-  trash-ra.svg          empty
-  trash-ra-full.svg     full
+One shell image now covers both themes (no more light/dark swap) — these are
+period pixel-art icons and don't invert well. Type glyph badges stay a fixed
+dark ink color via CSS filter (brightness(0)) since they sit on the light
+icon face in both themes — except multi-tone badges (sys9-acrobat, the
+video/football glyphs), which keep their own color instead of being
+crushed to a black blob by that filter.
 
-Legacy Mac folder webps remain for reference but desktop uses the file/folder SVGs.
+Trash (single set, white-faced so it works unchanged in both themes):
+  sys9-trash-empty.png
+  sys9-trash-full.png
+
+Base shells render with image-rendering:pixelated for a crisp period upscale.
 
 All bitmap icons historically 128×128 WebP in one square slot
 (--icon-size: 132px desk / 100px narrow).

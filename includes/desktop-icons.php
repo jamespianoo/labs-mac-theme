@@ -1,69 +1,54 @@
 <div id="icons">
       <!-- icons: file/folder base art + type glyphs — see img/icons/README.txt -->
-      <button class="icon" data-id="labs" data-open="labs" data-scatter>
-        <span class="art ra-folder folder smooth">
-          <img class="ra-shell ra-shell-light" src="img/icons/folder.svg" width="160" height="140" alt="">
-          <img class="ra-shell ra-shell-dark" src="img/icons/folder-solid.svg" width="160" height="140" alt="">
-          <img class="ra-glyph" src="img/icons/glyph-labs.webp" width="48" height="48" alt="">
-        </span>
-        <span class="label">Labs</span>
-      </button>
       <button class="icon" data-id="labs-site" data-href="https://labs.jamesbeckwith.com/" data-scatter>
         <span class="art smooth"><img src="img/icons/sites/labs.webp" width="128" height="128" alt=""></span>
         <span class="label">jb-labs.html</span>
       </button>
       <button class="icon" data-id="maps" data-open="maps" data-scatter>
         <span class="art ra-folder folder smooth">
-          <img class="ra-shell ra-shell-light" src="img/icons/folder.svg" width="160" height="140" alt="">
-          <img class="ra-shell ra-shell-dark" src="img/icons/folder-solid.svg" width="160" height="140" alt="">
+          <img class="ra-shell" src="img/icons/sys9-folder.png" width="128" height="128" alt="">
           <img class="ra-glyph" src="img/icons/glyph-map.webp" width="48" height="48" alt="">
         </span>
         <span class="label">Maps</span>
       </button>
       <button class="icon" data-id="music" data-open="music" data-scatter data-tag="coral">
         <span class="art ra-folder folder smooth">
-          <img class="ra-shell ra-shell-light" src="img/icons/folder.svg" width="160" height="140" alt="">
-          <img class="ra-shell ra-shell-dark" src="img/icons/folder-solid.svg" width="160" height="140" alt="">
+          <img class="ra-shell" src="img/icons/sys9-folder.png" width="128" height="128" alt="">
           <img class="ra-glyph" src="img/icons/glyph-note.webp" width="48" height="48" alt="">
         </span>
         <span class="label">Music</span>
       </button>
       <button class="icon" data-id="videos" data-open="videos" data-scatter data-tag="blue">
         <span class="art ra-folder folder smooth">
-          <img class="ra-shell ra-shell-light" src="img/icons/folder.svg" width="160" height="140" alt="">
-          <img class="ra-shell ra-shell-dark" src="img/icons/folder-solid.svg" width="160" height="140" alt="">
+          <img class="ra-shell" src="img/icons/sys9-folder.png" width="128" height="128" alt="">
           <img class="ra-glyph" src="img/icons/glyph-video.webp" width="48" height="48" alt="">
         </span>
         <span class="label">Videos</span>
       </button>
       <button class="icon" data-id="piano" data-open="piano" data-scatter>
         <span class="art ra-folder folder smooth">
-          <img class="ra-shell ra-shell-light" src="img/icons/folder.svg" width="160" height="140" alt="">
-          <img class="ra-shell ra-shell-dark" src="img/icons/folder-solid.svg" width="160" height="140" alt="">
+          <img class="ra-shell" src="img/icons/sys9-folder.png" width="128" height="128" alt="">
           <img class="ra-glyph" src="img/icons/glyph-tuning-fork.webp" width="48" height="48" alt="">
         </span>
         <span class="label">Piano Repair</span>
       </button>
       <button class="icon" data-id="football" data-open="football" data-scatter data-tag="green">
         <span class="art ra-folder folder smooth">
-          <img class="ra-shell ra-shell-light" src="img/icons/folder.svg" width="160" height="140" alt="">
-          <img class="ra-shell ra-shell-dark" src="img/icons/folder-solid.svg" width="160" height="140" alt="">
+          <img class="ra-shell" src="img/icons/sys9-folder.png" width="128" height="128" alt="">
           <img class="ra-glyph" src="img/icons/glyph-football.webp" width="48" height="48" alt="">
         </span>
         <span class="label">Football</span>
       </button>
       <button class="icon" data-id="about" data-open="about" data-scatter>
         <span class="art ra-file">
-          <img class="ra-shell ra-shell-light" src="img/icons/file.svg" width="128" height="160" alt="">
-          <img class="ra-shell ra-shell-dark" src="img/icons/file-solid.svg" width="128" height="160" alt="">
-          <img class="ra-glyph" src="img/icons/glyph-pdf-note.svg" width="48" height="48" alt="">
+          <img class="ra-shell" src="img/icons/sys9-generic.png" width="128" height="128" alt="">
+          <img class="ra-glyph" src="img/icons/sys9-acrobat.png" width="48" height="48" alt="">
         </span>
         <span class="label">about-me.pdf</span>
       </button>
       <button class="icon" data-id="contact" data-open="contact" data-scatter>
         <span class="art ra-file">
-          <img class="ra-shell ra-shell-light" src="img/icons/file.svg" width="128" height="160" alt="">
-          <img class="ra-shell ra-shell-dark" src="img/icons/file-solid.svg" width="128" height="160" alt="">
+          <img class="ra-shell" src="img/icons/sys9-generic.png" width="128" height="128" alt="">
           <img class="ra-glyph" src="img/icons/glyph-at.svg" width="48" height="48" alt="">
         </span>
         <span class="label">contact.me</span>
@@ -77,7 +62,7 @@
         <span class="label">se10.png</span>
       </button>
       <button class="icon trash" data-id="trash" data-open="trash" data-trash="1">
-        <span class="art ra-trash"><img src="img/icons/trash-ra.svg" width="128" height="148" alt=""></span>
+        <span class="art ra-trash"><img src="img/icons/sys9-trash-empty.png" width="128" height="128" alt=""></span>
         <span class="label">Trash</span>
       </button>
     </div>
@@ -159,8 +144,7 @@
       </button>
       <button class="icon" data-id="stream" data-open="stream" data-shelf="music">
         <span class="art ra-folder folder smooth">
-          <img class="ra-shell ra-shell-light" src="img/icons/folder.svg" width="160" height="140" alt="">
-          <img class="ra-shell ra-shell-dark" src="img/icons/folder-solid.svg" width="160" height="140" alt="">
+          <img class="ra-shell" src="img/icons/sys9-folder.png" width="128" height="128" alt="">
           <img class="ra-glyph" src="img/icons/glyph-stream.svg" width="48" height="48" alt="">
         </span>
         <span class="label">Streaming</span>

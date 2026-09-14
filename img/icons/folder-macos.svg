@@ -1,0 +1,19 @@
+<svg viewBox="0 0 128 112" xmlns="http://www.w3.org/2000/svg">
+  <!-- tab -->
+  <path d="M6,36 L6,28 Q6,24 10,24 L46,24 Q50,24 52,28 L58,36 Z"
+    fill="#b8bce8" stroke="#7478c0" stroke-width="1.5" stroke-linejoin="round"/>
+  <!-- body -->
+  <rect x="6" y="34" width="116" height="72" rx="5"
+    fill="#c4c8f0" stroke="#7478c0" stroke-width="1.5"/>
+  <!-- inner highlight band at top of body -->
+  <rect x="8" y="36" width="112" height="8" rx="2"
+    fill="rgba(255,255,255,0.35)"/>
+  <!-- subtle dot grid -->
+  <rect x="8" y="46" width="112" height="58" rx="3"
+    fill="url(#dots)"/>
+  <defs>
+    <pattern id="dots" x="0" y="0" width="8" height="8" patternUnits="userSpaceOnUse">
+      <circle cx="4" cy="4" r="0.8" fill="rgba(100,108,200,0.18)"/>
+    </pattern>
+  </defs>
+</svg>

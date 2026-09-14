@@ -305,7 +305,8 @@ html[data-theme="light"] .status-btn.theme-toggle .icon-sun{display:none}
 .win.drop-target{outline:2px solid var(--tag-coral);outline-offset:-2px}
 .item.shelf-drag{opacity:.55;cursor:url('../img/cursors/os9-grabbing.png') 8 8,grabbing;cursor:-webkit-image-set(url('../img/cursors/os9-grabbing.png') 1x,url('../img/cursors/os9-grabbing@2x.png') 2x) 8 8,grabbing}
 /* All desk icons share one square slot (folders, apps, docs, trash) */
-.icon .art{display:block;box-sizing:border-box;width:var(--icon-size);height:var(--icon-size);
+.icon .art{display:block;box-sizing:border-box;width:calc(var(--icon-size) + 10px);height:calc(var(--icon-size) + 10px);
+  margin:-5px -5px 0;
   line-height:0;background:transparent;filter:drop-shadow(1px 1px 0 var(--shadow))}
 .icon .art > img{
   width:100%;height:100%;display:block;object-fit:contain;object-position:center;
@@ -330,6 +331,14 @@ html[data-theme="light"] .status-btn.theme-toggle .icon-sun{display:none}
 .item .art.ra-folder .ra-glyph[src*="glyph-video"],
 .icon .art.ra-folder .ra-glyph[src*="glyph-football"],
 .item .art.ra-folder .ra-glyph[src*="glyph-football"]{filter:none !important}
+/* Inside windows: flat macOS-style folder, centred glyph, no skew */
+.item .art.ra-folder{filter:drop-shadow(2px 3px 0 rgba(0,0,0,.2))}
+.item .art.ra-folder .ra-shell{content:url('../img/icons/folder-macos.svg');image-rendering:auto}
+.item .art.ra-folder .ra-glyph{
+  left:50%;top:58%;width:36%;height:36%;
+  transform:translate(-50%,-50%);filter:brightness(0) !important;image-rendering:auto}
+.item .art.ra-folder .ra-glyph[src*="glyph-video"],
+.item .art.ra-folder .ra-glyph[src*="glyph-football"]{filter:none !important}
 .icon .art.ra-file{
   position:relative;
   filter:drop-shadow(3px 4px 0 rgba(0,0,0,.28));
@@ -344,10 +353,8 @@ html[data-theme="light"] .status-btn.theme-toggle .icon-sun{display:none}
 /* PDF / @ badges carry their own dark-grey ink — don't crush it to pure black */
 .icon .art.ra-file .ra-glyph[src*="glyph-pdf"],
 .icon .art.ra-file .ra-glyph[src*="glyph-at"]{filter:none !important}
-.icon.trash .art.ra-trash > img{width:100%;height:100%;image-rendering:pixelated;filter:none !important}
-.icon.trash .art.ra-trash{
-  filter:drop-shadow(2px 3px 0 rgba(0,0,0,.35));
-  display:flex;align-items:center;justify-content:center}
+.icon.trash .art.ra-trash > img{width:100%;height:100%;image-rendering:pixelated;filter:none !important;transform:translateX(18px)}
+.icon.trash .art.ra-trash{filter:drop-shadow(2px 3px 0 rgba(0,0,0,.35))}
 .item.selected .art.ra-folder,
 .item.selected .art.ra-file,
 .item.selected .art.ra-trash{background:var(--icon-hover) !important}

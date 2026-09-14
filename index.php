@@ -90,6 +90,9 @@ $pageTitle = isset($folderTitles[$initialSlug]) ? 'James Beckwith | ' . $folderT
 <script src="js/windows.js" defer></script>
 <script src="js/icons.js" defer></script>
 <script src="js/menus.js" defer></script>
+<script src="js/pixel-glyphs.js" defer></script>
+<script src="js/pixel-effects.js" defer></script>
+<script src="js/pixel-music.js" defer></script>
 <script src="js/pixel-field.js" defer></script>
 </body>
 </html>

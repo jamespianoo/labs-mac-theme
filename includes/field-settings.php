@@ -1,47 +1,68 @@
-<template id="tpl-field-settings" data-title="Pixel Field" data-w="420" data-h="520" data-info="Settings|Desktop">
+<template id="tpl-field-settings" data-title="Pixel Field" data-w="440" data-h="600" data-info="Settings|Desktop">
   <div class="doc field-settings" data-field-settings>
     <h2>Pixel Field</h2>
     <p class="sub">Desktop atmosphere</p>
-    <p>Tweak the Omarchy-style pixel field. Changes apply live and save to this browser.</p>
+    <p>Changes apply live and save to this browser. Click the name on the desktop to replay its entrance.</p>
 
+    <h3 class="field-group">Name</h3>
+    <label class="field-row">
+      <span>Entrance</span>
+      <select data-fs="entrance">
+        <option value="random">Random each time</option>
+        <option value="none">None</option>
+      </select>
+    </label>
+    <label class="field-row">
+      <span>Entrance speed <em data-fs-val="entranceSpeed"></em></span>
+      <input type="range" min="0.4" max="2.5" step="0.05" data-fs="entranceSpeed">
+    </label>
+    <label class="field-row">
+      <span>Shading</span>
+      <select data-fs="nameShade">
+        <option value="gradient">Coral gradient</option>
+        <option value="ivory">Ivory to coral</option>
+        <option value="solid">Solid coral</option>
+      </select>
+    </label>
+
+    <h3 class="field-group">Field</h3>
     <label class="field-row">
       <span>Pixel size <em data-fs-val="cellSize"></em></span>
-      <input type="range" min="6" max="16" step="1" data-fs="cellSize">
+      <input type="range" min="5" max="14" step="1" data-fs="cellSize">
     </label>
     <label class="field-row">
-      <span>Cursor glow <em data-fs-val="cursorGlow"></em></span>
-      <input type="range" min="0" max="2" step="0.05" data-fs="cursorGlow">
+      <span>Dust <em data-fs-val="density"></em></span>
+      <input type="range" min="0" max="2" step="0.05" data-fs="density">
     </label>
     <label class="field-row">
-      <span>Cursor reach <em data-fs-val="cursorReach"></em></span>
-      <input type="range" min="6" max="24" step="1" data-fs="cursorReach">
+      <span>Twinkle <em data-fs-val="twinkle"></em></span>
+      <input type="range" min="0" max="2" step="0.05" data-fs="twinkle">
     </label>
     <label class="field-row">
-      <span>Cursor trail <em data-fs-val="trail"></em></span>
-      <input type="range" min="0" max="2" step="0.05" data-fs="trail">
+      <span>Hi-fi EQ <em data-fs-val="music"></em></span>
+      <input type="range" min="0" max="2" step="0.05" data-fs="music">
+    </label>
+
+    <h3 class="field-group">Interaction</h3>
+    <label class="field-row">
+      <span>Cursor glow <em data-fs-val="cursor"></em></span>
+      <input type="range" min="0" max="2" step="0.05" data-fs="cursor">
     </label>
     <label class="field-row">
-      <span>Click ripples <em data-fs-val="clickPower"></em></span>
-      <input type="range" min="0" max="2" step="0.05" data-fs="clickPower">
+      <span>Click stamp</span>
+      <select data-fs="stamp">
+        <option value="keys">Piano octave</option>
+        <option value="note">Quaver</option>
+        <option value="monogram">JB monogram</option>
+      </select>
     </label>
     <label class="field-row">
-      <span>Ambient dust <em data-fs-val="ambient"></em></span>
-      <input type="range" min="0" max="1.2" step="0.05" data-fs="ambient">
-    </label>
-    <label class="field-row">
-      <span>EQ amount <em data-fs-val="eqAmount"></em></span>
-      <input type="range" min="0" max="1.2" step="0.05" data-fs="eqAmount">
-    </label>
-    <label class="field-row">
-      <span>EQ bands <em data-fs-val="eqBands"></em></span>
-      <input type="range" min="4" max="24" step="1" data-fs="eqBands">
-    </label>
-    <label class="field-row">
-      <span>Idle motion <em data-fs-val="motion"></em></span>
-      <input type="range" min="0" max="2" step="0.05" data-fs="motion">
+      <span>Stamp size <em data-fs-val="stampSize"></em></span>
+      <input type="range" min="0.5" max="2" step="0.05" data-fs="stampSize">
     </label>
 
     <div class="field-actions">
+      <button type="button" class="field-btn" data-fs-replay>Replay entrance</button>
       <button type="button" class="field-btn" data-fs-reset>Reset defaults</button>
     </div>
   </div>

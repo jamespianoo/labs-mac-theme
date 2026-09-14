@@ -319,23 +319,28 @@ html[data-theme="light"] .status-btn.theme-toggle .icon-sun{display:none}
   image-rendering:auto;pointer-events:none;filter:none !important}
 .icon .art.ra-folder .ra-glyph,
 .item .art.ra-folder .ra-glyph{
-  position:absolute;left:50%;top:54%;width:20%;height:20%;
-  transform:translate(-50%,-58%);object-fit:contain;pointer-events:none;
+  position:absolute;left:59%;top:68%;width:24%;height:24%;
+  transform:translate(-50%,-50%);object-fit:contain;pointer-events:none;
   filter:brightness(0) !important;image-rendering:auto}
-.icon .art.ra-folder .ra-caption,
-.item .art.ra-folder .ra-caption{
-  position:absolute;left:14%;right:14%;top:68%;text-align:center;
-  font-family:Helvetica Neue,Helvetica,Arial,sans-serif;font-weight:700;
-  font-size:clamp(11px,1.85vw,14px);
-  line-height:1.05;letter-spacing:.1em;text-transform:uppercase;color:#111;
-  pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-/* Mockup: label lives on the folder face — hide Mac under-label for RA folders only */
-.icon:has(.ra-folder) > .label{position:absolute;width:1px;height:1px;padding:0;margin:-1px;
-  overflow:hidden;clip:rect(0,0,0,0);border:0}
 .icon .art.ra-file{
+  position:relative;
   filter:drop-shadow(3px 4px 0 rgba(0,0,0,.28));
   width:calc(var(--icon-size) * 0.92);height:calc(var(--icon-size) * 1.12)}
-.icon .art.ra-file > img,
+.icon .art.ra-file .ra-shell{
+  position:absolute;inset:0;width:100%;height:100%;object-fit:contain;
+  image-rendering:auto;pointer-events:none;filter:none !important}
+.icon .art.ra-file .ra-glyph{
+  position:absolute;left:50%;top:62%;width:34%;height:34%;
+  transform:translate(-50%,-50%);object-fit:contain;pointer-events:none;
+  filter:brightness(0) !important;image-rendering:auto}
+/* Base state = dark shell/glyph (root theme is dark); light theme swaps in below */
+.ra-shell-light{display:none}
+.ra-shell-dark{display:block}
+html[data-theme="light"] .ra-shell-light{display:block}
+html[data-theme="light"] .ra-shell-dark{display:none}
+html[data-theme="dark"] .icon .art.ra-folder .ra-glyph,
+html[data-theme="dark"] .item .art.ra-folder .ra-glyph,
+html[data-theme="dark"] .icon .art.ra-file .ra-glyph{filter:brightness(0) invert(1) !important}
 .icon.trash .art.ra-trash > img{width:100%;height:100%;image-rendering:auto;filter:none !important}
 .icon.trash .art.ra-trash{
   filter:drop-shadow(4px 5px 0 rgba(0,0,0,.35))}
@@ -345,12 +350,7 @@ html[data-theme="light"] .status-btn.theme-toggle .icon-sun{display:none}
 .item.selected .art.ra-file,
 .item:hover .art.ra-trash,
 .item.selected .art.ra-trash{background:transparent !important}
-html[data-theme="dark"] .icon .art.ra-folder .ra-shell,
-html[data-theme="dark"] .item .art.ra-folder .ra-shell,
-html[data-theme="dark"] .icon .art.ra-file > img,
 html[data-theme="dark"] .icon.trash .art.ra-trash > img{filter:none !important}
-html[data-theme="dark"] .icon .art.ra-folder .ra-glyph,
-html[data-theme="dark"] .item .art.ra-folder .ra-glyph{filter:brightness(0) !important}
 /* Site favicons: smooth scale; pagefiles keep photo inset */
 .icon .art.site > img,.item .art.site > img,
 .icon .art.smooth > img,.item .art.smooth > img,
@@ -885,6 +885,12 @@ html[data-theme="dark"] .item .art.album > img{filter:none}
   font-style:normal;font-weight:500;color:var(--dim);margin-left:6px}
 .field-settings .field-row input[type=range]{
   width:100%;accent-color:var(--accent);cursor:pointer}
+.field-settings .field-row select{
+  width:100%;padding:4px 6px;border:1px solid var(--ink);background:var(--white);color:var(--ink);
+  font:inherit;font-weight:500;cursor:pointer}
+.field-settings .field-group{
+  margin:18px 0 8px;padding-top:10px;border-top:1px solid var(--hairline);
+  font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
 .field-settings .field-actions{margin-top:8px;display:flex;gap:8px}
 .field-settings .field-btn{
   padding:6px 12px;border:1px solid var(--ink);background:var(--face);color:var(--ink);

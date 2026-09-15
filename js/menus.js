@@ -21,6 +21,15 @@
         b.classList.toggle('checked', b.getAttribute('data-theme-set') === curTheme);
       });
     }
+    if (id === 'm-file') {
+      var eqOn = false;
+      if (window.JBField && typeof window.JBField.getSettings === 'function') {
+        eqOn = window.JBField.getSettings().showEq !== 'hide';
+      }
+      m.querySelectorAll('[data-eq-toggle]').forEach(function (b) {
+        b.classList.toggle('checked', eqOn);
+      });
+    }
     m.hidden = false;
     var r = btn.getBoundingClientRect();
     var top = '35px';
@@ -53,11 +62,18 @@
         '<hr>' +
         '<button type="button" data-ctx="close-note">Close Note</button>';
     } else if (target && target.classList.contains('item')) {
-      html =
-        '<button type="button" data-ctx="open">Open</button>' +
-        '<button type="button" data-ctx="info">Get Info</button>' +
-        '<hr>' +
-        '<button type="button" data-ctx="trash">Move to Trash</button>';
+      if (target.dataset.restore) {
+        html =
+          '<button type="button" data-ctx="putback">Put Back</button>' +
+          '<button type="button" data-ctx="info">Get Info</button>';
+      } else {
+        var itemMulti = typeof D.selectedNodes === 'function' && D.selectedNodes().length > 1 && target.classList.contains('selected');
+        html =
+          '<button type="button" data-ctx="open">' + (itemMulti ? 'Open ' + D.selectedNodes().length + ' Items' : 'Open') + '</button>' +
+          '<button type="button" data-ctx="info">Get Info</button>' +
+          '<hr>' +
+          '<button type="button" data-ctx="trash">' + (itemMulti ? 'Move ' + D.selectedNodes().length + ' Items to Trash' : 'Move to Trash') + '</button>';
+      }
     } else if (target && target.classList.contains('icon')) {
       if (target.classList.contains('trash') || target.getAttribute('data-trash') != null) {
         html =
@@ -66,22 +82,25 @@
           '<hr>' +
           '<button type="button" data-ctx="empty"' + (n ? '' : ' class="disabled"') + '>Empty Trash</button>';
       } else {
+        var iconMulti = typeof D.selectedNodes === 'function' && D.selectedNodes().length > 1 && target.classList.contains('selected');
         html =
-          '<button type="button" data-ctx="open">Open</button>' +
+          '<button type="button" data-ctx="open">' + (iconMulti ? 'Open ' + D.selectedNodes().length + ' Items' : 'Open') + '</button>' +
           '<button type="button" data-ctx="info">Get Info</button>' +
           '<hr>' +
-          '<button type="button" data-ctx="duplicate">Duplicate</button>' +
-          '<button type="button" data-ctx="rename">Rename</button>' +
-          '<hr>' +
-          '<button type="button" data-ctx="trash">Move to Trash</button>';
+          (iconMulti ? '' :
+            '<button type="button" data-ctx="duplicate">Duplicate</button>' +
+            '<button type="button" data-ctx="rename">Rename</button>' +
+            '<hr>') +
+          '<button type="button" data-ctx="trash">' + (iconMulti ? 'Move ' + D.selectedNodes().length + ' Items to Trash' : 'Move to Trash') + '</button>';
       }
     } else {
       html =
         '<button type="button" data-ctx="reset">Reset Desktop</button>' +
         '<hr>' +
-        '<button type="button" data-ctx="cleanup">Clean Up</button>' +
-        '<button type="button" data-ctx="byname">Arrange by Name</button>' +
-        '<hr>' +
+        (D.small() ? '' :
+          '<button type="button" data-ctx="cleanup">Clean Up</button>' +
+          '<button type="button" data-ctx="byname">Arrange by Name</button>' +
+          '<hr>') +
         '<button type="button" data-ctx="empty"' + (n ? '' : ' class="disabled"') + '>Empty Trash</button>';
     }
     D.ctxMenu.innerHTML = html;
@@ -159,13 +178,29 @@
         var act = b.dataset.ctx;
         var target = D.ctxTarget;
         hideMenus();
-        if (act === 'open' && target) D.activate(target);
+        if (act === 'open' && target) {
+          if (target.classList.contains('selected') && typeof D.activateSelected === 'function' && D.selectedNodes().length > 1) {
+            D.activateSelected(target);
+          } else {
+            D.activate(target);
+          }
+        }
+        else if (act === 'putback' && target && target.dataset.restore) D.restoreFromTrash(target.dataset.restore);
         else if (act === 'info') D.getInfo(target);
         else if (act === 'save-note' && target) D.downloadSticky(target);
         else if (act === 'close-note' && target) D.askCloseSticky(target);
         else if (act === 'rename' && target) D.renameIcon(target);
         else if (act === 'duplicate' && target) D.duplicateIcon(target);
-        else if (act === 'trash' && target) D.moveToTrash(target);
+        else if (act === 'trash' && target) {
+          if (target.classList.contains('selected') && typeof D.trashSelected === 'function' && D.selectedNodes().length > 1) {
+            D.trashSelected(target);
+          } else if (target.classList.contains('item') && target.dataset.unshelf) {
+            var shelved = D.shelved && (D.shelved.querySelector('.icon[data-id="' + target.dataset.unshelf + '"]') || D.shelved.querySelector('.icon[data-open="' + target.dataset.unshelf + '"]'));
+            if (shelved) D.moveToTrash(shelved);
+          } else {
+            D.moveToTrash(target);
+          }
+        }
         else if (act === 'empty') D.emptyTrash();
         else if (act === 'reset') D.resetDesktop();
         else if (act === 'cleanup') D.arrangeIcons('clean');
@@ -213,11 +248,92 @@
       e.preventDefault();
       var target = sticky || item || icon || null;
       if (target && target.classList && (target.classList.contains('icon') || target.classList.contains('item'))) {
-        D.clearSel();
-        target.classList.add('selected');
+        if (!target.classList.contains('selected')) {
+          D.clearSel();
+          target.classList.add('selected');
+        }
       }
       showCtx(e.clientX, e.clientY, target);
     });
+
+    /* Long-press → same context menu (phones / tablets without right-click) */
+    (function bindLongPressCtx() {
+      var timer = null;
+      var startX = 0, startY = 0, startTarget = null, startEl = null;
+      var fired = false;
+      var HOLD_MS = 500;
+      var MOVE_PX = 12;
+
+      function clear() {
+        if (timer) { clearTimeout(timer); timer = null; }
+        startTarget = null;
+        startEl = null;
+      }
+
+      function resolveTarget(el) {
+        if (!el || !el.closest) return null;
+        if (el.closest('.menubar') || el.closest('.menu') || el.closest('.box')) return null;
+        var sticky = el.closest('.sticky, [data-sticky]');
+        var item = el.closest('.item');
+        var icon = el.closest('#icons .icon, .win .item, .icon');
+        if (item) return item;
+        if (sticky) return sticky;
+        if (icon && !icon.closest('.win')) return icon;
+        if (el.closest('.hero') || el.closest('#desktop')) return null;
+        return null;
+      }
+
+      document.addEventListener('pointerdown', function (e) {
+        if (e.button > 0 || e.pointerType === 'mouse') return;
+        clear();
+        fired = false;
+        startX = e.clientX;
+        startY = e.clientY;
+        startEl = e.target;
+        startTarget = resolveTarget(e.target);
+        if (!startTarget && !(e.target.closest && (e.target.closest('.hero') || e.target.closest('#desktop')))) return;
+        timer = setTimeout(function () {
+          timer = null;
+          fired = true;
+          var target = startTarget;
+          if (target && target.classList && (target.classList.contains('icon') || target.classList.contains('item'))) {
+            if (!target.classList.contains('selected')) {
+              D.clearSel();
+              target.classList.add('selected');
+            }
+          }
+          if (navigator.vibrate) try { navigator.vibrate(12); } catch (err) {}
+          showCtx(startX, startY, target);
+        }, HOLD_MS);
+      }, { passive: true });
+
+      document.addEventListener('pointermove', function (e) {
+        if (!timer) return;
+        var dx = e.clientX - startX, dy = e.clientY - startY;
+        if (dx * dx + dy * dy > MOVE_PX * MOVE_PX) clear();
+      }, { passive: true });
+
+      function endPress(e) {
+        if (fired) {
+          if (e && e.cancelable) e.preventDefault();
+          /* Suppress the click that follows a long-press open */
+          var swallow = function (ev) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            document.removeEventListener('click', swallow, true);
+          };
+          document.addEventListener('click', swallow, true);
+          setTimeout(function () {
+            document.removeEventListener('click', swallow, true);
+          }, 400);
+        }
+        clear();
+        fired = false;
+      }
+
+      document.addEventListener('pointerup', endPress);
+      document.addEventListener('pointercancel', endPress);
+    })();
 
     document.addEventListener('click', function (e) {
       var node = e.target.closest('.icon,.item');
@@ -225,13 +341,25 @@
         if (node.dataset.justActivated) { delete node.dataset.justActivated; e.preventDefault(); return; }
         if (node.dataset.dragged) { delete node.dataset.dragged; e.preventDefault(); return; }
         if (node.closest && node.closest('.renaming')) return;
+        if (e.shiftKey || e.metaKey || e.ctrlKey) {
+          e.preventDefault();
+          return;
+        }
+        var multi = typeof D.selectedNodes === 'function' && D.selectedNodes().length > 1 && node.classList.contains('selected');
+        if (multi) {
+          /* Keep multi-selection; open happens via Enter / Open / double-click */
+          e.preventDefault();
+          return;
+        }
         D.clearSel();
         node.classList.add('selected');
         D.activate(node);
         return;
       }
       if (!e.target.closest('.menubar') && !e.target.closest('.menu')) hideMenus();
-      if (!e.target.closest('.win') && !e.target.closest('.icon')) D.clearSel();
+      /* Don't wipe a marquee multi-select if the browser still fires click after drag */
+      if (D.marqueeJustFinished || D.marqueeActive) return;
+      if (!e.target.closest('.win') && !e.target.closest('.icon') && !e.target.closest('.marquee')) D.clearSel();
     });
 
     /* double-click still works; same as single-click open */
@@ -240,6 +368,10 @@
       if (node) {
         if (node.dataset.dragged) { delete node.dataset.dragged; return; }
         e.preventDefault();
+        if (node.classList.contains('selected') && typeof D.activateSelected === 'function' && D.selectedNodes().length > 1) {
+          D.activateSelected(node);
+          return;
+        }
         D.clearSel();
         node.classList.add('selected');
         D.activate(node);
@@ -264,6 +396,10 @@
         if (D.openMenu) { hideMenus(); return; }
         var renaming = document.querySelector('.icon.renaming input.rename');
         if (renaming) { renaming.blur(); return; }
+        if (typeof D.selectedNodes === 'function' && D.selectedNodes().length) {
+          D.clearSel();
+          return;
+        }
         var names = Object.keys(D.open);
         if (names.length) D.closeWindow(names[names.length - 1]);
         return;
@@ -276,11 +412,23 @@
         }
       }
       if ((e.key === 'Delete' || e.key === 'Backspace') && !e.target.closest('input,textarea,[contenteditable]')) {
+        if (typeof D.trashSelected === 'function' && D.selectedNodes().length) {
+          e.preventDefault();
+          D.trashSelected();
+          return;
+        }
         var sel = document.querySelector('#icons .icon.selected:not([data-trash])');
         if (sel) { e.preventDefault(); D.moveToTrash(sel); return; }
       }
-      var node = e.target.closest && e.target.closest('.icon,.item');
-      if (node && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); D.activate(node); }
+      if ((e.key === 'Enter' || e.key === ' ') && !e.target.closest('input,textarea,[contenteditable]')) {
+        if (typeof D.activateSelected === 'function' && D.selectedNodes().length) {
+          e.preventDefault();
+          D.activateSelected();
+          return;
+        }
+        var node = e.target.closest && e.target.closest('.icon,.item');
+        if (node) { e.preventDefault(); D.activate(node); }
+      }
     });
 
     document.addEventListener('click', function (e) {
@@ -288,8 +436,16 @@
       if (b) { hideMenus(); D.openWindow(b.dataset.open); return; }
       if (e.target.closest('[data-close-all]')) { hideMenus(); D.closeAll(); }
       if (e.target.closest('[data-empty-trash]')) { hideMenus(); D.emptyTrash(); }
-      if (e.target.closest('[data-cleanup]')) { hideMenus(); D.arrangeIcons('clean'); return; }
-      if (e.target.closest('[data-arrange-name]')) { hideMenus(); D.arrangeIcons('name'); return; }
+      if (e.target.closest('[data-cleanup]')) {
+        hideMenus();
+        if (!D.small()) D.arrangeIcons('clean');
+        return;
+      }
+      if (e.target.closest('[data-arrange-name]')) {
+        hideMenus();
+        if (!D.small()) D.arrangeIcons('name');
+        return;
+      }
       var tagBtn = e.target.closest('#m-label [data-tag]');
       if (tagBtn) {
         hideMenus();
@@ -314,6 +470,16 @@
 
       if (e.target.closest('[data-theme-toggle]')) {
         D.setTheme(D.currentTheme() === 'dark' ? 'light' : 'dark');
+        hideMenus();
+        return;
+      }
+
+      var eqBtn = e.target.closest('[data-eq-toggle]');
+      if (eqBtn) {
+        if (window.JBField && typeof window.JBField.getSettings === 'function' && typeof window.JBField.applySettings === 'function') {
+          var cur = window.JBField.getSettings().showEq !== 'hide';
+          window.JBField.applySettings({ showEq: cur ? 'hide' : 'show' });
+        }
         hideMenus();
         return;
       }

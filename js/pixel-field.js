@@ -1,6 +1,6 @@
 /* Pixel field: dithered coral dust on one lattice with the name.
    The cursor glows, a click throws a small burst, holding gathers a swarm
-   into a piano that grows until release bursts it, a hi-fi spectrum sits
+   into a small piano that bursts on release, a hi-fi spectrum sits
    low on the desk, and the name plays an entrance effect
    (js/pixel-effects.js). */
 (function () {
@@ -28,7 +28,7 @@
     twinkle: 1,          /* per-pixel shimmer */
     cursor: 1,           /* cursor glow strength and reach */
     stampSize: 1,        /* the held piano's largest size */
-    showEq: 'show',      /* hi-fi EQ visibility: show / hide */
+    showEq: 'hide',      /* hi-fi EQ visibility: show / hide */
     music: 1,            /* hi-fi EQ display intensity */
     grid: 1,             /* graph-paper grid strength; 0 hides it */
     gridCells: 6,        /* field cells per grid square */
@@ -162,7 +162,12 @@
     resetSettings: function () { applySettings(DEFAULTS); },
     defaults: function () { return sanitize({}); },
     replay: function () { replay(); },
-    bindPanel: bindPanel
+    bindPanel: bindPanel,
+    fireworks: function () { fireworks(performance.now()); },
+    cancelPointer: function () {
+      holding = null;
+      wordPress = false;
+    }
   };
 
   /* ------------------------------------------------------------- palette */
@@ -174,15 +179,33 @@
     palette.grid = v('--field-grid', '#161a20');
     palette.dim = v('--field-dim', '#2a3038');
     palette.mid = v('--field-mid', '#5a6470');
+    palette.dustA = v('--field-dust-a', '#1a1e26');
+    palette.dustB = v('--field-dust-b', '#242a34');
+    palette.dustC = v('--field-dust-c', '#323944');
+    palette.dustD = v('--field-dust-d', '#434c58');
+    palette.dustE = v('--field-dust-e', '#586270');
     palette.lit = v('--field-lit', '#c45a5e');
     palette.hover = v('--field-hover', '#E8545C');
     palette.crest = v('--field-crest', '#f0a8ab');
     palette.text = v('--field-text', '#f2f2f2');
+    palette.jupA = v('--field-jup-a', '#c4784a');
+    palette.jupB = v('--field-jup-b', '#a85a32');
+    palette.jupC = v('--field-jup-c', '#6e3420');
+    palette.jupD = v('--field-jup-d', '#e0a878');
+    palette.satA = v('--field-sat-a', '#d8ccb0');
+    palette.satB = v('--field-sat-b', '#b8a888');
+    palette.satC = v('--field-sat-c', '#8a7c60');
+    palette.ring = v('--field-ring', '#c4b898');
   }
 
   /* Rects are gathered per ink and filled once each: a handful of fills a
      frame rather than thousands of fillStyle switches. */
-  var INKS = ['dim', 'mid', 'lit', 'hover', 'crest', 'text'];
+  var INKS = [
+    'dustA', 'dustB', 'dustC', 'dustD', 'dustE',
+    'dim', 'mid', 'lit', 'hover', 'crest', 'text',
+    'jupA', 'jupB', 'jupC', 'jupD', 'satA', 'satB', 'satC', 'ring'
+  ];
+  var DUST_INKS = ['dustA', 'dustB', 'dustC', 'dustD', 'dustE'];
   var buckets = {};
   INKS.forEach(function (ink) { buckets[ink] = []; });
 
@@ -418,20 +441,28 @@
     cols = Math.ceil((W - ox) / cw) - cMin + 1;
     rows = Math.ceil((H - oy) / cw) - rMin + 1;
 
-    /* Dust gathers toward the edges, stays clear of the centre and fades
-       out under the menubar. */
+    /* Dust toward the edges, clear of the centre. Top/bottom sit halfway
+       between the earlier sparse bands and full side-matched density. */
     ramp = new Float32Array(cols * rows);
     var r, c;
     for (r = 0; r < rows; r++) {
       var y = oy + (rMin + r + 0.5) * cw;
       var ny = (y / H) * 2 - 1;
-      var clear = 1;
+      var ay = Math.abs(ny);
       for (c = 0; c < cols; c++) {
         var x = ox + (cMin + c + 0.5) * cw;
         var nx = (x / W) * 2 - 1;
-        var rr = Math.sqrt(nx * nx + ny * ny * 0.82);
-        var eased = Math.min(1, Math.max(0, (rr - 0.4) / 0.85));
-        ramp[r * cols + c] = eased * eased * clear;
+        var ax = Math.abs(nx);
+        var rrOld = Math.sqrt(nx * nx + ny * ny * 0.82);
+        var oldDust = Math.min(1, Math.max(0, (rrOld - 0.4) / 0.85));
+        oldDust = oldDust * oldDust;
+        var rr = Math.sqrt(nx * nx + ny * ny);
+        var radial = Math.min(1, Math.max(0, (rr - 0.38) / 0.9));
+        var side = Math.max(0, (ax - 0.42) / 0.58);
+        var band = Math.max(0, (ay - 0.36) / 0.64);
+        var edge = Math.max(side, band);
+        var newDust = Math.max(radial * radial, edge * edge);
+        ramp[r * cols + c] = 0.5 * oldDust + 0.5 * newDust;
       }
     }
 
@@ -452,11 +483,9 @@
   /* ---------------------------------------------------- live interaction */
   var CURSOR_CELLS = 12;
   var HUSH_REACH = 96;
-  var CLICK_MS = 160;              /* a press shorter than this is a click */
+  var CLICK_MS = 220;              /* a press shorter than this is a click */
   var GATHER_S = 0.7;              /* how long particles take to leave the swarm */
-  var GROW_S = 3.2;                /* smallest keyboard to largest while held */
-  var KEY_PITCH_FROM = 3;          /* cells per white key (with its line) at first */
-  var KEY_PITCH_MAX = 4;           /* ...and at full size, times the Piano size setting */
+  var KEY_PITCH = 3;               /* cells per white key — one size only */
   var SWARM_CELLS = 9;             /* radius of the swarm a hold starts from */
   var PARTICLE_CAP = 1800;
   var BANDS = MUSIC ? MUSIC.BANDS : 32;
@@ -606,7 +635,7 @@
   }
 
   function makeSwarm(cx, cy, now) {
-    var count = keyboard(KEY_PITCH_FROM).cells.length;
+    var count = keyboard(KEY_PITCH).cells.length;
     var cc = (cx - ox) / cw, cr = (cy - oy) / cw;
     var dust = nearbyDustCells(cc, cr, now);
     var dustPairs = dust.length / 2;
@@ -633,27 +662,17 @@
   }
 
   /* Move the swarm one frame and report each particle's cell.
-     Calls fn(col, row, ink) with lattice cells. */
+     Calls fn(col, row, ink) with lattice cells. One small keyboard only —
+     no second, larger size. */
   function stepSwarm(time, fn) {
     var held = (time - holding.start - CLICK_MS) / 1000;
     if (held < 0) return null;
     var dt = Math.min(0.1, Math.max(0, (time - (holding.stepAt || time)) / 1000));
     holding.stepAt = time;
     var t = time / 1000;
-    var g = clamp01(held / GROW_S);
-    var maxPitch = Math.max(KEY_PITCH_FROM, Math.round(KEY_PITCH_MAX * settings.stampSize));
-    /* Continuous size: pitch0 stays a solid, settled keyboard while pitch0+1's
-       extra cells grow in from a point (see the render step in draw()) —
-       the keyboard gets bigger by gaining pixels, not by rescaling. */
-    var pitchF = KEY_PITCH_FROM + (maxPitch - KEY_PITCH_FROM) * g * g * (3 - 2 * g);
-    var pitch0 = Math.min(maxPitch, Math.floor(pitchF));
-    var pitch1 = Math.min(maxPitch, pitch0 + 1);
-    var frac = pitch1 > pitch0 ? pitchF - pitch0 : 0;
-    var kb = keyboard(pitch0);
-    var kb1 = pitch1 > pitch0 ? keyboard(pitch1) : kb;
+    var kb = keyboard(KEY_PITCH);
     var cc = (holding.x - ox) / cw, cr = (holding.y - oy) / cw;
     var c0 = Math.round(cc - kb.width / 2), r0 = Math.round(cr - kb.height / 2);
-    var c0b = Math.round(cc - kb1.width / 2), r0b = Math.round(cr - kb1.height / 2);
     var pull = 1 - Math.exp(-dt * 11);
     var home = 0, i;
     for (i = 0; i < holding.swarm.length; i++) {
@@ -681,15 +700,10 @@
       if (there) { col = goalC; row = goalR; home++; }
       fn(col, row, there ? ink : ink === 'mid' ? 'mid' : 'lit');
     }
-    /* Once the swarm has first settled the whole keyboard is drawn, and
-       stays drawn through each growth step while particles re-home */
     if (home / holding.swarm.length > 0.6) holding.settled = true;
-    var bc0 = Math.min(c0, c0b), br0 = Math.min(r0, r0b);
-    var bc1 = Math.max(c0 + kb.width, c0b + kb1.width), br1 = Math.max(r0 + kb.height, r0b + kb1.height);
     return {
-      c0: bc0, r0: br0, c1: bc1, r1: br1,
+      c0: c0, r0: r0, c1: c0 + kb.width, r1: r0 + kb.height,
       kb: kb, kc0: c0, kr0: r0,
-      kb1: kb1, kc1: c0b, kr1: r0b, frac: frac,
       formed: holding.settled ? 1 : 0
     };
   }
@@ -732,11 +746,49 @@
     var box = stepSwarm(now, fling);
     if (box && box.formed > 0.6) {
       box.kb.cells.forEach(function (cell) { fling(box.kc0 + cell[0], box.kr0 + cell[1], cell[2] === 2 ? 'hover' : 'lit'); });
-      if (box.frac > 0.001 && box.kb1 !== box.kb) {
-        box.kb1.cells.forEach(function (cell) { fling(box.kc1 + cell[0], box.kr1 + cell[1], cell[2] === 2 ? 'hover' : 'lit'); });
-      }
     }
     clickBurst(hx, hy, now);
+  }
+
+
+  /* Full-desk celebration: keyboard-burst language, but many staggered
+     shells so the fireworks fill most of the screen (Empty Trash egg). */
+  function fireworks(at) {
+    if (reduced || !W || !H || !cw) return;
+    var now = at || performance.now();
+    var bursts = [
+      { x: W * 0.50, y: H * 0.42, t: 0,   n: 96 },
+      { x: W * 0.22, y: H * 0.34, t: 160, n: 64 },
+      { x: W * 0.78, y: H * 0.32, t: 240, n: 64 },
+      { x: W * 0.32, y: H * 0.60, t: 380, n: 58 },
+      { x: W * 0.68, y: H * 0.58, t: 460, n: 58 },
+      { x: W * 0.50, y: H * 0.26, t: 620, n: 80 },
+      { x: W * 0.14, y: H * 0.50, t: 760, n: 48 },
+      { x: W * 0.86, y: H * 0.48, t: 820, n: 48 }
+    ];
+    var b, i, ang, speed, life, ink, jx, jy;
+    for (b = 0; b < bursts.length; b++) {
+      var burst = bursts[b];
+      var born = now + burst.t;
+      for (i = 0; i < burst.n; i++) {
+        ang = (i / burst.n) * Math.PI * 2 + Math.random() * 0.45;
+        speed = (10 + Math.random() * 28) * cw;
+        life = 0.85 + Math.random() * 1.1;
+        ink = i % 5 === 0 ? 'crest' : i % 3 === 0 ? 'hover' : 'lit';
+        jx = (Math.random() - 0.5) * cw * 2;
+        jy = (Math.random() - 0.5) * cw * 2;
+        spawn(burst.x + jx, burst.y + jy,
+          (Math.cos(ang) + (Math.random() - 0.5) * 0.35) * speed,
+          (Math.sin(ang) + (Math.random() - 0.5) * 0.35) * speed,
+          life, cw * (0.9 + Math.random() * 1.4), ink, born);
+      }
+      for (i = 0; i < 10; i++) {
+        ang = Math.random() * Math.PI * 2;
+        speed = (2 + Math.random() * 8) * cw;
+        spawn(burst.x, burst.y, Math.cos(ang) * speed, Math.sin(ang) * speed,
+          0.35 + Math.random() * 0.35, cw * (1.5 + Math.random()), 'crest', born);
+      }
+    }
   }
 
   function drawParticles(time) {
@@ -790,6 +842,125 @@
     var xl = ox + col * cw, yt = oy + row * cw;
     var x = Math.round(xl), y = Math.round(yt);
     push(ink, x, y, Math.round(xl + cw) - x, Math.round(yt + cw) - y);
+  }
+
+  /* -------------------------------------------------------------- planets
+     Rare pixel Jupiter / Saturn near the corners. Sparse, slow fade. */
+  var PLANET_SPRITES = {
+    jupiter: {
+      w: 11, h: 11,
+      /* . empty · A cream · B ochre · C dark belt · D highlight */
+      rows: [
+        '...........',
+        '...AAAAA...',
+        '..AABBBAA..',
+        '.AABBDBBAA.',
+        '.ABCCCCCBA.',
+        '.AABBBBAA..',
+        '.AADBBBDDA.',
+        '.ABCCCCCBA.',
+        '..AABBBAA..',
+        '...AAAAA...',
+        '...........'
+      ],
+      map: { A: 'jupA', B: 'jupB', C: 'jupC', D: 'jupD' }
+    },
+    saturn: {
+      w: 15, h: 11,
+      rows: [
+        '...............',
+        '....RRRRRRR....',
+        '...R..AAA..R...',
+        '..R..ABBBA..R..',
+        '.R..ABBBBBA..R.',
+        'RR..ABBCBBA..RR',
+        '.R..ABBBBBA..R.',
+        '..R..ABBBA..R..',
+        '...R..AAA..R...',
+        '....RRRRRRR....',
+        '...............'
+      ],
+      map: { A: 'satA', B: 'satB', C: 'satC', R: 'ring' }
+    }
+  };
+
+  var planets = [];
+  var planetNextAt = (typeof performance !== 'undefined' ? performance.now() : 0) + 14000 + Math.random() * 28000;
+  var PLANET_MIN_GAP = 45000;   /* ms between spawn attempts */
+  var PLANET_CHANCE = 0.22;     /* chance when an attempt fires */
+  var PLANET_LIFE = 18000;      /* visible duration */
+  var PLANET_FADE = 2200;
+
+  function planetCornerOrigin(corner, spr) {
+    var pad = 4;
+    var maxC = Math.floor((W - ox) / cw) - spr.w - pad;
+    var maxR = Math.floor((H - oy) / cw) - spr.h - pad;
+    var c0 = pad, r0 = pad;
+    if (corner === 1 || corner === 3) c0 = Math.max(pad, maxC);
+    if (corner === 2 || corner === 3) r0 = Math.max(pad, maxR);
+    /* Nudge a little so repeats don't land on the exact same cell */
+    c0 += Math.floor((Math.random() * 5) - 2);
+    r0 += Math.floor((Math.random() * 5) - 2);
+    return {
+      c0: Math.max(2, Math.min(maxC, c0)),
+      r0: Math.max(2, Math.min(maxR, r0))
+    };
+  }
+
+  function stepPlanets(time) {
+    if (reduced) { planets.length = 0; return; }
+    if (time >= planetNextAt) {
+      planetNextAt = time + PLANET_MIN_GAP * (0.7 + Math.random() * 0.8);
+      if (planets.length < 2 && Math.random() < PLANET_CHANCE) {
+        var kinds = ['jupiter', 'saturn'];
+        var used = {};
+        planets.forEach(function (p) { used[p.kind] = 1; used[p.corner] = 1; });
+        var kind = kinds[Math.floor(Math.random() * kinds.length)];
+        if (used[kind] && kinds.length > 1) kind = kind === 'jupiter' ? 'saturn' : 'jupiter';
+        var corner, tries = 0;
+        do {
+          corner = Math.floor(Math.random() * 4);
+          tries++;
+        } while (used[corner] && tries < 8);
+        var spr = PLANET_SPRITES[kind];
+        var origin = planetCornerOrigin(corner, spr);
+        planets.push({
+          kind: kind,
+          corner: corner,
+          c0: origin.c0,
+          r0: origin.r0,
+          born: time,
+          life: PLANET_LIFE * (0.85 + Math.random() * 0.4)
+        });
+      }
+    }
+    planets = planets.filter(function (p) {
+      return time - p.born < p.life + PLANET_FADE;
+    });
+  }
+
+  function drawPlanets(time) {
+    var i, p, spr, r, c, ch, ink, age, fade, thresh;
+    for (i = 0; i < planets.length; i++) {
+      p = planets[i];
+      spr = PLANET_SPRITES[p.kind];
+      age = time - p.born;
+      if (age < PLANET_FADE) fade = age / PLANET_FADE;
+      else if (age > p.life) fade = 1 - (age - p.life) / PLANET_FADE;
+      else fade = 1;
+      fade = Math.max(0, Math.min(1, fade));
+      for (r = 0; r < spr.h; r++) {
+        for (c = 0; c < spr.w; c++) {
+          ch = spr.rows[r].charAt(c);
+          ink = spr.map[ch];
+          if (!ink) continue;
+          /* Dissolve in/out with a per-cell threshold so it feels pixelly */
+          thresh = jitter[((p.r0 + r) * 41 + (p.c0 + c) * 13 + p.corner * 7) & 4095];
+          if (fade < 0.999 && fade < 0.15 + thresh * 0.85) continue;
+          cellRect(ink, p.c0 + c, p.r0 + r);
+        }
+      }
+    }
   }
 
   /* Like cellRect, but at the name's own (10% smaller) scale */
@@ -960,10 +1131,21 @@
 
         var heat = glow;
         var x = Math.round(xLeft);
-        push(heat > 0.34 ? 'lit' : heat > 0.1 ? 'mid' : 'dim', x, y, Math.round(xLeft + cw) - x, ch);
+        var dustInk;
+        if (heat > 0.34) dustInk = 'lit';
+        else if (heat > 0.1) dustInk = 'mid';
+        else {
+          /* Several resting greys — hash + luminance so neighbours differ */
+          var grain = jitter[(row * 53 + col * 17) & 4095];
+          var band = Math.min(4, Math.max(0, Math.floor(lum * 5.5 + grain * 2.2)));
+          dustInk = DUST_INKS[band];
+        }
+        push(dustInk, x, y, Math.round(xLeft + cw) - x, ch);
       }
     }
     if (showEq) drawEq();
+    stepPlanets(time);
+    drawPlanets(time);
     flush();
 
     /* The name at rest, or the entrance making it */
@@ -981,9 +1163,7 @@
       }
     }
 
-    /* The held piano and any bursts fly over everything */
-    /* Particles show while gathering; once formed the keyboard is drawn
-       clean, and steps up in size without stragglers across the keys */
+    /* Swarm while gathering; once formed, the single small keyboard */
     if (!pianoBox) {
       for (var sc = 0; sc < swarmCells.length; sc += 3) cellRect(swarmCells[sc + 2], swarmCells[sc], swarmCells[sc + 1]);
     }
@@ -991,25 +1171,6 @@
       pianoBox.kb.cells.forEach(function (cell) {
         cellRect(cell[2] === 2 ? 'hover' : 'lit', pianoBox.kc0 + cell[0], pianoBox.kr0 + cell[1]);
       });
-      /* New keys at the edge grow in from a point rather than popping to
-         full size — the keyboard gets bigger by gaining pixels, matching
-         how the rest of the field animates, not by rescaling a shape */
-      if (pianoBox.frac > 0.001 && pianoBox.kb1 !== pianoBox.kb) {
-        var seen = {};
-        pianoBox.kb.cells.forEach(function (cell) {
-          seen[(pianoBox.kc0 + cell[0]) + ',' + (pianoBox.kr0 + cell[1])] = 1;
-        });
-        var gsize = Math.max(1, Math.round(cw * pianoBox.frac));
-        var goff = Math.round((cw - gsize) / 2);
-        pianoBox.kb1.cells.forEach(function (cell) {
-          var col = pianoBox.kc1 + cell[0], row = pianoBox.kr1 + cell[1];
-          var key = col + ',' + row;
-          if (seen[key]) return;
-          seen[key] = 1;
-          var xl = ox + col * cw, yt = oy + row * cw;
-          push(cell[2] === 2 ? 'hover' : 'lit', Math.round(xl) + goff, Math.round(yt) + goff, gsize, gsize);
-        });
-      }
     }
     if (particles.length) drawParticles(time);
 
@@ -1071,6 +1232,7 @@
 
   function onPointerDown(e) {
     if (!visible || e.button > 0) return;
+    if (D && D.marqueeActive) return;
     var p = locate(e);
     if (!p.inside || onControl(e.target)) return;
     pointer.x = p.x;
@@ -1094,6 +1256,12 @@
       return;
     }
     if (!holding) return;
+    /* Marquee drag won this gesture — no click burst / piano */
+    var desk = window.JBDesk;
+    if (desk && (desk.marqueeActive || desk.marqueeJustFinished)) {
+      holding = null;
+      return;
+    }
     if (finePointer) {
       var p = locate(e);
       targetStrength = p.inside ? strengthAt(e.clientX, e.clientY) : 0;
@@ -1146,7 +1314,17 @@
   new IntersectionObserver(function (entries) {
     visible = !!(entries[0] && entries[0].isIntersecting);
     if (reduced) return;
-    if (visible && !frame && drawing) frame = requestAnimationFrame(loop);
-    else if (!visible && frame) { cancelAnimationFrame(frame); frame = 0; }
+    if (visible && !document.hidden && !frame && drawing) frame = requestAnimationFrame(loop);
+    else if ((!visible || document.hidden) && frame) { cancelAnimationFrame(frame); frame = 0; }
   }, { rootMargin: '64px' }).observe(host);
+
+  document.addEventListener('visibilitychange', function () {
+    if (reduced) return;
+    if (document.hidden && frame) {
+      cancelAnimationFrame(frame);
+      frame = 0;
+    } else if (!document.hidden && visible && drawing && !frame) {
+      frame = requestAnimationFrame(loop);
+    }
+  });
 })();

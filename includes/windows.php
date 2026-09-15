@@ -1,10 +1,26 @@
 <!-- ================================ windows =============================== -->
-<template id="tpl-projects" data-title="Projects" data-w="560" data-h="340" data-info="3 items|Maps, Piano Repair &amp; Football">
+<template id="tpl-projects" data-title="Projects" data-w="560" data-h="360" data-info="4 items|Labs, Maps, Piano Repair &amp; Football">
   <div class="items"></div>
 </template>
 
-<template id="tpl-labs" data-title="Labs" data-w="680" data-h="460" data-info="10 items|Experiments">
-  <div class="items"></div>
+<template id="tpl-labs" data-title="Labs" data-w="680" data-h="460" data-info="0 items|Locked">
+  <div class="labs-gate" data-labs-gate>
+    <div class="doc labs-login">
+      <h2>Labs</h2>
+      <p class="sub">This folder is locked. Enter your name and password.</p>
+      <form class="mac-form" data-labs-login novalidate>
+        <label for="labs-user">Name</label>
+        <input type="text" id="labs-user" name="user" autocomplete="username" required spellcheck="false">
+        <label for="labs-pass">Password</label>
+        <input type="password" id="labs-pass" name="pass" autocomplete="current-password" required>
+        <p class="labs-login-err" data-labs-err hidden>That name or password is not correct.</p>
+        <div class="mac-form-actions">
+          <button type="submit" class="mac-btn default">OK</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <div class="items" data-labs-items hidden></div>
 </template>
 
 <template id="tpl-maps" data-title="Maps" data-w="660" data-h="420" data-info="4 items|London Underground, venues, gigs">
@@ -39,7 +55,6 @@
 
 <?php require __DIR__ . '/about.php'; ?>
 <?php require __DIR__ . '/contact.php'; ?>
-<?php require __DIR__ . '/field-settings.php'; ?>
 
 <template id="tpl-trash" data-title="Trash" data-w="480" data-h="340" data-info="0 items|Desktop">
   <div class="items" id="trash-items">
@@ -51,7 +66,7 @@
   <div class="doc egg">
     <p class="egg-kicker" aria-hidden="true">&#9733;</p>
     <h2>Congratulations!</h2>
-    <p class="sub">You emptied the Trash</p>
+    <p class="sub">You cleared the desk</p>
     <p class="egg-lead">Somehow you tidied a desk that was never meant to stay tidy.</p>
     <!-- Easter egg body — format reserved; content TBD -->
     <div class="egg-slot" data-egg-slot>
@@ -66,6 +81,6 @@
   <img class="fit" src="img/promo.png" data-promo alt="James Beckwith">
 </template>
 
-<template id="tpl-se10-png" data-title="se10.png" data-w="520" data-h="560" data-info="1 item|PNG image" data-nopad="1">
-  <img class="fit" src="img/se10.png" alt="SE10">
+<template id="tpl-se10-png" data-title="SE10.png" data-w="520" data-h="560" data-info="1 item|PNG image" data-nopad="1">
+  <img class="fit" src="img/SE10.png" alt="SE10">
 </template>

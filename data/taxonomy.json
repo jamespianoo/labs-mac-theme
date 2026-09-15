@@ -60,10 +60,10 @@
   "files": {
     "se10": {
       "id": "se10",
-      "aliases": ["se10.png", "se10-png", "se10.html", "item-se10"],
-      "title": "se10.png",
+      "aliases": ["SE10.png", "se10.png", "se10-png", "se10.html", "item-se10"],
+      "title": "SE10.png",
       "kind": "PNG image",
-      "where": "Desktop",
+      "where": "Music",
       "description": "Album cover artwork for SE10, recorded and composed in Greenwich, South East London.",
       "credit": {
         "text": "Artwork by Jack Richardson",
@@ -190,40 +190,40 @@
     },
     "item-realmusic": {
       "id": "item-realmusic",
-      "aliases": ["realmusic.html", "realmusic"],
-      "title": "realmusic.html",
+      "aliases": ["Real Music.London", "realmusic.html", "realmusic"],
+      "title": "Real Music.London",
       "kind": "Web Link",
       "where": "Maps",
       "description": "Curated index and interactive map of London's authentic live music establishments."
     },
     "item-tube-symphony": {
       "id": "item-tube-symphony",
-      "aliases": ["tube-symphony.html"],
-      "title": "tube-symphony.html",
+      "aliases": ["Tube Symphony", "tube-symphony.html"],
+      "title": "Tube Symphony",
       "kind": "Web Application",
       "where": "Maps",
       "description": "Musical London Underground map turning train routes and transit interchanges into harmonic sequences."
     },
     "item-gig-map": {
       "id": "item-gig-map",
-      "aliases": ["gig-map.html"],
-      "title": "gig-map.html",
+      "aliases": ["Gig Map", "gig-map.html"],
+      "title": "Gig Map",
       "kind": "Web Application",
       "where": "Maps",
       "description": "Geographical guide to grassroots live jazz, soul, and acoustic venues in London."
     },
     "item-dead-venues": {
       "id": "item-dead-venues",
-      "aliases": ["dead-venues.html"],
-      "title": "dead-venues.html",
+      "aliases": ["Dead Venues", "dead-venues.html"],
+      "title": "Dead Venues",
       "kind": "Web Application",
       "where": "Maps",
       "description": "Cartographic tribute preserving the memory of closed London live music institutions."
     },
     "item-se10": {
       "id": "item-se10",
-      "aliases": ["se10.html"],
-      "title": "se10.html",
+      "aliases": ["SE10", "se10.html"],
+      "title": "SE10",
       "kind": "Album",
       "where": "Music",
       "description": "Debut studio album by James Beckwith, melding acoustic grand piano, vintage synthesisers, and cinematic grooves.",
@@ -235,40 +235,40 @@
     },
     "item-long-distance": {
       "id": "item-long-distance",
-      "aliases": ["long-distance.html", "long-distance"],
-      "title": "long-distance.html",
+      "aliases": ["Long Distance", "long-distance.html", "long-distance"],
+      "title": "Long Distance",
       "kind": "Album",
       "where": "Music",
       "description": "Sophomore album exploring expansive contemporary jazz arrangements, rhodes textures, and acoustic interplay."
     },
     "item-spotify": {
       "id": "item-spotify",
-      "aliases": ["spotify.html", "spotify"],
-      "title": "spotify.html",
+      "aliases": ["Spotify", "spotify.html", "spotify"],
+      "title": "Spotify",
       "kind": "Streaming Service",
       "where": "Streaming",
       "description": "James Beckwith artist discography, verified profile, and top tracks on Spotify."
     },
     "item-apple-music": {
       "id": "item-apple-music",
-      "aliases": ["apple-music.html", "apple-music"],
-      "title": "apple-music.html",
+      "aliases": ["Apple Music", "apple-music.html", "apple-music"],
+      "title": "Apple Music",
       "kind": "Streaming Service",
       "where": "Streaming",
       "description": "James Beckwith releases, albums, and curated playlists on Apple Music."
     },
     "item-tidal": {
       "id": "item-tidal",
-      "aliases": ["tidal.html", "tidal"],
-      "title": "tidal.html",
+      "aliases": ["Tidal", "tidal.html", "tidal"],
+      "title": "Tidal",
       "kind": "Streaming Service",
       "where": "Streaming",
       "description": "Lossless Master audio streams and high-resolution albums on Tidal."
     },
     "item-qobuz": {
       "id": "item-qobuz",
-      "aliases": ["qobuz.html", "qobuz"],
-      "title": "qobuz.html",
+      "aliases": ["QoBuz", "qobuz.html", "qobuz"],
+      "title": "QoBuz",
       "kind": "Streaming Service",
       "where": "Streaming",
       "description": "Studio-quality 24-bit Hi-Res audio downloads and streams on Qobuz."
@@ -276,7 +276,7 @@
     "video-qpRMLR7VkO8": {
       "id": "video-qpRMLR7VkO8",
       "aliases": ["qpRMLR7VkO8"],
-      "title": "A Time-Lapse Map of Every Death From the Coronavirus Pandemic (Up to July 2020)",
+      "title": "Timelapse of Every Death from Covid",
       "kind": "YouTube Video",
       "where": "Videos",
       "description": "Global cartographic data visualization and timelapse tracking pandemic mortality up to July 2020."
@@ -284,7 +284,7 @@
     "video-QeW5kR0EGok": {
       "id": "video-QeW5kR0EGok",
       "aliases": ["QeW5kR0EGok"],
-      "title": "Land Of The \"Freer\": A Music Timelapse of US Election 2020 (Lift Every Voice and Sing)",
+      "title": "US Election 2020 Timelapse",
       "kind": "YouTube Video",
       "where": "Videos",
       "description": "Musical arrangement of 'Lift Every Voice and Sing' synchronized to the state-by-state 2020 US Election results."
@@ -292,7 +292,7 @@
     "video-OR9yKC8f1Zs": {
       "id": "video-OR9yKC8f1Zs",
       "aliases": ["OR9yKC8f1Zs"],
-      "title": "How To Play: Harder Better Faster Stronger on Vocoder (Daft Punk)",
+      "title": "Harder Better Faster Stronger on Vocoder",
       "kind": "YouTube Video",
       "where": "Videos",
       "description": "Step-by-step breakdown and live performance of Daft Punk's vocoder harmonies on hardware synthesizers."
@@ -300,7 +300,7 @@
     "video-6REtACtGSJE": {
       "id": "video-6REtACtGSJE",
       "aliases": ["6REtACtGSJE"],
-      "title": "Celeste - James Beckwith",
+      "title": "Celeste",
       "kind": "YouTube Video",
       "where": "Videos",
       "description": "Live performance of original jazz composition 'Celeste' featuring acoustic grand piano and rhythm section."
@@ -308,7 +308,7 @@
     "video-hacDUIS12Ho": {
       "id": "video-hacDUIS12Ho",
       "aliases": ["hacDUIS12Ho"],
-      "title": "Everybody Loves the Sunshine on a Rhodes MK8",
+      "title": "Everybody Loves the Sunshine",
       "kind": "YouTube Video",
       "where": "Videos",
       "description": "Soulful rendition of Roy Ayers' classic played on the flagship electro-mechanical Fender Rhodes MK8."
@@ -316,74 +316,66 @@
     "video-ity7KgKlNbE": {
       "id": "video-ity7KgKlNbE",
       "aliases": ["ity7KgKlNbE"],
-      "title": "Her Name Is Covid (feat. James Copus) - James Beckwith",
+      "title": "Her Name Is Covid",
       "kind": "YouTube Video",
       "where": "Videos",
       "description": "Original composition featuring acclaimed British jazz trumpeter James Copus, recorded live in London."
     },
     "item-st-totteringham": {
       "id": "item-st-totteringham",
-      "aliases": ["st-totteringhams-day.html", "st-totteringham"],
-      "title": "st-totteringhams-day.html",
+      "aliases": ["When Is St. Totteringham's Day?", "st-totteringhams-day.html", "st-totteringham"],
+      "title": "When Is St. Totteringham's Day?",
       "kind": "Web Application",
       "where": "Football",
       "description": "Formula calculator tracking the exact date Tottenham Hotspur cannot mathematically surpass Arsenal."
     },
     "item-invincibles": {
       "id": "item-invincibles",
-      "aliases": ["invincibles-day.html", "invincibles"],
-      "title": "invincibles-day.html",
+      "aliases": ["When Is Invincibles Day?", "invincibles-day.html", "invincibles"],
+      "title": "When Is Invincibles Day?",
       "kind": "Web Application",
       "where": "Football",
       "description": "Annual tracker celebrating the defeat of the final unbeaten club in the English Premier League season."
     },
     "item-jupiter": {
       "id": "item-jupiter",
-      "aliases": ["jupiter.html", "jupiter"],
-      "title": "jupiter.html",
+      "aliases": ["Jupiter Vintage Pianos", "jupiter.html", "jupiter"],
+      "title": "Jupiter Vintage Pianos",
       "kind": "Service Link",
       "where": "Piano Repair",
       "description": "Jupiter Vintage Pianos — specialist restoration workshop for Fender Rhodes, Wurlitzer 200A, and Hohner Clavinet."
     },
     "item-greenwich-piano": {
       "id": "item-greenwich-piano",
-      "aliases": ["greenwich-piano.html", "greenwich-piano"],
-      "title": "greenwich-piano.html",
+      "aliases": ["Greenwich Piano Services", "greenwich-piano.html", "greenwich-piano"],
+      "title": "Greenwich Piano Services",
       "kind": "Service Link",
       "where": "Piano Repair",
       "description": "Greenwich Piano Services — concert-standard acoustic piano tuning, pitch raising, and mechanical regulation."
     },
     "seed-1": {
       "id": "seed-1",
-      "aliases": ["Untitled Synth Patch 47"],
-      "title": "Untitled Synth Patch 47",
-      "kind": "Synthesizer Patch",
+      "aliases": ["cool-rhodes-sound.wav"],
+      "title": "cool-rhodes-sound.wav",
+      "kind": "Audio Recording",
       "where": "Trash",
-      "description": "Divergent analog poly-synth patch draft with excessive chorus and runaway LFO feedback."
+      "description": "Definitely the coolest Rhodes sample ever captured. Do not empty."
     },
     "seed-2": {
       "id": "seed-2",
-      "aliases": ["whenisarsenalinthenextworldcup.com"],
-      "title": "whenisarsenalinthenextworldcup.com",
-      "kind": "Draft Document",
+      "aliases": ["insecurity.exe"],
+      "title": "insecurity.exe",
+      "kind": "Application",
       "where": "Trash",
-      "description": "Unregistered joke domain concept conceived during an international break."
+      "description": "Mysterious executable recovered from a System Error. Probably fine."
     },
     "seed-3": {
       "id": "seed-3",
-      "aliases": ["Rhodes_scratch.aiff"],
-      "title": "Rhodes_scratch.aiff",
-      "kind": "Audio Recording",
+      "aliases": ["confidence", "confidence.keychain"],
+      "title": "confidence.keychain",
+      "kind": "Keychain Item",
       "where": "Trash",
-      "description": "Late-night scratch audio memo testing pickup balance on an early 1973 Rhodes Mark I."
-    },
-    "seed-4": {
-      "id": "seed-4",
-      "aliases": ["todo-finish-later.txt"],
-      "title": "todo-finish-later.txt",
-      "kind": "Text Document",
-      "where": "Trash",
-      "description": "Checklist of pending workshop tasks: replace damper felts, re-solder ground wire, re-voice treble tines."
+      "description": "Misplaced keys to the whole operation. Put back when ready."
     }
   },
   "notes": {

@@ -13,7 +13,7 @@
    should have every lit cell at 'rest' by the end.
 
    To add an effect: register it below with an id, a label, a duration (ms
-   at speed 1) and a frame function. It appears in the Pixel Field panel. */
+   at speed 1) and a frame function. */
 (function () {
   'use strict';
 

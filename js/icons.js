@@ -51,7 +51,7 @@
       var id = icon.dataset.trashId || '';
       var name = iconLabel(icon);
       var art = icon.querySelector('.art');
-      var b = D.el('<button class="item" data-restore="' + id + '"><span class="label"></span></button>');
+      var b = D.el('<button class="item" data-restore="' + id + '"><span class="label"></span><span class="putback-hint">Put Back</span></button>');
       if (art) b.insertBefore(art.cloneNode(true), b.firstChild);
       b.querySelector('.label').textContent = name;
       host.appendChild(b);
@@ -79,6 +79,8 @@
     var prevShelf = icon.dataset.shelf;
     if (winName && D.open[winName] && winName !== 'trash') D.closeWindow(winName);
     if (!icon.dataset.trashId) icon.dataset.trashId = String(++D.trashSeq);
+    /* Remember where it came from so Put Back can restore it */
+    icon.dataset.trashOrigin = prevShelf || 'desktop';
     icon.classList.remove('selected', 'dragging');
     delete icon.dataset.shelf;
     D.trashed.appendChild(icon);
@@ -96,6 +98,8 @@
       return !isTrashCan(icon);
     });
     if (!items.length) return;
+    /* Snapshot before protected folders bounce back onto the desk */
+    var bare = deskIsBare();
     var count = 0;
     var names = [];
     var gone = readGone();
@@ -104,6 +108,7 @@
       if (icon.dataset.open && D.FOLDER_IDS && D.FOLDER_IDS[icon.dataset.open]) {
         /* Protect core site folders from permanent destruction */
         delete icon.dataset.trashId;
+        delete icon.dataset.trashOrigin;
         delete icon.dataset.shelf;
         D.iconsHost.appendChild(icon);
         icon.setAttribute('data-scatter', '');
@@ -127,7 +132,21 @@
     refreshTrashWindow();
     savePositions();
     if (typeof D.beep === 'function') D.beep();
-    if (count > 0) showEgg(count, names);
+    /* Easter egg only when the desk was already bare (Trash alone) —
+       emptying leftover seed files with icons still out does not count */
+    if (count > 0 && bare) {
+      if (window.JBField && typeof window.JBField.fireworks === 'function') {
+        window.JBField.fireworks();
+      }
+      setTimeout(function () { showEgg(count, names); }, 720);
+    }
+  }
+
+  function deskIsBare() {
+    if (!D.iconsHost) return false;
+    return !Array.prototype.some.call(D.iconsHost.children, function (icon) {
+      return !isTrashCan(icon);
+    });
   }
 
   function readGone() {
@@ -198,8 +217,31 @@
   function restoreFromTrash(id, clientX, clientY) {
     var icon = D.trashed && D.trashed.querySelector('[data-trash-id="' + id + '"]');
     if (!icon || !D.iconsHost) return;
+    var origin = icon.dataset.trashOrigin || '';
     delete icon.dataset.trashId;
+    delete icon.dataset.trashOrigin;
     delete icon.dataset.shelf;
+    icon.classList.remove('selected', 'dragging');
+
+    var putInFolder = origin && D.FOLDER_IDS && D.FOLDER_IDS[origin] && D.shelved
+      && clientX == null && clientY == null;
+
+    if (putInFolder) {
+      /* Put Back to the folder it was deleted from */
+      icon.dataset.shelf = origin;
+      D.shelved.appendChild(icon);
+      icon.style.left = '';
+      icon.style.top = '';
+      updateTrashAppearance();
+      refreshTrashWindow();
+      refreshFolderWindow(origin);
+      saveShelfState();
+      savePositions();
+      if (typeof D.beep === 'function') D.beep();
+      return;
+    }
+
+    /* Seeds / desktop origin / drag-out → desktop */
     D.iconsHost.appendChild(icon);
     if (!icon.dataset.dragBound) {
       dragIcon(icon);
@@ -416,6 +458,10 @@
   }
 
   function getInfo(target) {
+    if (target && target.dataset && target.dataset.restore && D.trashed) {
+      var fromTrash = D.trashed.querySelector('[data-trash-id="' + target.dataset.restore + '"]');
+      if (fromTrash) target = fromTrash;
+    }
     var tax = resolveTaxonomy(target);
     var name = tax.title;
     var kind = tax.kind;
@@ -535,6 +581,7 @@
       }
       icon.style.left = pos.left + 'px';
       icon.style.top = pos.top + 'px';
+      clampIconToDesk(icon);
       if (isTrashCan(icon) && pos.moved) icon.dataset.moved = '1';
       applied++;
     });
@@ -592,6 +639,44 @@
 
   function clamp(n, lo, hi) {
     return Math.max(lo, Math.min(hi, n));
+  }
+
+  /* Real desk footprint — promo is ~3× a normal icon; using 128×148 for
+     everything lets it run off the edge and sit on top of neighbours. */
+  function iconSize(icon) {
+    if (!icon) return { w: 128, h: 148 };
+    var w = icon.offsetWidth;
+    var h = icon.offsetHeight;
+    if (w >= 8 && h >= 8) return { w: w, h: h };
+    if (icon.dataset.id === 'promo' || icon.dataset.open === 'promo') return { w: 300, h: 330 };
+    return { w: 128, h: 148 };
+  }
+
+  function overlapsPlaced(x, y, iw, ih, placed, gap) {
+    gap = gap == null ? 12 : gap;
+    var i, p, pw, ph;
+    for (i = 0; i < placed.length; i++) {
+      p = placed[i];
+      pw = p.w || 128;
+      ph = p.h || 148;
+      if (x + iw + gap > p.x && x < p.x + pw + gap &&
+          y + ih + gap > p.y && y < p.y + ph + gap) return true;
+    }
+    return false;
+  }
+
+  function clampIconToDesk(icon) {
+    if (!D.desktop || !icon || D.small()) return;
+    var size = iconSize(icon);
+    var pad = 8;
+    var maxX = Math.max(pad, D.desktop.clientWidth - size.w - pad);
+    var maxY = Math.max(pad, D.desktop.clientHeight - size.h - pad);
+    var x = parseInt(icon.style.left, 10);
+    var y = parseInt(icon.style.top, 10);
+    if (!isFinite(x)) x = pad;
+    if (!isFinite(y)) y = pad;
+    icon.style.left = clamp(x, pad, maxX) + 'px';
+    icon.style.top = clamp(y, pad, maxY) + 'px';
   }
 
   function sampleMidSpot(W, H, iw, ih, zone) {
@@ -653,34 +738,85 @@
     var pad = 12;
     var W = D.desktop.clientWidth, H = D.desktop.clientHeight;
     var zone = wordmarkZone(W, H);
-    var x, y, t, i, p, spot;
+    var x, y, t, spot;
     function blocked(px, py) {
       if (avoidWordmark && px + iw > zone.x0 && px < zone.x1 && py + ih > zone.y0 && py < zone.y1) return true;
       if (overlapsAnySticky(px, py, iw, ih, stickies)) return true;
-      for (i = 0; i < placed.length; i++) {
-        p = placed[i];
-        if (Math.abs(p.x - px) < iw - 8 && Math.abs(p.y - py) < ih - 8) return true;
-      }
+      if (overlapsPlaced(px, py, iw, ih, placed)) return true;
       return false;
     }
-    for (t = 0; t < 120; t++) {
+    for (t = 0; t < 160; t++) {
       spot = preferMid ? sampleMidSpot(W, H, iw, ih, zone) : sampleEdgeSpot(W, H, iw, ih);
       x = spot.x; y = spot.y;
       if (!blocked(x, y)) return { x: x, y: y };
     }
     /* fallback: any clear spot on the desk */
-    for (t = 0; t < 80; t++) {
+    for (t = 0; t < 100; t++) {
       x = pad + Math.floor(Math.random() * Math.max(1, W - iw - pad * 2));
       y = pad + Math.floor(Math.random() * Math.max(1, H - ih - pad * 2));
       if (!blocked(x, y)) return { x: x, y: y };
     }
-    var dx = iw, dy = ih;
+    var dx = Math.max(48, Math.floor(iw * 0.45));
+    var dy = Math.max(48, Math.floor(ih * 0.45));
     for (y = pad; y <= H - ih - pad; y += dy) {
       for (x = pad; x <= W - iw - pad; x += dx) {
         if (!blocked(x, y)) return { x: x, y: y };
       }
     }
-    return { x: pad, y: pad };
+    return {
+      x: pad,
+      y: pad
+    };
+  }
+
+  function collectPlaced(except) {
+    var placed = [];
+    if (!D.iconsHost) return placed;
+    D.iconsHost.querySelectorAll('.icon').forEach(function (icon) {
+      if (icon === except) return;
+      if (!icon.style.left && !icon.style.top) return;
+      var size = iconSize(icon);
+      placed.push({
+        x: parseInt(icon.style.left, 10) || 0,
+        y: parseInt(icon.style.top, 10) || 0,
+        w: size.w,
+        h: size.h
+      });
+    });
+    return placed;
+  }
+
+  function resolveIconOverlaps() {
+    if (D.small() || !D.iconsHost) return;
+    var stickies = stickyRects();
+    var moved = false;
+    /* Largest first so promo claims a clear seat, then others move around it */
+    var list = Array.prototype.slice.call(D.iconsHost.querySelectorAll('.icon:not(.trash)'));
+    list.sort(function (a, b) {
+      var sa = iconSize(a), sb = iconSize(b);
+      return (sb.w * sb.h) - (sa.w * sa.h);
+    });
+    var placed = [];
+    list.forEach(function (icon) {
+      clampIconToDesk(icon);
+      var size = iconSize(icon);
+      var x = parseInt(icon.style.left, 10) || 0;
+      var y = parseInt(icon.style.top, 10) || 0;
+      var bad = overlapsAnySticky(x, y, size.w, size.h, stickies) ||
+        overlapsPlaced(x, y, size.w, size.h, placed);
+      if (bad) {
+        var spot = findClearSpot(size.w, size.h, placed, stickies, true, icon.dataset.id !== 'promo');
+        icon.style.left = spot.x + 'px';
+        icon.style.top = spot.y + 'px';
+        clampIconToDesk(icon);
+        x = parseInt(icon.style.left, 10) || spot.x;
+        y = parseInt(icon.style.top, 10) || spot.y;
+        moved = true;
+      }
+      placed.push({ x: x, y: y, w: size.w, h: size.h });
+    });
+    if (D.trashIcon && !D.trashIcon.dataset.moved) placeTrashCorner();
+    if (moved) savePositions();
   }
 
   function scatterIcons(force) {
@@ -691,49 +827,64 @@
         var result = applySavedPositions(saved);
         if (result.applied > 0) {
           if (result.missing.length) {
-            var iw = 128, ih = 148;
             var stickies = stickyRects();
-            var placed = [];
-            D.iconsHost.querySelectorAll('.icon').forEach(function (icon) {
-              if (!icon.style.left && !icon.style.top) return;
-              placed.push({
-                x: parseInt(icon.style.left, 10) || 0,
-                y: parseInt(icon.style.top, 10) || 0
-              });
+            var placed = collectPlaced();
+            /* Place missing largest-first (promo before small icons) */
+            result.missing.sort(function (a, b) {
+              var sa = iconSize(a), sb = iconSize(b);
+              return (sb.w * sb.h) - (sa.w * sa.h);
             });
             result.missing.forEach(function (icon) {
-              var spot = findClearSpot(iw, ih, placed, stickies, true, true);
+              var size = iconSize(icon);
+              var spot = findClearSpot(size.w, size.h, placed, stickies, true, icon.dataset.id !== 'promo');
               icon.style.left = spot.x + 'px';
               icon.style.top = spot.y + 'px';
-              placed.push({ x: spot.x, y: spot.y });
+              clampIconToDesk(icon);
+              placed.push({
+                x: parseInt(icon.style.left, 10) || spot.x,
+                y: parseInt(icon.style.top, 10) || spot.y,
+                w: size.w,
+                h: size.h
+              });
             });
             savePositions();
           }
           if (D.trashIcon && !D.trashIcon.dataset.moved) placeTrashCorner();
           resolveStickyOverlaps();
+          resolveIconOverlaps();
           return;
         }
       }
     }
     var list = Array.prototype.slice.call(D.iconsHost.querySelectorAll('.icon[data-scatter]'));
     if (!list.length) return;
-    /* Shuffle so which 1–2 sit on the edge varies */
-    for (var s = list.length - 1; s > 0; s--) {
-      var j = Math.floor(Math.random() * (s + 1));
-      var tmp = list[s]; list[s] = list[j]; list[j] = tmp;
-    }
-    var iw = 128, ih = 148;
+    /* Largest first so promo gets a clear seat; then shuffle the rest lightly */
+    list.sort(function (a, b) {
+      var sa = iconSize(a), sb = iconSize(b);
+      return (sb.w * sb.h) - (sa.w * sa.h);
+    });
     var stickies = stickyRects();
     var placed = [];
     var edgeSlots = Math.min(2, Math.max(1, Math.floor(list.length / 6)));
-    list.forEach(function (icon, idx) {
-      var preferMid = idx >= edgeSlots;
-      var spot = findClearSpot(iw, ih, placed, stickies, true, preferMid);
+    var smallIdx = 0;
+    list.forEach(function (icon) {
+      var size = iconSize(icon);
+      var isPromo = icon.dataset.id === 'promo' || icon.dataset.open === 'promo';
+      var preferMid = isPromo ? false : (smallIdx >= edgeSlots);
+      if (!isPromo) smallIdx++;
+      var spot = findClearSpot(size.w, size.h, placed, stickies, true, preferMid);
       icon.style.left = spot.x + 'px';
       icon.style.top = spot.y + 'px';
-      placed.push({ x: spot.x, y: spot.y });
+      clampIconToDesk(icon);
+      placed.push({
+        x: parseInt(icon.style.left, 10) || spot.x,
+        y: parseInt(icon.style.top, 10) || spot.y,
+        w: size.w,
+        h: size.h
+      });
     });
     placeTrashCorner();
+    resolveIconOverlaps();
     savePositions();
   }
 
@@ -741,26 +892,29 @@
     if (D.small() || !D.iconsHost) return;
     var stickies = stickyRects();
     if (!stickies.length) return;
-    var iw = 128, ih = 148;
     var placed = [];
     var moved = false;
-    Array.prototype.forEach.call(D.iconsHost.querySelectorAll('.icon:not(.trash)'), function (icon) {
+    var list = Array.prototype.slice.call(D.iconsHost.querySelectorAll('.icon:not(.trash)'));
+    list.sort(function (a, b) {
+      var sa = iconSize(a), sb = iconSize(b);
+      return (sb.w * sb.h) - (sa.w * sa.h);
+    });
+    list.forEach(function (icon) {
+      var size = iconSize(icon);
       var x = parseInt(icon.style.left, 10) || 0;
       var y = parseInt(icon.style.top, 10) || 0;
-      var hitSticky = overlapsAnySticky(x, y, iw, ih, stickies);
-      var hitIcon = false;
-      for (var i = 0; i < placed.length; i++) {
-        var p = placed[i];
-        if (Math.abs(p.x - x) < iw - 8 && Math.abs(p.y - y) < ih - 8) { hitIcon = true; break; }
-      }
+      var hitSticky = overlapsAnySticky(x, y, size.w, size.h, stickies);
+      var hitIcon = overlapsPlaced(x, y, size.w, size.h, placed);
       if (hitSticky || hitIcon) {
-        var spot = findClearSpot(iw, ih, placed, stickies, true, true);
+        var spot = findClearSpot(size.w, size.h, placed, stickies, true, icon.dataset.id !== 'promo');
         icon.style.left = spot.x + 'px';
         icon.style.top = spot.y + 'px';
-        x = spot.x; y = spot.y;
+        clampIconToDesk(icon);
+        x = parseInt(icon.style.left, 10) || spot.x;
+        y = parseInt(icon.style.top, 10) || spot.y;
         moved = true;
       }
-      placed.push({ x: x, y: y });
+      placed.push({ x: x, y: y, w: size.w, h: size.h });
     });
     if (moved) savePositions();
   }
@@ -769,52 +923,105 @@
     var list = Array.prototype.slice.call(D.iconsHost.querySelectorAll('.icon:not(.trash)'));
     if (mode === 'name') {
       list.sort(function (a, b) { return iconLabel(a).localeCompare(iconLabel(b)); });
+    } else {
+      list.sort(function (a, b) {
+        var sa = iconSize(a), sb = iconSize(b);
+        return (sb.w * sb.h) - (sa.w * sa.h);
+      });
     }
-    var iw = 128, ih = 148;
     var stickies = stickyRects();
     var placed = [];
-    /* Clean Up: central cluster around the wordmark, still clear of the name */
     var W = D.desktop.clientWidth, H = D.desktop.clientHeight;
     var zone = wordmarkZone(W, H);
+    var pad = 12;
+    var defaultW = 128, defaultH = 148;
+
+    /* Arrange by Name: one centred row just above the JAMES BECKWITH wordmark */
+    if (mode === 'name') {
+      var n = list.length;
+      var cellW = 134;
+      var maxSpan = Math.max(defaultW, W - pad * 2);
+      if (n > 1) {
+        cellW = Math.min(cellW, Math.floor((maxSpan - defaultW) / (n - 1)));
+        cellW = Math.max(96, cellW);
+      }
+      var span = n > 0 ? (n - 1) * cellW + defaultW : 0;
+      var startX = Math.round((W - span) / 2);
+      startX = clamp(startX, pad, Math.max(pad, W - span - pad));
+      var rowY = Math.round(zone.y0 - defaultH - 10);
+      rowY = clamp(rowY, pad, Math.max(pad, H - defaultH - pad));
+      list.forEach(function (icon, i) {
+        var size = iconSize(icon);
+        var x = startX + i * cellW;
+        var y = rowY;
+        if (overlapsAnySticky(x, y, size.w, size.h, stickies) ||
+            overlapsPlaced(x, y, size.w, size.h, placed) ||
+            size.w > defaultW * 1.4) {
+          var spot = findClearSpot(size.w, size.h, placed, stickies, true, icon.dataset.id !== 'promo');
+          x = spot.x; y = spot.y;
+        }
+        icon.style.left = x + 'px';
+        icon.style.top = y + 'px';
+        clampIconToDesk(icon);
+        placed.push({
+          x: parseInt(icon.style.left, 10) || x,
+          y: parseInt(icon.style.top, 10) || y,
+          w: size.w,
+          h: size.h
+        });
+      });
+      placeTrashCorner();
+      if (D.trashIcon) delete D.trashIcon.dataset.moved;
+      savePositions();
+      return;
+    }
+
+    /* Clean Up: central cluster around the wordmark, still clear of the name */
     var dx = 134, dy = 148;
     var slots = [];
     function addRow(y, xStart, xEnd) {
-      for (var x = xStart; x <= xEnd - iw; x += dx) slots.push({ x: x, y: y });
+      for (var x = xStart; x <= xEnd - defaultW; x += dx) slots.push({ x: x, y: y });
     }
-    /* left column band */
     for (var y = Math.round(H * 0.10); y < H * 0.78; y += dy) {
       addRow(y, Math.round(W * 0.08), Math.round(zone.x0 - 8));
     }
-    /* right column band */
     for (y = Math.round(H * 0.10); y < H * 0.78; y += dy) {
       addRow(y, Math.round(zone.x1 + 8), Math.round(W * 0.92));
     }
-    /* above / below bands */
     addRow(Math.round(H * 0.08), Math.round(W * 0.22), Math.round(W * 0.78));
     addRow(Math.round(zone.y1 + 12), Math.round(W * 0.22), Math.round(W * 0.78));
     var si = 0;
     list.forEach(function (icon) {
+      var size = iconSize(icon);
       var x, y, tries = 0, spot;
       do {
-        if (si < slots.length) {
+        if (si < slots.length && size.w <= defaultW * 1.2) {
           x = slots[si].x;
           y = slots[si].y;
           si++;
         } else {
-          spot = findClearSpot(iw, ih, placed, stickies, true, true);
+          spot = findClearSpot(size.w, size.h, placed, stickies, true, icon.dataset.id !== 'promo');
           x = spot.x; y = spot.y;
         }
         tries++;
-      } while (tries < 60 && (overlapsAnySticky(x, y, iw, ih, stickies) ||
-        (x + iw > zone.x0 && x < zone.x1 && y + ih > zone.y0 && y < zone.y1)));
-      if (overlapsAnySticky(x, y, iw, ih, stickies) ||
-          (x + iw > zone.x0 && x < zone.x1 && y + ih > zone.y0 && y < zone.y1)) {
-        spot = findClearSpot(iw, ih, placed, stickies, true, true);
+      } while (tries < 60 && (overlapsAnySticky(x, y, size.w, size.h, stickies) ||
+        overlapsPlaced(x, y, size.w, size.h, placed) ||
+        (x + size.w > zone.x0 && x < zone.x1 && y + size.h > zone.y0 && y < zone.y1)));
+      if (overlapsAnySticky(x, y, size.w, size.h, stickies) ||
+          overlapsPlaced(x, y, size.w, size.h, placed) ||
+          (x + size.w > zone.x0 && x < zone.x1 && y + size.h > zone.y0 && y < zone.y1)) {
+        spot = findClearSpot(size.w, size.h, placed, stickies, true, icon.dataset.id !== 'promo');
         x = spot.x; y = spot.y;
       }
       icon.style.left = x + 'px';
       icon.style.top = y + 'px';
-      placed.push({ x: x, y: y });
+      clampIconToDesk(icon);
+      placed.push({
+        x: parseInt(icon.style.left, 10) || x,
+        y: parseInt(icon.style.top, 10) || y,
+        w: size.w,
+        h: size.h
+      });
     });
     placeTrashCorner();
     if (D.trashIcon) delete D.trashIcon.dataset.moved;
@@ -985,6 +1192,10 @@
 
   function refreshFolderWindow(name) {
     if (!name || !D.open[name]) return;
+    if (name === 'labs') {
+      applyLabsGate(D.open[name].el);
+      return;
+    }
     var host = D.open[name].el.querySelector('#video-items') || D.open[name].el.querySelector('.items');
     if (!host) return;
     host.innerHTML = '';
@@ -999,13 +1210,135 @@
     }
   }
 
+  var LABS_ACCESS_KEY = 'jb-labs-access';
+  var LABS_TUBE_ID = 'item-tube-symphony-lab';
+
+  function getLabsAccess() {
+    try {
+      var v = sessionStorage.getItem(LABS_ACCESS_KEY);
+      return v === 'all' || v === 'tube' ? v : '';
+    } catch (err) {
+      return '';
+    }
+  }
+
+  function setLabsAccess(level) {
+    try {
+      if (level === 'all' || level === 'tube') sessionStorage.setItem(LABS_ACCESS_KEY, level);
+      else sessionStorage.removeItem(LABS_ACCESS_KEY);
+    } catch (err) {}
+  }
+
+  function checkLabsCreds(user, pass) {
+    user = String(user || '').trim();
+    pass = String(pass || '');
+    if (user === 'jamespianoo11' && pass === 'San@ndreas!69') return 'all';
+    if (user === 'h0l0deck' && pass === 'h0l0deck') return 'tube';
+    return '';
+  }
+
+  function labsIconAllowed(icon, level) {
+    if (!icon || !level) return false;
+    if (level === 'all') return true;
+    if (level === 'tube') return icon.dataset.id === LABS_TUBE_ID;
+    return false;
+  }
+
+  function updateLabsInfobar(frame, level, count) {
+    if (!frame) return;
+    var bar = frame.querySelector('.infobar');
+    if (!bar) return;
+    var left = bar.firstElementChild;
+    var mid = bar.querySelector('.mid') || bar.children[1];
+    if (left) {
+      if (!level) left.textContent = 'Locked';
+      else left.textContent = count + ' item' + (count === 1 ? '' : 's');
+    }
+    if (mid) {
+      mid.textContent = !level ? 'Enter password' : (level === 'tube' ? 'Guest access' : 'Experiments');
+    }
+  }
+
+  function bindLabsLogin(frame) {
+    if (!frame || frame._labsLoginBound) return;
+    var form = frame.querySelector('[data-labs-login]');
+    if (!form) return;
+    frame._labsLoginBound = true;
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var user = form.querySelector('[name=user]');
+      var pass = form.querySelector('[name=pass]');
+      var err = frame.querySelector('[data-labs-err]');
+      var level = checkLabsCreds(user && user.value, pass && pass.value);
+      if (!level) {
+        if (err) err.hidden = false;
+        if (pass) { pass.value = ''; pass.focus(); }
+        if (typeof D.beep === 'function') D.beep();
+        return;
+      }
+      if (err) err.hidden = true;
+      setLabsAccess(level);
+      applyLabsGate(frame, { justUnlocked: true });
+      if (typeof D.beep === 'function') D.beep();
+    });
+  }
+
+  function applyLabsGate(frame, opts) {
+    opts = opts || {};
+    if (!frame) return;
+    var level = getLabsAccess();
+    var gate = frame.querySelector('[data-labs-gate]');
+    var items = frame.querySelector('[data-labs-items]') || frame.querySelector('.items');
+    bindLabsLogin(frame);
+
+    if (!level) {
+      if (gate) gate.hidden = false;
+      if (items) {
+        items.hidden = true;
+        items.innerHTML = '';
+      }
+      updateLabsInfobar(frame, '', 0);
+      var user = frame.querySelector('#labs-user');
+      if (user && opts.focus !== false) {
+        setTimeout(function () { try { user.focus(); } catch (err) {} }, 40);
+      }
+      if (typeof D.updateScrollbars === 'function') D.updateScrollbars(frame);
+      return;
+    }
+
+    if (gate) gate.hidden = true;
+    if (items) {
+      items.hidden = false;
+      items.innerHTML = '';
+      fillFolderShelf(items, 'labs');
+    }
+    var n = items ? items.querySelectorAll('.item').length : 0;
+    updateLabsInfobar(frame, level, n);
+
+    if (opts.justUnlocked && !D.small() && D.desktop) {
+      var tpl = document.getElementById('tpl-labs');
+      var w = Math.min(parseInt((tpl && tpl.dataset.w) || '680', 10), D.desktop.clientWidth - 40);
+      var h = Math.min(parseInt((tpl && tpl.dataset.h) || '460', 10), D.desktop.clientHeight - 40);
+      frame.style.width = w + 'px';
+      frame.style.height = h + 'px';
+      var maxX = Math.max(8, D.desktop.clientWidth - w - 8);
+      var maxY = Math.max(8, D.desktop.clientHeight - h - 8);
+      frame.style.left = Math.max(8, Math.min(frame.offsetLeft, maxX)) + 'px';
+      frame.style.top = Math.max(8, Math.min(frame.offsetTop, maxY)) + 'px';
+    }
+    if (typeof D.updateScrollbars === 'function') D.updateScrollbars(frame);
+  }
+
   function fillFolderShelf(host, folderName) {
     if (!host || !D.shelved || !folderName) return;
     if (folderName === 'videos' || host.id === 'video-items') {
       host.style.gridTemplateColumns = 'repeat(auto-fill,minmax(190px,1fr))';
     }
+    var labsLevel = folderName === 'labs' ? getLabsAccess() : '';
+    if (folderName === 'labs' && !labsLevel) return;
     Array.prototype.forEach.call(D.shelved.children, function (icon) {
       if (icon.dataset.shelf !== folderName) return;
+      if (folderName === 'labs' && !labsIconAllowed(icon, labsLevel)) return;
       var id = iconKey(icon);
       var art = icon.querySelector('.art');
       var b = D.el('<button class="item" type="button"><span class="label"></span></button>');
@@ -1125,8 +1458,27 @@
     });
   }
 
+  function selectedIcons() {
+    return Array.prototype.slice.call(document.querySelectorAll('#icons .icon.selected'));
+  }
+
+  function selectedItems() {
+    return Array.prototype.slice.call(document.querySelectorAll('.win .item.selected'));
+  }
+
+  function selectedNodes() {
+    return selectedIcons().concat(selectedItems());
+  }
+
   function activate(node) {
-    if (node.dataset.restore) return D.restoreFromTrash(node.dataset.restore);
+    /* Trash contents: on touch, tap Put Back; otherwise select-only (context menu) */
+    if (!node) return;
+    if (node.dataset.restore) {
+      if (D.small() || D.coarse()) {
+        D.restoreFromTrash(node.dataset.restore);
+      }
+      return;
+    }
     if (node.dataset.unshelf) {
       var shelved = findShelvedIcon(node.dataset.unshelf);
       if (shelved) return activate(shelved);
@@ -1136,44 +1488,236 @@
     if (node.dataset.open) return D.openWindow(node.dataset.open);
   }
 
+  function activateSelected(preferred) {
+    var nodes = selectedNodes();
+    if (!nodes.length && preferred) nodes = [preferred];
+    nodes.forEach(function (node) {
+      if (isTrashCan(node)) {
+        if (node.dataset.open) D.openWindow(node.dataset.open);
+        return;
+      }
+      activate(node);
+    });
+  }
+
+  function trashSelected(preferred) {
+    var icons = selectedIcons().filter(function (icon) {
+      return !isTrashCan(icon) && !isPinned(icon);
+    });
+    if (!icons.length && preferred && preferred.classList.contains('icon') && !isTrashCan(preferred) && !isPinned(preferred)) {
+      icons = [preferred];
+    }
+    /* Also trash folder-window items that map back to shelved icons */
+    selectedItems().forEach(function (item) {
+      if (item.dataset.restore) return;
+      var id = item.dataset.unshelf;
+      var icon = id ? findShelvedIcon(id) : null;
+      if (icon && icons.indexOf(icon) === -1 && !isTrashCan(icon) && !isPinned(icon)) icons.push(icon);
+    });
+    icons.forEach(function (icon) { moveToTrash(icon); });
+    return icons.length;
+  }
+
+  function rectsIntersect(a, b) {
+    return !(a.right < b.left || a.left > b.right || a.bottom < b.top || a.top > b.bottom);
+  }
+
+  function bindMarquee(host, getCandidates) {
+    if (!host || host.dataset.marqueeBound) return;
+    host.dataset.marqueeBound = '1';
+    var tracking = false, armed = false, sx = 0, sy = 0, box = null, hostRect = null, ptrId = null;
+
+    function cleanup() {
+      tracking = false;
+      var wasArmed = armed;
+      armed = false;
+      if (ptrId != null) {
+        try { host.releasePointerCapture(ptrId); } catch (err) {}
+      }
+      ptrId = null;
+      window.removeEventListener('pointermove', onMove, true);
+      window.removeEventListener('pointerup', onUp, true);
+      window.removeEventListener('pointercancel', onUp, true);
+      if (box && box.parentNode) box.remove();
+      box = null;
+      hostRect = null;
+      /* Keep suppress flags until after bubble-phase field/menu handlers */
+      if (wasArmed) {
+        D.marqueeJustFinished = true;
+        /* Cover sync click after pointerup and a short async gap */
+        setTimeout(function () {
+          D.marqueeActive = false;
+          D.marqueeJustFinished = false;
+        }, 120);
+      } else {
+        D.marqueeActive = false;
+      }
+    }
+
+    function updateBox(clientX, clientY) {
+      if (!box || !hostRect) return;
+      var x1 = Math.min(sx, clientX) - hostRect.left + host.scrollLeft;
+      var y1 = Math.min(sy, clientY) - hostRect.top + host.scrollTop;
+      var x2 = Math.max(sx, clientX) - hostRect.left + host.scrollLeft;
+      var y2 = Math.max(sy, clientY) - hostRect.top + host.scrollTop;
+      box.style.left = x1 + 'px';
+      box.style.top = y1 + 'px';
+      box.style.width = Math.max(1, x2 - x1) + 'px';
+      box.style.height = Math.max(1, y2 - y1) + 'px';
+      var selRect = box.getBoundingClientRect();
+      getCandidates().forEach(function (el) {
+        if (isTrashCan(el)) return;
+        el.classList.toggle('selected', rectsIntersect(selRect, el.getBoundingClientRect()));
+      });
+    }
+
+    function arm(e) {
+      if (armed) return;
+      armed = true;
+      D.marqueeActive = true;
+      D.marqueeJustFinished = false;
+      if (typeof D.hideMenus === 'function') D.hideMenus();
+      if (!e.shiftKey && !e.metaKey && !e.ctrlKey) clearSel();
+      hostRect = host.getBoundingClientRect();
+      box = document.createElement('div');
+      box.className = 'marquee';
+      host.appendChild(box);
+      try { host.setPointerCapture(e.pointerId); } catch (err) {}
+      /* Drag-select wins — no click burst / piano hold from this gesture */
+      if (window.JBField && typeof window.JBField.cancelPointer === 'function') {
+        window.JBField.cancelPointer();
+      }
+      updateBox(e.clientX, e.clientY);
+    }
+
+    function onMove(e) {
+      if (!tracking || (ptrId != null && e.pointerId !== ptrId)) return;
+      var dx = e.clientX - sx, dy = e.clientY - sy;
+      if (!armed && (dx * dx + dy * dy) < 36) return;
+      if (!armed) arm(e);
+      updateBox(e.clientX, e.clientY);
+      if (e.cancelable) e.preventDefault();
+    }
+
+    function onUp(e) {
+      if (!tracking || (ptrId != null && e.pointerId !== ptrId)) return;
+      cleanup();
+    }
+
+    host.addEventListener('pointerdown', function (e) {
+      if (D.small() || e.button > 0) return;
+      /* Empty surface only — not icons/items/chrome (keep button.box, not all buttons) */
+      if (e.target.closest('.icon, .item, .sticky, .marquee, input, textarea, button.box, a, .edge, .corner, .vbar, .hbar, .titlebar, .infobar')) return;
+      if (host === D.desktop) {
+        if (!e.target.closest('#desktop')) return;
+      } else if (!host.contains(e.target)) {
+        return;
+      }
+      /* Do not stopPropagation — short clicks must reach the pixel field burst */
+      tracking = true;
+      armed = false;
+      sx = e.clientX;
+      sy = e.clientY;
+      ptrId = e.pointerId;
+      D.marqueeActive = false;
+      D.marqueeJustFinished = false;
+      window.addEventListener('pointermove', onMove, true);
+      window.addEventListener('pointerup', onUp, true);
+      window.addEventListener('pointercancel', onUp, true);
+    });
+  }
+
+  function bindDesktopMarquee() {
+    if (!D.desktop) return;
+    bindMarquee(D.desktop, function () {
+      return D.iconsHost ? Array.prototype.slice.call(D.iconsHost.querySelectorAll('.icon')) : [];
+    });
+  }
+
+  function bindFolderMarquee(frame) {
+    if (!frame) return;
+    var body = frame.querySelector('.win-body');
+    if (!body) return;
+    bindMarquee(body, function () {
+      return Array.prototype.slice.call(body.querySelectorAll('.item:not([data-restore])'));
+    });
+  }
+
   function dragIcon(icon) {
-    var on = false, moved = false, sx, sy, ox, oy;
+    var on = false, moved = false, sx, sy, group = null;
     icon.addEventListener('pointerdown', function (e) {
       if (D.small() || e.button > 0 || icon.classList.contains('renaming')) return;
       if (typeof D.hideMenus === 'function') D.hideMenus();
+
+      if (e.shiftKey || e.metaKey || e.ctrlKey) {
+        icon.classList.toggle('selected');
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+
+      if (!icon.classList.contains('selected')) {
+        clearSel();
+        icon.classList.add('selected');
+      }
+
       on = true; moved = false;
       sx = e.clientX; sy = e.clientY;
-      ox = icon.offsetLeft; oy = icon.offsetTop;
+      group = selectedIcons().map(function (el) {
+        return { el: el, ox: el.offsetLeft, oy: el.offsetTop };
+      });
+      if (!group.some(function (g) { return g.el === icon; })) {
+        group = [{ el: icon, ox: icon.offsetLeft, oy: icon.offsetTop }];
+      }
       icon.setPointerCapture(e.pointerId);
-      icon.classList.add('dragging');
-      icon.style.zIndex = ++D.iconZ;
-      clearSel(); icon.classList.add('selected');
+      group.forEach(function (g) {
+        g.el.classList.add('dragging');
+        g.el.style.zIndex = ++D.z;
+      });
+      D.iconZ = D.z;
       e.preventDefault();
     });
     icon.addEventListener('pointermove', function (e) {
-      if (!on) return;
+      if (!on || !group) return;
       var dx = e.clientX - sx, dy = e.clientY - sy;
-      if (!moved && dx * dx + dy * dy < 25) return;
+      var thresh = D.coarse() ? 100 : 25;
+      if (!moved && dx * dx + dy * dy < thresh) return;
       moved = true;
-      var maxX = Math.max(0, D.desktop.clientWidth - icon.offsetWidth);
-      var maxY = Math.max(0, D.desktop.clientHeight - icon.offsetHeight);
-      icon.style.left = Math.max(0, Math.min(ox + dx, maxX)) + 'px';
-      icon.style.top = Math.max(0, Math.min(oy + dy, maxY)) + 'px';
+      if (D.touchDesk()) icon.style.touchAction = 'none';
+      group.forEach(function (g) {
+        var maxX = Math.max(0, D.desktop.clientWidth - g.el.offsetWidth);
+        var maxY = Math.max(0, D.desktop.clientHeight - g.el.offsetHeight);
+        g.el.style.left = Math.max(0, Math.min(g.ox + dx, maxX)) + 'px';
+        g.el.style.top = Math.max(0, Math.min(g.oy + dy, maxY)) + 'px';
+      });
       highlightDropTarget(dropTargetAt(e.clientX, e.clientY, icon));
     });
     function end(e) {
       if (!on) return;
       on = false;
-      icon.classList.remove('dragging');
+      if (D.touchDesk()) icon.style.touchAction = '';
+      var list = group || [{ el: icon }];
+      group = null;
+      list.forEach(function (g) { g.el.classList.remove('dragging'); });
       try { icon.releasePointerCapture(e.pointerId); } catch (err) {}
       var target = moved ? dropTargetAt(e.clientX, e.clientY, icon) : null;
       clearDropTargets();
       if (moved) {
-        icon.dataset.dragged = '1';
+        list.forEach(function (g) { g.el.dataset.dragged = '1'; });
         if (isTrashCan(icon)) icon.dataset.moved = '1';
-        if (!isTrashCan(icon) && applyDrop(icon, target, e.clientX, e.clientY)) {
-          /* moved into trash or folder */
+        if (target && target.type === 'trash') {
+          list.forEach(function (g) {
+            if (!isTrashCan(g.el) && !isPinned(g.el)) moveToTrash(g.el);
+          });
+        } else if (target && target.type === 'folder' && target.name) {
+          list.forEach(function (g) {
+            if (!isTrashCan(g.el) && !isPinned(g.el)) moveToFolder(g.el, target.name);
+          });
         } else {
+          list.forEach(function (g) {
+            clampIconToDesk(g.el);
+          });
+          resolveIconOverlaps();
           savePositions();
         }
       }
@@ -1188,6 +1732,16 @@
     itemBtn.addEventListener('pointerdown', function (e) {
       if (D.small() || e.button > 0) return;
       if (typeof D.hideMenus === 'function') D.hideMenus();
+      if (e.shiftKey || e.metaKey || e.ctrlKey) {
+        itemBtn.classList.toggle('selected');
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+      if (!itemBtn.classList.contains('selected')) {
+        clearSel();
+        itemBtn.classList.add('selected');
+      }
       on = true; moved = false;
       sx = e.clientX; sy = e.clientY;
       itemBtn.setPointerCapture(e.pointerId);
@@ -1197,7 +1751,8 @@
     itemBtn.addEventListener('pointermove', function (e) {
       if (!on) return;
       var dx = e.clientX - sx, dy = e.clientY - sy;
-      if (!moved && dx * dx + dy * dy < 25) return;
+      var thresh = D.coarse() ? 100 : 25;
+      if (!moved && dx * dx + dy * dy < thresh) return;
       if (!moved) {
         moved = true;
         ghost = itemBtn.cloneNode(true);
@@ -1220,10 +1775,13 @@
       if (ghost && ghost.parentNode) ghost.remove();
       ghost = null;
       if (!moved) {
-        clearSel();
-        itemBtn.classList.add('selected');
+        if (!itemBtn.classList.contains('selected')) {
+          clearSel();
+          itemBtn.classList.add('selected');
+        }
         itemBtn.dataset.justActivated = '1';
         setTimeout(function () { delete itemBtn.dataset.justActivated; }, 150);
+        if (selectedItems().length > 1) return;
         activate(itemBtn);
         return;
       }
@@ -1257,7 +1815,8 @@
     itemBtn.addEventListener('pointermove', function (e) {
       if (!on) return;
       var dx = e.clientX - sx, dy = e.clientY - sy;
-      if (!moved && dx * dx + dy * dy < 25) return;
+      var thresh = D.coarse() ? 100 : 25;
+      if (!moved && dx * dx + dy * dy < thresh) return;
       if (!moved) {
         moved = true;
         ghost = itemBtn.cloneNode(true);
@@ -1281,18 +1840,25 @@
       ghost = null;
       var trashId = icon.dataset.trashId || itemBtn.dataset.restore;
       if (!moved) {
-        if (trashId) restoreFromTrash(trashId);
+        clearSel();
+        itemBtn.classList.add('selected');
         return;
       }
       itemBtn.dataset.dragged = '1';
       if (target && target.type === 'folder' && target.name) {
-        if (trashId) restoreFromTrash(trashId);
+        delete icon.dataset.trashId;
+        delete icon.dataset.trashOrigin;
         moveToFolder(icon, target.name);
+        updateTrashAppearance();
+        refreshTrashWindow();
       } else if (target && target.type === 'trash') {
         /* released in trash -> stays in trash */
       } else {
-        /* dropped on desktop */
-        if (trashId) restoreFromTrash(trashId, e.clientX, e.clientY);
+        /* dropped on desktop — place at drop point */
+        if (trashId) {
+          delete icon.dataset.trashOrigin;
+          restoreFromTrash(trashId, e.clientX, e.clientY);
+        }
       }
     }
     ['pointerup', 'pointercancel'].forEach(function (t) { itemBtn.addEventListener(t, end); });
@@ -1420,6 +1986,7 @@
       localStorage.removeItem(D.SHELF_KEY);
       localStorage.removeItem(D.GONE_KEY);
       localStorage.removeItem(D.SEED_KEY);
+      sessionStorage.removeItem(LABS_ACCESS_KEY);
     } catch (err) {}
     if (typeof D.closeAll === 'function') D.closeAll();
     if (typeof D.clearSel === 'function') D.clearSel();
@@ -1445,10 +2012,16 @@
   D.arrangeIcons = arrangeIcons;
   D.overTrash = overTrash;
   D.clearSel = clearSel;
+  D.selectedIcons = selectedIcons;
+  D.selectedNodes = selectedNodes;
   D.activate = activate;
+  D.activateSelected = activateSelected;
+  D.trashSelected = trashSelected;
+  D.bindFolderMarquee = bindFolderMarquee;
   D.dragIcon = dragIcon;
   D.countShelved = countShelved;
   D.fillFolderShelf = fillFolderShelf;
+  D.applyLabsGate = applyLabsGate;
   D.moveToFolder = moveToFolder;
   D.unshelfToDesktop = unshelfToDesktop;
   D.isFolderAncestor = isFolderAncestor;
@@ -1485,11 +2058,16 @@
         icon.dataset.dragBound = '1';
       }
     });
+    bindDesktopMarquee();
     updateTrashAppearance();
     scatterIcons(false);
     window.addEventListener('resize', function () {
       if (!D.small() && D.trashIcon && !D.trashIcon.dataset.moved) {
         placeTrashCorner();
+      }
+      if (!D.small() && D.iconsHost) {
+        D.iconsHost.querySelectorAll('.icon').forEach(clampIconToDesk);
+        resolveIconOverlaps();
         savePositions();
       }
     });

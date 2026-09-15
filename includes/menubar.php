@@ -27,32 +27,7 @@
   <div class="menu" id="m-file" hidden>
     <button data-open="about">About James Beckwith</button>
     <button data-open="contact">Contact&hellip;</button>
-    <button data-open="field-settings">Pixel Field&hellip;</button>
-    <hr>
-    <div class="submenu-wrap">
-      <button data-submenu="m-labs" aria-haspopup="true" aria-expanded="false">Labs<span>&#9656;</span></button>
-      <div class="menu submenu" id="m-labs" hidden>
-        <button data-open="labs">Open Labs folder</button>
-        <a href="https://labs.jamesbeckwith.com/" target="_blank" rel="noopener">JB Labs</a>
-        <hr>
-        <a href="https://labs.jamesbeckwith.com/metis/" target="_blank" rel="noopener">Metis</a>
-        <a href="https://labs.jamesbeckwith.com/tubemap/demo.php" target="_blank" rel="noopener">Tube Symphony</a>
-        <a href="https://labs.jamesbeckwith.com/gig-map/" target="_blank" rel="noopener">Gig Map</a>
-        <a href="https://labs.jamesbeckwith.com/dead-venues/" target="_blank" rel="noopener">Dead Venues</a>
-        <a href="https://labs.jamesbeckwith.com/fantasy-football/" target="_blank" rel="noopener">FPL Maximizer</a>
-        <a href="https://labs.jamesbeckwith.com/solar-system/" target="_blank" rel="noopener">Solar System</a>
-        <a href="https://labs.jamesbeckwith.com/ganymede-synth-engine/" target="_blank" rel="noopener">Ganymede</a>
-        <a href="https://labs.jamesbeckwith.com/flight-radar/" target="_blank" rel="noopener">Flight Radar</a>
-        <a href="https://labs.jamesbeckwith.com/ltd-company-tax/" target="_blank" rel="noopener">Director Tax</a>
-        <hr>
-        <a href="https://labs.jamesbeckwith.com/" target="_blank" rel="noopener">All experiments</a>
-      </div>
-    </div>
-    <a href="https://www.jupitervintagepianos.com" target="_blank" rel="noopener">Jupiter Vintage Pianos</a>
-    <a href="https://www.greenwichpianotuner.co.uk" target="_blank" rel="noopener">Greenwich Piano Services</a>
-    <hr>
-    <a href="https://www.whenissttotteringhamsday.com" target="_blank" rel="noopener">St Totteringham&#39;s Day</a>
-    <a href="https://www.whenisinvinciblesday.com" target="_blank" rel="noopener">Invincibles Day</a>
+    <button type="button" data-eq-toggle>EQ Visualiser</button>
     <hr>
     <button type="button" data-cleanup>Clean Up</button>
     <button type="button" data-arrange-name>Arrange by Name</button>
@@ -65,11 +40,11 @@
     <a href="https://jamesbeckwith.bandcamp.com/album/se10" target="_blank" rel="noopener">SE10</a>
     <a href="https://jamesbeckwith.bandcamp.com/album/long-distance" target="_blank" rel="noopener">Long Distance</a>
     <hr>
-    <a href="https://jamesbeckwith.bandcamp.com" target="_blank" rel="noopener">Bandcamp</a>
-    <a href="https://open.spotify.com/artist/2IKevWKWuhVBPlg7QtBDOd" target="_blank" rel="noopener">Spotify</a>
     <a href="https://music.apple.com/gb/artist/james-beckwith/1499185416" target="_blank" rel="noopener">Apple Music</a>
+    <a href="https://jamesbeckwith.bandcamp.com" target="_blank" rel="noopener">Bandcamp</a>
+    <a href="https://open.qobuz.com/artist/2999610" target="_blank" rel="noopener">QoBuz</a>
+    <a href="https://open.spotify.com/artist/2IKevWKWuhVBPlg7QtBDOd" target="_blank" rel="noopener">Spotify</a>
     <a href="https://tidal.com/artist/12732103" target="_blank" rel="noopener">Tidal</a>
-    <a href="https://open.qobuz.com/artist/2999610" target="_blank" rel="noopener">Qobuz</a>
   </div>
 
   <div class="menu" id="m-go" hidden>
@@ -81,7 +56,6 @@
     <hr>
     <button data-open="contact">contact.me</button>
     <button data-open="promo">promo.png</button>
-    <button data-open="se10-png">se10.png</button>
   </div>
 
   <div class="menu" id="m-socials" hidden>

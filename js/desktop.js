@@ -5,12 +5,12 @@
 
   D.YT = ['qpRMLR7VkO8', 'QeW5kR0EGok', 'OR9yKC8f1Zs', '6REtACtGSJE', 'hacDUIS12Ho', 'ity7KgKlNbE'];
   D.YT_TITLES = {
-    'qpRMLR7VkO8': 'A Time-Lapse Map of Every Death From the Coronavirus Pandemic (Up to July 2020)',
-    'QeW5kR0EGok': 'Land Of The "Freer": A Music Timelapse of US Election 2020 (Lift Every Voice and Sing)',
-    'OR9yKC8f1Zs': 'How To Play: Harder Better Faster Stronger on Vocoder (Daft Punk)',
-    '6REtACtGSJE': 'Celeste - James Beckwith',
-    'hacDUIS12Ho': 'Everybody Loves the Sunshine on a Rhodes MK8',
-    'ity7KgKlNbE': 'Her Name Is Covid (feat. James Copus) - James Beckwith'
+    'qpRMLR7VkO8': 'Timelapse of Every Death from Covid',
+    'QeW5kR0EGok': 'US Election 2020 Timelapse',
+    'OR9yKC8f1Zs': 'Harder Better Faster Stronger on Vocoder',
+    '6REtACtGSJE': 'Celeste',
+    'hacDUIS12Ho': 'Everybody Loves the Sunshine',
+    'ity7KgKlNbE': 'Her Name Is Covid'
   };
   D.desktop = document.getElementById('desktop');
   D.open = Object.create(null);
@@ -28,9 +28,11 @@
   D.shelved = document.getElementById('shelved');
   D.trashIcon = document.querySelector('.icon.trash');
   D.trashSeq = 0;
+  D.marqueeActive = false;
+  D.marqueeJustFinished = false;
   D.POS_KEY = 'jb-desk-pos-v2';
   D.GONE_KEY = 'jb-desk-gone-v2';
-  D.SEED_KEY = 'jb-trash-seeds-cleared';
+  D.SEED_KEY = 'jb-trash-seeds-cleared-v2';
   D.SHELF_KEY = 'jb-desk-shelf-v6';
   D.FOLDER_IDS = { projects: 1, labs: 1, maps: 1, music: 1, stream: 1, videos: 1, piano: 1, football: 1 };
   /* Only Trash is pinned / cannot be shelved into folders */
@@ -50,8 +52,51 @@
     console.warn('Could not parse jb-taxonomy', err);
   }
 
+  D.MQ_SMALL = '(max-width:820px)';
+  D.MQ_COARSE = '(pointer: coarse)';
+
   D.small = function () {
-    return window.matchMedia('(max-width:820px)').matches;
+    return window.matchMedia(D.MQ_SMALL).matches;
+  };
+
+  D.coarse = function () {
+    return window.matchMedia(D.MQ_COARSE).matches;
+  };
+
+  /* Wide tablet / touch laptop: keep the desk metaphor, touch-first chrome */
+  D.touchDesk = function () {
+    return !D.small() && D.coarse();
+  };
+
+  D.syncModeClass = function () {
+    var root = document.documentElement;
+    root.classList.toggle('mode-small', D.small());
+    root.classList.toggle('mode-coarse', D.coarse());
+    root.classList.toggle('mode-touch-desk', D.touchDesk());
+  };
+
+  D.onViewportModeChange = function (fn) {
+    if (typeof fn !== 'function') return;
+    var mqSmall = window.matchMedia(D.MQ_SMALL);
+    var mqCoarse = window.matchMedia(D.MQ_COARSE);
+    var last = D.small() + ':' + D.coarse();
+    function check() {
+      D.syncModeClass();
+      var next = D.small() + ':' + D.coarse();
+      if (next === last) return;
+      last = next;
+      fn();
+    }
+    if (mqSmall.addEventListener) {
+      mqSmall.addEventListener('change', check);
+      mqCoarse.addEventListener('change', check);
+    } else {
+      mqSmall.addListener(check);
+      mqCoarse.addListener(check);
+    }
+    window.addEventListener('orientationchange', function () {
+      setTimeout(check, 50);
+    });
   };
 
   D.el = function (html) {
@@ -59,4 +104,6 @@
     t.innerHTML = html.trim();
     return t.content.firstElementChild;
   };
+
+  D.syncModeClass();
 })(window);

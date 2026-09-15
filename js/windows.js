@@ -195,7 +195,11 @@
     if (srcImg) body.querySelectorAll('[data-promo]').forEach(function (i) { i.src = srcImg.src; });
     if (name === 'trash' && typeof D.fillTrash === 'function') D.fillTrash(body.querySelector('#trash-items'));
     if (D.FOLDER_IDS && D.FOLDER_IDS[name] && typeof D.fillFolderShelf === 'function') {
-      D.fillFolderShelf(body.querySelector('#video-items') || body.querySelector('.items'), name);
+      if (name === 'labs' && typeof D.applyLabsGate === 'function') {
+        D.applyLabsGate(frame);
+      } else {
+        D.fillFolderShelf(body.querySelector('#video-items') || body.querySelector('.items'), name);
+      }
     }
     if (name === 'player') D.bindPlayer(frame);
     if (name.indexOf('video-') === 0) {
@@ -204,23 +208,33 @@
     }
     if (name === 'egg' && typeof D.bindEgg === 'function') D.bindEgg(frame);
     if (name === 'contact') bindContactForm(body);
-    if (name === 'field-settings' && window.JBField && typeof window.JBField.bindPanel === 'function') {
-      window.JBField.bindPanel(body.querySelector('[data-field-settings]') || body);
+    if (D.FOLDER_IDS && D.FOLDER_IDS[name] && typeof D.bindFolderMarquee === 'function') {
+      D.bindFolderMarquee(frame);
     }
 
     if (!D.small()) {
       var w = Math.min(parseInt(tpl.dataset.w || '560', 10), D.desktop.clientWidth - 40);
       var h = Math.min(parseInt(tpl.dataset.h || '380', 10), D.desktop.clientHeight - 40);
+      if (D.touchDesk()) {
+        w = Math.max(w, Math.min(440, D.desktop.clientWidth - 32));
+        h = Math.max(h, Math.min(340, D.desktop.clientHeight - 32));
+      }
       frame.style.width = w + 'px';
       frame.style.height = h + 'px';
       frame.style.left = '-9999px';
       frame.style.top = '0';
       D.desktop.appendChild(frame);
       /* Fit folders and document windows to their content on open */
-      if (!tpl.dataset.nopad && (body.querySelector('.items') || body.querySelector('.doc'))) {
+      var labsGate = name === 'labs' ? frame.querySelector('[data-labs-gate]') : null;
+      var labsLocked = !!(labsGate && !labsGate.hidden);
+      if (labsLocked || (!tpl.dataset.nopad && (body.querySelector('.items:not([hidden])') || body.querySelector('.doc')))) {
         var fit = fitSizeForFrame(frame, name);
         w = fit.w;
         h = fit.h;
+        if (D.touchDesk()) {
+          w = Math.max(w, Math.min(440, D.desktop.clientWidth - 32));
+          h = Math.max(h, Math.min(340, D.desktop.clientHeight - 32));
+        }
         frame.style.width = w + 'px';
         frame.style.height = h + 'px';
       }
@@ -369,7 +383,27 @@
     var w = minW;
     var h = minH;
 
-    var items = body && body.querySelector('.items');
+    /* Labs password gate — hug the login form, ignore the hidden items grid */
+    var labsGate = body && body.querySelector('[data-labs-gate]');
+    var labsLogin = body && body.querySelector('.labs-login');
+    if (labsGate && !labsGate.hidden && labsLogin) {
+      var probeLoginW = Math.min(360, maxW);
+      frame.style.width = probeLoginW + 'px';
+      frame.style.height = maxH + 'px';
+      var loginCs = body ? window.getComputedStyle(body) : null;
+      var loginPadX = loginCs ? (parseFloat(loginCs.paddingLeft) || 0) + (parseFloat(loginCs.paddingRight) || 0) : 28;
+      var loginPadY = loginCs ? (parseFloat(loginCs.paddingTop) || 0) + (parseFloat(loginCs.paddingBottom) || 0) : 40;
+      var lw = Math.max(labsLogin.scrollWidth, labsLogin.offsetWidth);
+      var lh = Math.max(labsLogin.scrollHeight, labsLogin.offsetHeight);
+      w = Math.ceil(lw + loginPadX + chromeW + 8);
+      h = Math.ceil(lh + loginPadY + chromeH + 8);
+      return {
+        w: Math.max(320, Math.min(Math.round(w), maxW)),
+        h: Math.max(300, Math.min(Math.round(h), maxH))
+      };
+    }
+
+    var items = body && body.querySelector('.items:not([hidden])');
     if (items) {
       var n = items.querySelectorAll('.item').length;
       if (!n) {
@@ -406,13 +440,13 @@
         frame.style.height = maxH + 'px';
         var content = body && body.firstElementChild;
         var cs = body ? window.getComputedStyle(body) : null;
-        var padX = cs ? (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0) : 28;
-        var padY = cs ? (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0) : 40;
-        var cw = content ? Math.max(content.scrollWidth, content.offsetWidth) : probeW - padX;
+        var docPadX = cs ? (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0) : 28;
+        var docPadY = cs ? (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0) : 40;
+        var cw = content ? Math.max(content.scrollWidth, content.offsetWidth) : probeW - docPadX;
         var ch = content ? Math.max(content.scrollHeight, content.offsetHeight) : 200;
-        h = Math.ceil(ch + padY + chromeH + 4);
+        h = Math.ceil(ch + docPadY + chromeH + 4);
         if (name === 'contact' || (content && content.classList && content.classList.contains('contact-doc'))) {
-          w = Math.ceil(cw + padX + chromeW);
+          w = Math.ceil(cw + docPadX + chromeW);
         } else {
           w = Math.max(probeW, tw || minW);
         }
@@ -634,21 +668,29 @@
   }
 
   function drag(frame, name) {
-    var bar = frame.querySelector('.titlebar'), on = false, sx, sy, ox, oy;
+    var bar = frame.querySelector('.titlebar'), on = false, moved = false, sx, sy, ox, oy;
     bar.addEventListener('pointerdown', function (e) {
       if (e.target.closest('.box') || D.small()) return;
-      on = true; sx = e.clientX; sy = e.clientY; ox = frame.offsetLeft; oy = frame.offsetTop;
+      on = true; moved = false;
+      sx = e.clientX; sy = e.clientY; ox = frame.offsetLeft; oy = frame.offsetTop;
       bar.setPointerCapture(e.pointerId); focus(name);
-      frame.classList.add('dragging'); e.preventDefault();
+      e.preventDefault();
     });
     bar.addEventListener('pointermove', function (e) {
       if (!on) return;
-      frame.style.left = Math.max(-frame.offsetWidth + 90, Math.min(ox + e.clientX - sx, D.desktop.clientWidth - 70)) + 'px';
-      frame.style.top = Math.max(0, Math.min(oy + e.clientY - sy, D.desktop.clientHeight - 26)) + 'px';
+      var dx = e.clientX - sx, dy = e.clientY - sy;
+      var thresh = D.coarse() ? 100 : 4;
+      if (!moved && dx * dx + dy * dy < thresh * thresh) return;
+      if (!moved) {
+        moved = true;
+        frame.classList.add('dragging');
+      }
+      frame.style.left = Math.max(-frame.offsetWidth + 90, Math.min(ox + dx, D.desktop.clientWidth - 70)) + 'px';
+      frame.style.top = Math.max(0, Math.min(oy + dy, D.desktop.clientHeight - 26)) + 'px';
     });
     ['pointerup', 'pointercancel'].forEach(function (t) {
       bar.addEventListener(t, function (e) {
-        on = false; frame.classList.remove('dragging');
+        on = false; moved = false; frame.classList.remove('dragging');
         try { bar.releasePointerCapture(e.pointerId); } catch (err) {}
       });
     });
@@ -972,9 +1014,9 @@
       tpl = document.createElement('template');
       tpl.id = 'tpl-' + name;
       tpl.dataset.title = 'Media Player — ' + title;
-      tpl.dataset.info = 'Media Player|QuickTime Movie|Stereo Audio';
-      tpl.dataset.w = '640';
-      tpl.dataset.h = '476';
+      tpl.dataset.info = 'Media Player|Stereo Audio';
+      tpl.dataset.w = '800';
+      tpl.dataset.h = '595';
       tpl.dataset.nopad = '1';
       tpl.innerHTML =
         '<div class="media-player-app">' +
@@ -1067,6 +1109,55 @@
     }
   });
 
+  function reflowForViewport() {
+    D.syncModeClass();
+    var names = Object.keys(D.open);
+    if (!names.length) return;
+    if (D.small()) {
+      names.forEach(function (name) {
+        var w = D.open[name];
+        if (!w || !w.el) return;
+        w.prev = null;
+        w.el.style.left = '';
+        w.el.style.top = '';
+        w.el.style.width = '';
+        w.el.style.height = '';
+        updateScrollbars(w.el);
+      });
+      return;
+    }
+    /* Left phone sheet mode — give floating windows a real desk placement */
+    names.forEach(function (name) {
+      var w = D.open[name];
+      if (!w || !w.el) return;
+      var frame = w.el;
+      var tpl = document.getElementById('tpl-' + name);
+      var width = parseInt(frame.style.width, 10);
+      var height = parseInt(frame.style.height, 10);
+      if (!width || !height) {
+        var fit = fitSizeForFrame(frame, name);
+        width = fit.w;
+        height = fit.h;
+        if (tpl) {
+          width = Math.min(parseInt(tpl.dataset.w || String(width), 10), D.desktop.clientWidth - 40);
+          height = Math.min(parseInt(tpl.dataset.h || String(height), 10), D.desktop.clientHeight - 40);
+        }
+        frame.style.width = width + 'px';
+        frame.style.height = height + 'px';
+      }
+      if (D.touchDesk()) {
+        width = Math.max(width, Math.min(420, D.desktop.clientWidth - 32));
+        height = Math.max(height, Math.min(320, D.desktop.clientHeight - 32));
+        frame.style.width = width + 'px';
+        frame.style.height = height + 'px';
+      }
+      var spot = findWindowSpot(width, height);
+      frame.style.left = spot.left + 'px';
+      frame.style.top = spot.top + 'px';
+      updateScrollbars(frame);
+    });
+  }
+
   D.openWindow = openWindow;
   D.closeWindow = closeWindow;
   D.closeAll = closeAll;
@@ -1079,6 +1170,17 @@
   D.initRoute = initRoute;
   D.updateRoute = updateRoute;
   D.getSlugFromPath = getSlugFromPath;
+  D.reflowForViewport = reflowForViewport;
+
+  D.onViewportModeChange(function () {
+    reflowForViewport();
+    if (!D.small() && typeof D.scatterIcons === 'function') {
+      /* Re-assert trash corner / clamps when leaving phone grid */
+      if (D.trashIcon && !D.trashIcon.dataset.moved && typeof D.placeTrashCorner === 'function') {
+        D.placeTrashCorner();
+      }
+    }
+  });
 
   window.JB = { open: openWindow, close: closeWindow, closeAll: closeAll };
 })(window.JBDesk);

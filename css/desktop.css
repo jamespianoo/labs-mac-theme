@@ -18,10 +18,23 @@ html[data-theme="light"]{
   --field-grid:#e6ddcc;
   --field-dim:#e2d8c5;
   --field-mid:#c8baa3;
+  --field-dust-a:#ebe3d4;
+  --field-dust-b:#ddd3c0;
+  --field-dust-c:#cfc3ad;
+  --field-dust-d:#bdb09a;
+  --field-dust-e:#a89880;
   --field-lit:#ec8d91;
   --field-hover:#E8545C;
   --field-crest:#c23b44;
   --field-text:#2b2622;
+  --field-jup-a:#c4784a;
+  --field-jup-b:#a85a32;
+  --field-jup-c:#8a4428;
+  --field-jup-d:#d4a078;
+  --field-sat-a:#d2c4a0;
+  --field-sat-b:#b8a87e;
+  --field-sat-c:#9a8c68;
+  --field-ring:#c8b896;
   --sticky:#f6e59a;
   --sticky-green:#d2eeb4;
   --sticky-pink:#f7c9db;
@@ -63,10 +76,23 @@ html[data-theme="dark"]{
   --field-grid:#1b1f26;
   --field-dim:#2a3038;
   --field-mid:#5a6470;
+  --field-dust-a:#1a1e26;
+  --field-dust-b:#242a34;
+  --field-dust-c:#323944;
+  --field-dust-d:#434c58;
+  --field-dust-e:#586270;
   --field-lit:#c45a5e;
   --field-hover:#E8545C;
   --field-crest:#f0a8ab;
   --field-text:#f2f2f2;
+  --field-jup-a:#c4784a;
+  --field-jup-b:#a85a32;
+  --field-jup-c:#6e3420;
+  --field-jup-d:#e0a878;
+  --field-sat-a:#d8ccb0;
+  --field-sat-b:#b8a888;
+  --field-sat-c:#8a7c60;
+  --field-ring:#c4b898;
   --sticky:#f6e59a;
   --sticky-green:#d2eeb4;
   --sticky-pink:#f7c9db;
@@ -77,14 +103,14 @@ html[data-theme="dark"]{
   --icon-hover:rgba(160,170,200,0.25);
   --rm-bg:#2c2c30;
 
-  /* Dark chrome — slate-blue scale, distinct from pure black */
-  --ink:#e8e8e8;
-  --white:#20232a;
-  --face:#1c1e24;
-  --mid:#3d434c;
+  /* Dark chrome — darker window fill, mid-grey borders (no near-white trim) */
+  --ink:#e4e6ea;
+  --white:#181a22;
+  --face:#1c1e26;
+  --mid:#3a404a;
   --dim:#9aa0aa;
-  --hairline:#3a3f48;
-  --rim:#14161a;
+  --hairline:#7a8490;
+  --rim:#7a8490;
   --on-accent:#ffffff;
   --shadow:rgba(0,0,0,.55);
   --selected-face:color-mix(in srgb, var(--accent) 22%, var(--face));
@@ -150,6 +176,10 @@ body:not(.booting) .pixel-field{opacity:1;transition:opacity .55s ease}
   box-shadow:inset 0 1px 0 var(--white), inset 0 -1px 0 var(--mid);
   user-select:none;font-family:var(--sys);font-weight:500;-webkit-font-smoothing:antialiased;
   color:var(--ink)}
+html[data-theme="dark"] .menubar{
+  border-bottom-color:var(--hairline);
+  box-shadow:none;
+}
 .menubar .menu-title,
 .menubar .status-btn{color:var(--ink)}
 /* Classic Mac menu bar — plain flush text/icons, solid highlight only when open/hovered */
@@ -220,13 +250,17 @@ html[data-theme="light"] .status-btn.theme-toggle .icon-sun{display:none}
 .menu button .swatch.blue{background:var(--tag-blue)}
 .menu button .swatch.green{background:var(--tag-green)}
 .menu button .swatch.none{background:var(--white)}
-.menu button.checked::before{content:"\2713";display:inline-block;width:1.1em;margin-right:2px}
+.menu button.checked::before{content:"\2713";display:inline-block;flex:none;width:1.1em;margin-right:6px}
 
 /* Raised menus: chrome face + hard ink shadow */
 .menu{position:absolute;z-index:401;min-width:230px;padding:4px 0;background:var(--face);
   border:1px solid var(--ink);box-shadow:3px 3px 0 var(--ink)}
+html[data-theme="dark"] .menu{
+  border-color:var(--hairline);
+  box-shadow:3px 3px 0 rgba(0,0,0,.55);
+}
 .menu[hidden]{display:none}
-.menu a,.menu button{display:flex;align-items:center;justify-content:space-between;gap:24px;width:100%;
+.menu a,.menu button{display:flex;align-items:center;justify-content:flex-start;gap:0;width:100%;
   padding:5px 14px;font-family:var(--sys);font-size:14px;font-weight:500;text-decoration:none;color:var(--ink);background:none;border:0;
   text-align:left;cursor:url('../img/cursors/os9-pointer.png') 5 0,pointer;cursor:-webkit-image-set(url('../img/cursors/os9-pointer.png') 1x,url('../img/cursors/os9-pointer@2x.png') 2x) 5 0,pointer;-webkit-font-smoothing:antialiased}
 .menubar a,
@@ -270,10 +304,15 @@ html[data-theme="light"] .status-btn.theme-toggle .icon-sun{display:none}
 
 /* ------------------------------------------------------------ desktop icons */
 .desktop{position:absolute;inset:34px 0 0 0;z-index:2}
+/* Full-desk hit layer for marquee; icons remain clickable */
+#icons{
+  position:absolute;inset:0;z-index:1;pointer-events:none;
+}
+#icons .icon{pointer-events:auto}
 .icon{position:absolute;display:flex;flex-direction:column;align-items:center;gap:4px;width:124px;
   padding:2px 2px 2px;background:transparent;border:0;cursor:url('../img/cursors/os9-pointer.png') 5 0,pointer;cursor:-webkit-image-set(url('../img/cursors/os9-pointer.png') 1x,url('../img/cursors/os9-pointer@2x.png') 2x) 5 0,pointer;touch-action:none;user-select:none;
   -webkit-user-select:none;
-  --icon-size:104px;
+  --icon-size:96px;
   --pagefile-pad:13px}
 .icon:hover,
 .icon:hover .art,
@@ -298,6 +337,9 @@ html[data-theme="light"] .status-btn.theme-toggle .icon-sun{display:none}
 .icon .art.photo:not(.video-art) > img,
 .icon .art.album > img{
   width:72%;height:72%;object-fit:cover;box-sizing:border-box}
+/* Desktop promo portrait — three times the usual icon slot */
+.icon[data-id="promo"]{width:300px;--icon-size:288px}
+.icon[data-id="promo"] .art.photo > img{width:100%;height:100%;object-fit:cover}
 .win.drop-target{outline:2px solid var(--tag-coral);outline-offset:-2px}
 .item.shelf-drag{opacity:.55;cursor:url('../img/cursors/os9-grabbing.png') 8 8,grabbing;cursor:-webkit-image-set(url('../img/cursors/os9-grabbing.png') 1x,url('../img/cursors/os9-grabbing@2x.png') 2x) 8 8,grabbing}
 /* All desk icons share one square slot (folders, apps, docs, trash) */
@@ -306,35 +348,39 @@ html[data-theme="light"] .status-btn.theme-toggle .icon-sun{display:none}
   line-height:0;background:transparent;filter:drop-shadow(1px 1px 0 var(--shadow))}
 .icon .art > img{
   width:100%;height:100%;display:block;object-fit:contain;object-position:center;
-  image-rendering:pixelated;image-rendering:crisp-edges}
-/* System 9 folder / file / trash — real pixel-art shells, chunky upscale */
+  image-rendering:-moz-crisp-edges;image-rendering:pixelated;
+  -ms-interpolation-mode:nearest-neighbor}
+/* System 9 folder / file / trash — real pixel-art shells, chunky upscale.
+   Drop-shadow lives on the shell img (not the parent) so filter compositing
+   doesn't re-sample the pixel art smooth. */
 .icon .art.ra-folder,
 .item .art.ra-folder{
   position:relative;background:transparent;
-  filter:drop-shadow(4px 5px 0 rgba(0,0,0,.35));
+  filter:none;
   width:var(--icon-size);height:var(--icon-size)}
 .icon .art.ra-folder .ra-shell,
 .item .art.ra-folder .ra-shell{
   position:absolute;inset:0;width:100%;height:100%;object-fit:contain;
-  image-rendering:pixelated;pointer-events:none;filter:none !important}
+  pointer-events:none;
+  image-rendering:-moz-crisp-edges;image-rendering:pixelated;
+  -ms-interpolation-mode:nearest-neighbor;
+  filter:drop-shadow(4px 5px 0 rgba(0,0,0,.35)) !important}
 .icon .art.ra-folder .ra-glyph,
 .item .art.ra-folder .ra-glyph{
   position:absolute;left:36%;top:54%;width:28%;height:28%;
   transform:translate(-50%,-50%) skewY(26deg) scaleX(0.76);object-fit:contain;pointer-events:none;
-  filter:brightness(0) !important;image-rendering:auto}
-/* Multi-tone badges (not a flat silhouette) — brightness(0) would crush them to a blob */
+  filter:brightness(0) !important;
+  image-rendering:-moz-crisp-edges;image-rendering:pixelated;
+  -ms-interpolation-mode:nearest-neighbor}
+/* Multi-tone / colour badges — brightness(0) would crush them */
 .icon .art.ra-folder .ra-glyph[src*="glyph-video"],
 .item .art.ra-folder .ra-glyph[src*="glyph-video"],
 .icon .art.ra-folder .ra-glyph[src*="glyph-football"],
-.item .art.ra-folder .ra-glyph[src*="glyph-football"]{filter:none !important}
-/* Inside windows: flat macOS-style folder, centred glyph, no skew */
-.item .art.ra-folder{filter:drop-shadow(2px 3px 0 rgba(0,0,0,.2))}
-.item .art.ra-folder .ra-shell{content:url('../img/icons/folder-macos.svg');image-rendering:auto}
-.item .art.ra-folder .ra-glyph{
-  left:50%;top:58%;width:36%;height:36%;
-  transform:translate(-50%,-50%);filter:brightness(0) !important;image-rendering:auto}
-.item .art.ra-folder .ra-glyph[src*="glyph-video"],
-.item .art.ra-folder .ra-glyph[src*="glyph-football"]{filter:none !important}
+.item .art.ra-folder .ra-glyph[src*="glyph-football"],
+.icon .art.ra-folder .ra-glyph[src*="glyph-map"],
+.item .art.ra-folder .ra-glyph[src*="glyph-map"],
+.icon .art.ra-folder .ra-glyph[src*="glyph-labs"],
+.item .art.ra-folder .ra-glyph[src*="glyph-labs"]{filter:none !important}
 .icon .art.ra-file{
   position:relative;
   filter:drop-shadow(3px 4px 0 rgba(0,0,0,.28));
@@ -342,6 +388,9 @@ html[data-theme="light"] .status-btn.theme-toggle .icon-sun{display:none}
 .icon .art.ra-file .ra-shell{
   position:absolute;inset:0;width:100%;height:100%;object-fit:contain;
   image-rendering:pixelated;pointer-events:none;filter:none !important}
+.item .art.ra-file .ra-shell{
+  position:absolute;inset:0;width:100%;height:100%;object-fit:contain;
+  image-rendering:auto;-ms-interpolation-mode:bicubic;pointer-events:none;filter:none !important}
 .icon .art.ra-file .ra-glyph{
   position:absolute;left:50%;top:50%;width:48%;height:48%;
   transform:translate(-50%,-50%);object-fit:contain;pointer-events:none;
@@ -354,9 +403,9 @@ html[data-theme="light"] .status-btn.theme-toggle .icon-sun{display:none}
 .item.selected .art.ra-folder,
 .item.selected .art.ra-file,
 .item.selected .art.ra-trash{background:var(--icon-hover) !important}
-/* Site favicons: smooth scale; pagefiles keep photo inset */
+/* Site favicons / photos: smooth scale; folder shells+glyphs stay pixelated */
 .icon .art.site > img,.item .art.site > img,
-.icon .art.smooth > img,.item .art.smooth > img,
+.icon .art.smooth:not(.ra-folder) > img,.item .art.smooth:not(.ra-folder) > img,
 .icon .art.album > img,.item .art.album > img{
   image-rendering:auto;-ms-interpolation-mode:bicubic}
 .icon .pagefile.art{
@@ -388,6 +437,10 @@ html[data-theme="dark"] .icon .art.site > img,
 html[data-theme="dark"] .item .art.site > img,
 html[data-theme="dark"] .icon .art.album > img,
 html[data-theme="dark"] .item .art.album > img{filter:none}
+html[data-theme="dark"] .icon .art > img[src*="sys9-bomb"],
+html[data-theme="dark"] .item .art > img[src*="sys9-bomb"]{
+  filter:brightness(0) invert(1);
+}
 .icon svg.art{width:var(--icon-size);height:var(--icon-size);display:block;color:var(--ink);overflow:visible}
 .icon .label{padding:2px 6px 3px;background:var(--face);border:1px solid var(--ink);
   box-shadow:1px 1px 0 var(--ink);font-family:var(--sys);font-weight:500;font-size:13px;line-height:1.2;letter-spacing:.01em;
@@ -395,7 +448,8 @@ html[data-theme="dark"] .item .art.album > img{filter:none}
   -webkit-font-smoothing:antialiased}
 /* The folder shape (and its drop shadow) sits left of the icon box's true
    centre, so its label needs to shift left to read as centred under it */
-.icon:has(.art.ra-folder) .label{transform:translateX(-7px)}
+.icon:has(.art.ra-folder) .label,
+.item:has(.art.ra-folder) .label{transform:translateX(-7px)}
 .icon:hover{background:transparent}
 .icon:hover .art{background:var(--icon-hover)}
 .item:hover .art.folder{background:transparent}
@@ -431,7 +485,8 @@ html[data-theme="dark"] .item .art.album > img{filter:none}
 .icon.selected:hover .label{
   background:var(--accent);color:var(--on-accent);box-shadow:none}
 .icon:focus-visible .label{outline:2px solid var(--ink);outline-offset:2px}
-.icon.renaming{cursor:url('../img/cursors/os9-arrow.png') 1 1,default;cursor:-webkit-image-set(url('../img/cursors/os9-arrow.png') 1x,url('../img/cursors/os9-arrow@2x.png') 2x) 1 1,default;z-index:60}
+.icon.dragging{z-index:9999}
+.icon.renaming{z-index:60}
 .icon.renaming .label,.icon.renaming input.rename{
   display:block;width:100%;max-width:120px;margin:0;padding:2px 6px 3px;border:1px solid var(--ink);
   background:var(--white);color:var(--ink);font:500 14px/1.2 var(--sys);box-shadow:inset 1px 1px 0 var(--shadow);
@@ -538,6 +593,13 @@ html[data-theme="dark"] .item .art.album > img{filter:none}
 .alert{width:min(420px,calc(100vw - 32px));padding:18px 18px 14px;background:var(--white);color:var(--ink);
   border:1px solid var(--ink);box-shadow:0 0 0 1px var(--rim),0 0 0 2px var(--ink),4px 4px 0 var(--ink);
   font:500 14px/1.4 var(--ui)}
+html[data-theme="dark"] .alert{
+  border-color:var(--hairline);
+  box-shadow:0 0 0 1px var(--hairline),4px 4px 0 rgba(0,0,0,.55);
+}
+html[data-theme="dark"] .alert-btn.default{
+  box-shadow:0 0 0 2px var(--face),0 0 0 3px var(--hairline),1px 1px 0 rgba(0,0,0,.55);
+}
 .alert-body{display:flex;gap:14px;align-items:flex-start;margin:0 0 18px}
 .alert-icon{flex:none;width:48px;height:48px}
 .alert-icon svg{display:block;width:48px;height:48px}
@@ -570,14 +632,22 @@ html[data-theme="dark"] .item .art.album > img{filter:none}
   border:1px solid var(--ink);border-radius:0;overflow:hidden;
   box-shadow:inset 0 1px 0 var(--white), inset 0 -1px 0 var(--mid), 3px 3px 0 var(--ink)
 }
+html[data-theme="dark"] .win{
+  border-color:var(--hairline);
+  box-shadow:3px 3px 0 rgba(0,0,0,.55);
+}
 .win[hidden]{display:none}
 
 /* Title bar — flat face plate, matching the menu bar */
 .titlebar{
-  flex:none;display:flex;align-items:center;height:22px;padding:0 4px;cursor:url('../img/cursors/os9-arrow.png') 1 1,default;cursor:-webkit-image-set(url('../img/cursors/os9-arrow.png') 1x,url('../img/cursors/os9-arrow@2x.png') 2x) 1 1,default;
+  flex:none;display:flex;align-items:center;height:26px;padding:0 6px;cursor:url('../img/cursors/os9-arrow.png') 1 1,default;cursor:-webkit-image-set(url('../img/cursors/os9-arrow.png') 1x,url('../img/cursors/os9-arrow@2x.png') 2x) 1 1,default;
   border-bottom:1px solid var(--ink);color:var(--ink);
   background:var(--face);
   box-shadow:inset 0 1px 0 var(--white)
+}
+html[data-theme="dark"] .titlebar{
+  border-bottom-color:var(--hairline);
+  box-shadow:none;
 }
 .win.dragging .titlebar{cursor:url('../img/cursors/os9-grabbing.png') 8 8,grabbing;cursor:-webkit-image-set(url('../img/cursors/os9-grabbing.png') 1x,url('../img/cursors/os9-grabbing@2x.png') 2x) 8 8,grabbing}
 .win.inactive .titlebar{
@@ -585,20 +655,24 @@ html[data-theme="dark"] .item .art.album > img{filter:none}
   box-shadow:none;
   opacity:.85
 }
-.tb-title{flex:1;min-width:0;text-align:center;overflow:hidden;pointer-events:none}
+.tb-title{flex:1;min-width:0;text-align:left;overflow:hidden;pointer-events:none}
 .tb-title span{
-  display:inline-block;padding:0 8px;background:transparent;color:var(--ink);
-  font-family:var(--sys),sans-serif;font-weight:600;font-size:12px;
-  line-height:22px;white-space:nowrap;letter-spacing:-.01em;-webkit-font-smoothing:antialiased;
+  display:inline-block;padding:0 4px 0 2px;background:transparent;color:var(--ink);
+  font-family:var(--sys),sans-serif;font-weight:700;font-size:13px;
+  line-height:26px;white-space:nowrap;letter-spacing:-.01em;-webkit-font-smoothing:antialiased;
   max-width:100%;overflow:hidden;text-overflow:ellipsis;vertical-align:top
 }
 
 /* Close / deco / zoom — flat square traffic lights, clustered on the left */
-.tb-boxes{flex:none;display:flex;align-items:center;gap:5px;margin-right:6px}
+.tb-boxes{flex:none;display:flex;align-items:center;gap:6px;margin-right:8px}
 .box{
-  flex:none;position:relative;z-index:1;width:13px;height:13px;margin:0;padding:0;
-  border-radius:2px;border:2px solid var(--ink);box-shadow:none;
+  flex:none;position:relative;z-index:1;width:15px;height:15px;margin:0;padding:0;
+  border-radius:2px;border:2px solid #000;box-shadow:none;
   cursor:url('../img/cursors/os9-pointer.png') 5 0,pointer;cursor:-webkit-image-set(url('../img/cursors/os9-pointer.png') 1x,url('../img/cursors/os9-pointer@2x.png') 2x) 5 0,pointer;
+}
+html[data-theme="dark"] .box,
+html[data-theme="dark"] .win.inactive .box{
+  border-color:#000 !important;
 }
 .box[data-act="close"]{background:#ff5f57}
 .box-deco{background:#ffbd2e;cursor:default}
@@ -606,7 +680,7 @@ html[data-theme="dark"] .item .art.album > img{filter:none}
 /* Close: an X, revealed on hover */
 .box[data-act="close"]::before,
 .box[data-act="close"]::after{
-  content:"";position:absolute;left:50%;top:50%;width:7px;height:1.3px;background:rgba(0,0,0,0);
+  content:"";position:absolute;left:50%;top:50%;width:8px;height:1.5px;background:rgba(0,0,0,0);
   transform-origin:center
 }
 .box[data-act="close"]::before{transform:translate(-50%,-50%) rotate(45deg)}
@@ -625,8 +699,8 @@ html[data-theme="dark"] .item .art.album > img{filter:none}
   content:"";position:absolute;left:50%;top:50%;background:rgba(0,0,0,0);
   transform:translate(-50%,-50%)
 }
-.box.zoom::before{width:7px;height:1.3px}
-.box.zoom::after{width:1.3px;height:7px}
+.box.zoom::before{width:8px;height:1.5px}
+.box.zoom::after{width:1.5px;height:8px}
 .box.zoom:hover::before,
 .box.zoom:focus-visible::before,
 .box.zoom:active::before,
@@ -647,10 +721,14 @@ html[data-theme="dark"] .item .art.album > img{filter:none}
 .win.inactive .box::after{background:rgba(0,0,0,0) !important}
 
 .infobar{
-  flex:none;display:flex;align-items:center;gap:16px;height:17px;padding:0 8px;
+  flex:none;display:flex;align-items:center;gap:16px;height:20px;padding:0 10px;
   border-bottom:1px solid var(--ink);background:var(--face);color:var(--w-ink);
-  font-family:var(--sys);font-size:11px;font-weight:500;-webkit-font-smoothing:antialiased;
+  font-family:var(--sys);font-size:12px;font-weight:500;-webkit-font-smoothing:antialiased;
   box-shadow:inset 0 1px 0 var(--white)
+}
+html[data-theme="dark"] .infobar{
+  border-bottom-color:var(--hairline);
+  box-shadow:none;
 }
 .infobar .mid{color:var(--w-ink)}
 .infobar .right{margin-left:auto;color:var(--w-ink)}
@@ -658,7 +736,7 @@ html[data-theme="dark"] .item .art.album > img{filter:none}
 .win-inner{flex:1;display:flex;min-height:0;background:var(--white)}
 .win-body{
   flex:1;overflow:auto;padding:18px 14px 22px;scrollbar-width:none;
-  background:var(--white);color:var(--w-ink)
+  background:var(--white);color:var(--w-ink);position:relative
 }
 .win-body::-webkit-scrollbar{display:none}
 
@@ -749,25 +827,20 @@ html[data-theme="dark"] .item .art.album > img{filter:none}
 }
 .win.resizing,.win.resizing *{cursor:url('../img/cursors/os9-resize.png') 6 6,nwse-resize !important;cursor:-webkit-image-set(url('../img/cursors/os9-resize.png') 1x,url('../img/cursors/os9-resize@2x.png') 2x) 6 6,nwse-resize !important}
 
-.win.win-media-player .corner{
-  display:none !important;
-}
-
 /* Edge grips — thin strips along the right/left/bottom borders so the
    window can be resized by dragging its edges, not just the corner */
 .edge{position:absolute;z-index:14;touch-action:none;background:transparent}
 .edge-r{top:0;right:0;bottom:16px;width:6px;cursor:ew-resize}
 .edge-l{top:22px;left:0;bottom:16px;width:6px;cursor:ew-resize}
 .edge-b{left:0;right:16px;bottom:0;height:6px;cursor:ns-resize}
-.win.win-media-player .edge{display:none !important}
 .win.resizing.resizing-e,.win.resizing.resizing-e *,
 .win.resizing.resizing-w,.win.resizing.resizing-w *{cursor:ew-resize !important}
 .win.resizing.resizing-s,.win.resizing.resizing-s *{cursor:ns-resize !important}
 
 /* things inside windows */
-.items{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:28px 10px;align-content:start;
-  --icon-size:104px}
-.item{display:flex;flex-direction:column;align-items:center;gap:9px;padding:6px 4px;background:none;border:0;cursor:url('../img/cursors/os9-pointer.png') 5 0,pointer;cursor:-webkit-image-set(url('../img/cursors/os9-pointer.png') 1x,url('../img/cursors/os9-pointer@2x.png') 2x) 5 0,pointer}
+.items{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:20px 8px;align-content:start;
+  --icon-size:80px}
+.item{display:flex;flex-direction:column;align-items:center;gap:7px;padding:4px 3px;background:none;border:0;cursor:url('../img/cursors/os9-pointer.png') 5 0,pointer;cursor:-webkit-image-set(url('../img/cursors/os9-pointer.png') 1x,url('../img/cursors/os9-pointer@2x.png') 2x) 5 0,pointer}
 .item,
 .item .art,
 .item .art img,
@@ -777,11 +850,13 @@ html[data-theme="dark"] .item .art.album > img{filter:none}
   line-height:0;background:transparent;filter:drop-shadow(1px 1px 0 var(--shadow))}
 .item .art > img,.item > img{
   width:100%;height:100%;display:block;object-fit:contain;border:0;
-  image-rendering:pixelated;image-rendering:crisp-edges}
+  image-rendering:auto;-ms-interpolation-mode:bicubic}
 .item > img{width:var(--icon-size);height:var(--icon-size)}
 .item img.thumb{width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;border:2px solid var(--ink);
   image-rendering:auto}
-.item .art > img[src*="folder"],.item > img[src*="folder"],.item .art.smooth > img{
+.item .art > img[src*="folder"]:not(.ra-shell):not(.ra-glyph),
+.item > img[src*="folder"],
+.item .art.smooth:not(.ra-folder) > img{
   image-rendering:auto;-ms-interpolation-mode:bicubic}
 .video-thumb-frame{
   position:relative;
@@ -891,6 +966,13 @@ html[data-theme="dark"] .item .art.album > img{filter:none}
 .item:hover .art.photo{background:transparent}
 .item:focus-visible .label{outline:2px solid var(--ink);outline-offset:2px}
 
+/* Desktop / folder marquee selection */
+.marquee{
+  position:absolute;z-index:60;pointer-events:none;box-sizing:border-box;
+  background:color-mix(in srgb, var(--tag-coral) 28%, transparent);
+  border:1px solid var(--tag-coral);
+}
+
 .doc{max-width:62ch;font-size:15px;line-height:1.55}
 .doc::after{content:"";display:table;clear:both}
 .doc h2{margin:0 0 2px;font-size:22px;font-weight:800;letter-spacing:-.02em}
@@ -927,6 +1009,9 @@ html[data-theme="dark"] .item .art.album > img{filter:none}
   color:var(--tag-coral);font-weight:700;text-decoration:underline;text-underline-offset:3px
 }
 .contact-doc .contact-to a:hover{color:var(--rm-bg)}
+.labs-login{width:100%;max-width:30ch;box-sizing:border-box}
+.labs-login .sub{letter-spacing:.06em;text-transform:none;font-size:14px;line-height:1.4;margin:0 0 14px}
+.labs-login-err{margin:4px 0 0;font-size:13px;font-weight:700;color:var(--tag-coral)}
 .mac-form{display:flex;flex-direction:column;gap:6px}
 .mac-form label{font-size:13px;font-weight:700}
 .mac-form input,.mac-form textarea{
@@ -1030,6 +1115,10 @@ html[data-theme="dark"] .item .art.album > img{filter:none}
   display:flex;
   flex-direction:column;
   gap:6px;
+}
+html[data-theme="dark"] .media-player-dock{
+  border-top-color:var(--hairline);
+  box-shadow:none;
 }
 
 /* Timeline scrubber row */
@@ -1227,22 +1316,62 @@ html[data-theme="dark"] .item .art.album > img{filter:none}
 .vol-mute:active{transform:translate(1px,1px);box-shadow:none !important}
 
 @media (max-width:820px){
+  .menubar{position:sticky;top:0;z-index:600}
+  .menubar .menu-title{padding:0 7px;font-size:13px}
+  .menubar .status-btn{padding:0 6px}
   .desktop{position:static;inset:auto;padding:22px 16px 40px;overflow:auto;height:calc(100svh - 34px)}
   .icon{--icon-size:80px;--pagefile-pad:10px;position:static !important;width:auto;cursor:url('../img/cursors/os9-pointer.png') 5 0,pointer;cursor:-webkit-image-set(url('../img/cursors/os9-pointer.png') 1x,url('../img/cursors/os9-pointer@2x.png') 2x) 5 0,pointer;touch-action:auto;padding:0}
-  .items{--icon-size:100px}
+  .icon[data-id="promo"]{width:auto;--icon-size:240px}
+  .items{--icon-size:76px}
   #icons{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:18px 8px}
   .hero{height:100svh;min-height:0}
   .hero::after{display:none}
   .pixel-field{opacity:.9}
-  .win{position:fixed;inset:34px 8px 8px 8px;z-index:500}
-  .titlebar{cursor:url('../img/cursors/os9-arrow.png') 1 1,default;cursor:-webkit-image-set(url('../img/cursors/os9-arrow.png') 1x,url('../img/cursors/os9-arrow@2x.png') 2x) 1 1,default;height:22px}
-  .corner{display:none !important}
-  .box{width:15px;height:15px}
+  .win{position:fixed;inset:34px 8px 8px 8px;z-index:500;min-width:0 !important;max-width:none}
+  .win.win-media-player{min-width:0 !important}
+  .titlebar{cursor:url('../img/cursors/os9-arrow.png') 1 1,default;cursor:-webkit-image-set(url('../img/cursors/os9-arrow.png') 1x,url('../img/cursors/os9-arrow@2x.png') 2x) 1 1,default;height:26px}
+  .corner,
+  .edge{display:none !important}
+  .box.zoom{display:none !important}
+  .box{width:18px;height:18px}
   .portrait{float:none;width:100%;margin:0 0 14px}
   .stickies{position:relative;inset:auto;display:flex;flex-wrap:wrap;gap:12px;padding:0 0 18px;pointer-events:auto}
   .sticky{position:static !important;cursor:url('../img/cursors/os9-arrow.png') 1 1,default;cursor:-webkit-image-set(url('../img/cursors/os9-arrow.png') 1x,url('../img/cursors/os9-arrow@2x.png') 2x) 1 1,default}
   .player{flex-direction:column}
+  .player-art{width:96px;height:96px}
 }
+
+/* Phone / any coarse pointer: visible Put Back in Trash */
+.putback-hint{
+  display:none;margin-top:2px;padding:2px 6px;border:1px solid var(--ink);
+  background:var(--face);font-size:11px;font-weight:700;line-height:1.2;color:var(--ink)
+}
+html.mode-small .putback-hint,
+html.mode-coarse .putback-hint{
+  display:inline-block;background:var(--accent);color:var(--on-accent);border-color:transparent
+}
+html.mode-small .item[data-restore],
+html.mode-coarse .item[data-restore]{gap:6px}
+
+/* Tablet touch-desk: larger chrome, auto cursors, softer touch */
+html.mode-touch-desk .titlebar{height:28px}
+html.mode-touch-desk .box{width:20px;height:20px;margin:0 5px}
+html.mode-touch-desk .icon .label{font-size:14px;padding:3px 7px 4px;max-width:132px}
+html.mode-touch-desk .item .label{font-size:14px}
+html.mode-touch-desk .icon{touch-action:manipulation}
+html.mode-coarse,
+html.mode-coarse body,
+html.mode-coarse .icon,
+html.mode-coarse .item,
+html.mode-coarse .menubar,
+html.mode-coarse .menu,
+html.mode-coarse .win,
+html.mode-coarse .titlebar{
+  cursor:auto
+}
+
+html.mode-small [data-cleanup],
+html.mode-small [data-arrange-name]{display:none}
 @media (prefers-reduced-motion:reduce){
   *{transition:none!important;animation:none!important}
   body.booting .boot-veil{opacity:0}

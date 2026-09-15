@@ -649,7 +649,8 @@
         pc = Math.cos(ang) * rad; pr = Math.sin(ang) * rad * 0.8;
       }
       list.push({
-        c: pc, r: pr,
+        c: 0, r: 0,
+        hc: pc, hr: pr,
         share: (i + Math.random()) / count,
         orbit: 0.3 + Math.random() * 0.7,
         spin: (Math.random() < 0.5 ? -1 : 1) * (0.4 + Math.random() * 0.8),
@@ -664,9 +665,11 @@
   /* Move the swarm one frame and report each particle's cell.
      Calls fn(col, row, ink) with lattice cells. One small keyboard only —
      no second, larger size. */
+  var ENTRANCE_S = CLICK_MS / 1000; /* swarm grows out from the press point over this long */
   function stepSwarm(time, fn) {
-    var held = (time - holding.start - CLICK_MS) / 1000;
-    if (held < 0) return null;
+    var heldRaw = (time - holding.start) / 1000;
+    if (heldRaw < 0) return null;
+    var held = heldRaw - ENTRANCE_S;
     var dt = Math.min(0.1, Math.max(0, (time - (holding.stepAt || time)) / 1000));
     holding.stepAt = time;
     var t = time / 1000;
@@ -674,16 +677,20 @@
     var cc = (holding.x - ox) / cw, cr = (holding.y - oy) / cw;
     var c0 = Math.round(cc - kb.width / 2), r0 = Math.round(cr - kb.height / 2);
     var pull = 1 - Math.exp(-dt * 11);
+    /* Same easing the click burst uses — the swarm blossoms out from the
+       press point instead of popping in fully scattered. */
+    var entrance = easeOut(clamp01(heldRaw / ENTRANCE_S));
     var home = 0, i;
     for (i = 0; i < holding.swarm.length; i++) {
       var q = holding.swarm[i];
       var goalC, goalR, ink;
       if (held < q.delay * GATHER_S) {
-        /* Still in the swarm: a lazy orbit around the press */
-        var ang = Math.atan2(q.r, q.c) + dt * q.spin;
-        var rad = Math.sqrt(q.c * q.c + q.r * q.r);
-        goalC = cc + Math.cos(ang) * rad + Math.sin(t * 2 + q.phase) * q.orbit;
-        goalR = cr + Math.sin(ang) * rad + Math.cos(t * 1.7 + q.phase) * q.orbit;
+        /* Still in the swarm: a lazy orbit around the press, radius eased
+           in from zero so it grows out rather than appearing at full size */
+        var homeRad = Math.sqrt(q.hc * q.hc + q.hr * q.hr) * entrance;
+        var homeAng = Math.atan2(q.hr, q.hc) + t * q.spin;
+        goalC = cc + Math.cos(homeAng) * homeRad + Math.sin(t * 2 + q.phase) * q.orbit * entrance;
+        goalR = cr + Math.sin(homeAng) * homeRad + Math.cos(t * 1.7 + q.phase) * q.orbit * entrance;
         q.home = false;
         ink = 'mid';
       } else {
@@ -1163,15 +1170,11 @@
       }
     }
 
-    /* Swarm while gathering; once formed, the single small keyboard */
-    if (!pianoBox) {
-      for (var sc = 0; sc < swarmCells.length; sc += 3) cellRect(swarmCells[sc + 2], swarmCells[sc], swarmCells[sc + 1]);
-    }
-    if (pianoBox) {
-      pianoBox.kb.cells.forEach(function (cell) {
-        cellRect(cell[2] === 2 ? 'hover' : 'lit', pianoBox.kc0 + cell[0], pianoBox.kr0 + cell[1]);
-      });
-    }
+    /* Each swarm particle owns exactly one keyboard cell (count matches
+       1:1) and already draws at that exact cell/ink once arrived, so the
+       keyboard completes gradually as particles land — no hard cutover
+       to a fully-drawn grid once "mostly" formed. */
+    for (var sc = 0; sc < swarmCells.length; sc += 3) cellRect(swarmCells[sc + 2], swarmCells[sc], swarmCells[sc + 1]);
     if (particles.length) drawParticles(time);
 
     /* Strapline, typed in as the entrance finishes */

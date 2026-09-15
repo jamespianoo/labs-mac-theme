@@ -1232,7 +1232,7 @@
 
   function onPointerDown(e) {
     if (!visible || e.button > 0) return;
-    if (D && D.marqueeActive) return;
+    if (window.JBDesk && window.JBDesk.marqueeActive) return;
     var p = locate(e);
     if (!p.inside || onControl(e.target)) return;
     pointer.x = p.x;

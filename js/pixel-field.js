@@ -320,6 +320,10 @@
   var word = wordOneLine;
   var cw = 10;            /* device px per cell, fractional */
   var ox = 0, oy = 0;     /* device px of the name's top-left cell */
+  var NAME_SCALE = 0.9;   /* the name renders 10% smaller than its cell grid,
+                              inset-centred within the same footprint so dust
+                              still clears the original (larger) area */
+  var nameCw = 10, nameOx = 0, nameOy = 0;
   var cMin = 0, rMin = 0, cols = 0, rows = 0;
   var ramp = new Float32Array(0);
   var strapBox = null;    /* in cells: c0, c1, r0, r1 */
@@ -373,6 +377,9 @@
 
     ox = Math.round((W - word.width * cw) / 2);
     oy = Math.round((box.height * 0.4 - (totalRows * cell) / 2) * dpr);
+    nameCw = cw * NAME_SCALE;
+    nameOx = ox + (word.width * cw - word.width * nameCw) / 2;
+    nameOy = oy + (word.height * cw - word.height * nameCw) / 2;
 
     strapBox = null;
     if (showStrap) {
@@ -785,18 +792,25 @@
     push(ink, x, y, Math.round(xl + cw) - x, Math.round(yt + cw) - y);
   }
 
-  function emitEffect(col, row, ink, kind, weight) {
-    var xl = ox + col * cw, yt = oy + row * cw;
+  /* Like cellRect, but at the name's own (10% smaller) scale */
+  function wordCellRect(ink, col, row) {
+    var xl = nameOx + col * nameCw, yt = nameOy + row * nameCw;
     var x = Math.round(xl), y = Math.round(yt);
-    var w = Math.round(xl + cw) - x, h = Math.round(yt + cw) - y;
-    if (ink === 'rest') ink = wordInk(xl + cw / 2, yt + cw / 2, row);
+    push(ink, x, y, Math.round(xl + nameCw) - x, Math.round(yt + nameCw) - y);
+  }
+
+  function emitEffect(col, row, ink, kind, weight) {
+    var xl = nameOx + col * nameCw, yt = nameOy + row * nameCw;
+    var x = Math.round(xl), y = Math.round(yt);
+    var w = Math.round(xl + nameCw) - x, h = Math.round(yt + nameCw) - y;
+    if (ink === 'rest') ink = wordInk(xl + nameCw / 2, yt + nameCw / 2, row);
     if (kind === 'block') {
       push(ink, x, y, w, h);
     } else if (kind === 'bar') {
-      var sw = Math.max(1, Math.round(cw / 5));
+      var sw = Math.max(1, Math.round(nameCw / 5));
       push(ink, x + Math.round((w - sw) / 2), y, sw, h);
     } else if (kind === 'dash') {
-      var sh = Math.max(1, Math.round(cw / 5));
+      var sh = Math.max(1, Math.round(nameCw / 5));
       push(ink, x, y + Math.round((h - sh) / 2), w, sh);
     } else {
       var size = Math.max(1, Math.round(w * Math.sqrt(weight || 0.3)));
@@ -963,7 +977,7 @@
       });
       for (k = 0; k < cells.length; k++) {
         var wc = cells[k][0], wr = cells[k][1];
-        cellRect(quiet ? restInkAtRow(wr) : wordInk(ox + (wc + 0.5) * cw, oy + (wr + 0.5) * cw, wr), wc, wr);
+        wordCellRect(quiet ? restInkAtRow(wr) : wordInk(nameOx + (wc + 0.5) * nameCw, nameOy + (wr + 0.5) * nameCw, wr), wc, wr);
       }
     }
 

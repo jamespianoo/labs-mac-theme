@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>App Folder</title>
+<style>
+  :root{
+    --be-grey:#d6d6d6; --be-grey-d:#c2c2c2; --be-hi:#ffffff; --be-sh:#8a8a8a;
+    --be-sh-l:#b4b4b4; --be-line:#2a2a2a; --be-yellow-1:#fbd85c; --be-yellow-2:#f2bd23;
+    --be-yellow-br:#a07c10; --tracker-grey:#d8d8d8;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;}
+  body{ font-family:Helvetica,Arial,sans-serif; overflow:hidden;
+        background:transparent; -webkit-font-smoothing:antialiased; }
+
+  .be-win{
+    position:absolute; left:0; right:0; top:22px; bottom:0;
+    display:flex;flex-direction:column;
+    border:1px solid var(--be-line); background:var(--tracker-grey);
+    box-shadow:2px 3px 7px rgba(0,0,0,.32); user-select:none;
+  }
+  /* title tab — flush left (BeOS Lasche), protrudes up into the top margin */
+  .be-tab{
+    position:absolute;top:-22px;left:0;z-index:3;
+    display:flex;align-items:center;gap:7px;height:23px;padding:0 8px 0 7px;
+    background:linear-gradient(180deg,var(--be-yellow-1) 0%, var(--be-yellow-2) 100%);
+    border:1px solid var(--be-line);border-bottom:none;border-radius:3px 3px 0 0;
+    box-shadow:inset 1px 1px 0 rgba(255,255,255,.55);max-width:80%;
+  }
+  .be-close{
+    width:13px;height:13px;flex:0 0 auto;border:1px solid #6f5a10;
+    background:linear-gradient(135deg,#fbe27e,#eab92a);
+    box-shadow:inset 1px 1px 0 rgba(255,255,255,.75), inset -1px -1px 0 rgba(0,0,0,.18);cursor:pointer;
+  }
+  .be-title{font-size:13px;font-weight:700;color:#2a2306;letter-spacing:.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .be-zoom{width:14px;height:13px;flex:0 0 auto;margin-left:2px;position:relative;}
+  .be-zoom::before,.be-zoom::after{content:"";position:absolute;border:1px solid #6f5a10;background:#fbe27e;}
+  .be-zoom::before{left:0;top:3px;width:9px;height:9px;}
+  .be-zoom::after{right:0;top:0;width:7px;height:7px;background:#f8d75a;}
+
+  .be-menubar{display:flex;align-items:center;gap:2px;height:21px;padding:0 4px;
+    background:var(--tracker-grey);border-bottom:1px solid var(--be-sh);box-shadow:inset 0 1px 0 var(--be-hi);}
+  .be-menubar span{font-size:12.5px;color:#1c1c1c;padding:1px 8px;border-radius:1px;cursor:default;}
+  .be-menubar span:hover{background:#404a6e;color:#fff;}
+  .be-menubar span.open{background:#404a6e;color:#fff;}
+
+  /* BeOS dropdown menus */
+  .menu{position:absolute;z-index:9999;background:#d8d8d8;border:1px solid #2a2a2a;
+    box-shadow:2px 2px 5px rgba(0,0,0,.35);min-width:150px;padding:2px 0;
+    font-family:Helvetica,Arial,sans-serif;font-size:12.5px;user-select:none;}
+  .menu .mi{padding:3px 22px 3px 14px;white-space:nowrap;position:relative;cursor:default;color:#1c1c1c;}
+  .menu .mi.disabled{color:#a0a0a0;}
+  .menu .mi:not(.disabled):hover{background:#404a6e;color:#fff;}
+  .menu .mi.has-sub::after{content:"▸";position:absolute;right:7px;top:3px;}
+  .menu .sep{height:1px;background:#9a9a9a;margin:3px 6px;}
+  .menu .submenu{top:-3px;left:100%;min-width:150px;}
+
+  .be-mid{display:flex;flex:1 1 auto;min-height:0;}
+  .be-content{position:relative;flex:1 1 auto;overflow:hidden;background:#ffffff;box-shadow:inset 1px 1px 0 rgba(0,0,0,.06);}
+  .be-grid{position:absolute;top:0;left:0;will-change:transform;}
+  .be-item{position:absolute;width:88px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:3px;padding-top:7px;cursor:default;}
+  .be-item .ic{width:64px;height:64px;display:flex;align-items:center;justify-content:center;}
+  .be-item .ic svg,.be-item .ic img{width:100%;height:100%;display:block;object-fit:contain;}
+  /* Mini Icon View */
+  .be-grid.mini .be-item{width:76px;padding-top:6px;gap:2px;}
+  .be-grid.mini .be-item .ic{width:44px;height:44px;}
+  .be-grid.mini .be-item .lbl{font-size:11px;max-width:72px;}
+  /* List View — small icon + name in full-width rows */
+  .be-grid.list .be-item{flex-direction:row;justify-content:flex-start;align-items:center;gap:6px;padding:2px 8px;text-align:left;}
+  .be-grid.list .be-item .ic{width:16px;height:16px;flex:0 0 auto;}
+  .be-grid.list .be-item .lbl{font-size:12px;max-width:none;border-bottom:none;flex:1 1 auto;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .be-grid.list .be-item.sel{background:#3c63c8;}
+  .be-grid.list .be-item.sel .lbl{color:#fff;}
+  .be-item .lbl{font-size:12px;color:#161616;line-height:1.15;max-width:86px;border-bottom:1px dotted #b0b0b0;padding-bottom:1px;
+    white-space:normal;overflow-wrap:anywhere;text-align:center;}
+  .be-item.sel .lbl{background:#3c63c8;color:#fff;border-bottom-color:transparent;}
+
+  .vsb{width:15px;flex:0 0 auto;display:flex;flex-direction:column;background:var(--be-grey);border-left:1px solid var(--be-sh);}
+  .hsb{height:15px;flex:1 1 auto;display:flex;background:var(--be-grey);border-top:1px solid var(--be-sh);}
+  .sb-arrows{display:flex;flex:0 0 auto;}
+  .vsb .sb-arrows{flex-direction:column;}
+  .sb-btn{width:15px;height:15px;flex:0 0 auto;background:var(--be-grey);border:1px solid var(--be-sh);
+    box-shadow:inset 1px 1px 0 var(--be-hi), inset -1px -1px 0 var(--be-sh-l);display:flex;align-items:center;justify-content:center;cursor:default;}
+  .sb-btn:active{box-shadow:inset 1px 1px 0 var(--be-sh), inset -1px -1px 0 var(--be-hi);}
+  .sb-trough{position:relative;flex:1 1 auto;background:#c4c4c4;box-shadow:inset 1px 1px 0 rgba(0,0,0,.16), inset -1px -1px 0 rgba(255,255,255,.5);}
+  .sb-thumb{position:absolute;background:var(--be-grey);border:1px solid var(--be-sh);
+    box-shadow:inset 1px 1px 0 var(--be-hi), inset -1px -1px 0 var(--be-sh-l);display:flex;align-items:center;justify-content:center;gap:3px;cursor:default;}
+  .vsb .sb-thumb{left:0;right:0;flex-direction:column;}
+  .hsb .sb-thumb{top:0;bottom:0;}
+  .grip{width:3px;height:3px;border-radius:50%;background:#7e7e7e;box-shadow:0 1px 0 rgba(255,255,255,.7);}
+
+  .be-status{display:flex;height:15px;background:var(--be-grey);border-top:1px solid var(--be-line);}
+  .be-count{flex:0 0 auto;min-width:96px;height:15px;display:flex;align-items:center;padding:0 8px;font-size:11px;color:#2a2a2a;
+    background:var(--be-grey);border-right:1px solid var(--be-sh);box-shadow:inset 1px 1px 0 var(--be-hi);}
+  .be-resize{width:15px;height:15px;flex:0 0 auto;background:var(--be-grey);border-left:1px solid var(--be-sh);box-shadow:inset 1px 1px 0 var(--be-hi);position:relative;}
+  .be-resize::after{content:"";position:absolute;inset:3px;
+    background:linear-gradient(135deg,transparent 0 33%,#8a8a8a 33% 45%,transparent 45% 66%,#8a8a8a 66% 78%,transparent 78%);}
+
+  /* ===== Mac OS 9 (Platinum) chrome — active only in theme-macos9 ===== */
+  .m9-title,.m9-info{display:none;}
+  body.theme-macos9 .be-tab{display:none;}
+  body.theme-macos9 .be-menubar{display:none;}
+  body.theme-macos9 .be-win{top:0;border:1px solid #000;background:#dadada;box-shadow:1px 1px #111,inset 1px 1px #fff,inset -1px -1px #999;
+    box-shadow:1px 1px 0 rgba(0,0,0,.35), 3px 3px 8px rgba(0,0,0,.30);}
+  /* os9 window: the black frame is the OUTER line; the scrollbars sit INSIDE it.
+     Frame joins .be-mid (content + vertical scrollbar) and .be-status (horizontal scrollbar). */
+  body.theme-macos9 .be-content{margin:0;border:none;box-shadow:none;background:#fff;}
+  body.theme-macos9 .be-mid{margin:2px 4px 0 4px;border:1px solid #000;border-bottom:none;
+    box-shadow:inset 1px 1px #fff, inset -1px 0 #acacac;}
+  body.theme-macos9 .be-status{margin:0 4px 4px 4px;border:1px solid #000;border-top:none;
+    box-shadow:inset -1px -1px #acacac, inset 1px 0 #fff;}
+  /* vertical scrollbar flush inside the right frame edge; a hairline separates it from the content */
+  body.theme-macos9 .vsb{border-left:1px solid #808080;}
+  body.theme-macos9 .hsb{border-left:1px solid #808080;}
+  /* title bar */
+  /* Mac OS 9 Platinum title bar — faithful to the Mac OS 9 UI Kit (Figma) */
+  body.theme-macos9 .m9-title{display:flex;position:relative;height:20px;flex:0 0 20px;
+    align-items:center;border-top:1px solid #f3f3f3;border-bottom:1px solid #9a9a9a;
+    background:repeating-linear-gradient(#e8e8e8 0 1px,#d0d0d0 1px 2px);
+    image-rendering:pixelated;image-rendering:crisp-edges;}
+  .m9-stripes{display:none;}
+  .m9-title>*{position:relative;z-index:2;}
+  .m9-ctl{position:relative;box-sizing:border-box;width:11px;height:11px;flex:0 0 11px;
+    background:#c0c0c0;border:1px solid #7e7e8a;box-shadow:inset 0 0 0 1px #dadaff;}
+  .m9-close{margin-left:7px;cursor:pointer;}
+  .m9-plaque{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    background:#f3f3f3;padding:0 8px;height:15px;display:flex;align-items:center;gap:5px;
+    font-size:13px;font-weight:700;letter-spacing:.2px;color:#000;
+    font-family:"Charcoal","ChicagoFLF","Helvetica Neue",Helvetica,sans-serif;}
+  .m9-right{margin-left:auto;display:flex;gap:5px;padding-right:7px;}
+  .m9-collapse,.m9-zoom{position:relative;cursor:pointer;}
+  .m9-zoom::before{content:"";position:absolute;left:1px;top:1px;width:4px;height:4px;border:1px solid #7e7e8a;background:#c0c0c0;}
+  .m9-collapse::before{content:"";position:absolute;left:2px;right:2px;top:4px;height:0;border-top:1px solid #7e7e8a;}
+  /* info bar */
+  body.theme-macos9 .m9-info{display:block;text-align:center;height:16px;line-height:15px;margin:0 4px;box-sizing:border-box;
+    background:#dadada;border:1px solid #000;box-shadow:-1px -1px #9c9c9c,1px 1px #fff,inset 1px 1px #fff,inset -1px -1px #b3b3b3;color:#000;font:10px Arial,sans-serif;letter-spacing:.4px;}
+  /* Platinum scrollbars / status */
+  body.theme-macos9 .vsb,body.theme-macos9 .hsb,body.theme-macos9 .be-status{background:#d8d8d8;}
+  body.theme-macos9 .sb-btn{background:linear-gradient(#f3f3f3,#cfcfcf);border:1px solid #808080;box-shadow:none;}
+  body.theme-macos9 .sb-trough{background:repeating-linear-gradient(45deg,#d2d2d2 0 1px,#c4c4c4 1px 3px);}
+  body.theme-macos9 .sb-thumb{background:linear-gradient(90deg,#fff,#e3e3e3 40%,#c7c7c7);border:1px solid #808080;}
+  body.theme-macos9 .be-count{background:#d8d8d8;color:#000;border-right:1px solid #808080;box-shadow:inset 0 1px 0 #fff;}
+  body.theme-macos9 .be-resize{background:#d8d8d8;border-left:1px solid #808080;box-shadow:inset 0 1px 0 #fff;}
+  /* grid: Geneva-ish labels, no dotted underline */
+  body.theme-macos9 .be-item .lbl{border-bottom:none;}
+  body.theme-macos9 .be-grid.list .be-item.sel,body.theme-macos9 .be-item.sel .lbl{background:#000;color:#fff;}
+
+  /* ===== Windows XP (Luna Blue) chrome — active only in theme-winxp ===== */
+  .xp-title{display:none;}
+  body.theme-winxp .be-tab{display:none;}
+
+  /* ===== XP Luna scrollbars + controls (theme-winxp) ===== */
+  body.theme-winxp ::-webkit-scrollbar,
+  body.theme-winxp #pad::-webkit-scrollbar{width:17px;height:17px;}
+  body.theme-winxp ::-webkit-scrollbar-track,
+  body.theme-winxp #pad::-webkit-scrollbar-track{background:#d6e5f5;border-left:1px solid #aac3e0;}
+  body.theme-winxp ::-webkit-scrollbar-thumb,
+  body.theme-winxp #pad::-webkit-scrollbar-thumb{
+    background:linear-gradient(90deg,#7fb1f5,#2f6fdd 50%,#4f8fe8);
+    border:1px solid #1c4aa0;border-radius:3px;}
+  body.theme-winxp ::-webkit-scrollbar-thumb:hover,
+  body.theme-winxp #pad::-webkit-scrollbar-thumb:hover{
+    background:linear-gradient(90deg,#93c0fb,#4f8fe8 50%,#5f9ff2);}
+  body.theme-winxp ::-webkit-scrollbar-button{
+    height:17px;width:17px;background:linear-gradient(180deg,#eaf2fc,#bcd4ef);
+    border:1px solid #6a93c8;border-radius:2px;}
+  body.theme-winxp ::-webkit-scrollbar-corner{background:#d6e5f5;}
+  body.theme-winxp button{
+    font:12px Tahoma,"Segoe UI",sans-serif;padding:2px 12px;border-radius:3px;border:1px solid #003c74;
+    background:linear-gradient(180deg,#fdfeff,#eaf0fb 45%,#d6e2f5);color:#000;}
+  body.theme-winxp button:hover{border-color:#ff9a00;box-shadow:inset 0 0 5px rgba(255,154,0,.55);}
+  body.theme-winxp button:active{background:linear-gradient(180deg,#cdd9ee,#e6eefc);}
+  body.theme-winxp input,body.theme-winxp textarea,body.theme-winxp select{
+    border:1px solid #7f9db9;background:#fff;border-radius:0;padding:2px 4px;font:12px Tahoma,"Segoe UI",sans-serif;}
+  body.theme-winxp input:focus,body.theme-winxp textarea:focus,body.theme-winxp select:focus{
+    outline:none;border-color:#2f6fdd;box-shadow:0 0 3px rgba(47,111,221,.7);}
+
+  body.theme-winxp .be-win{top:0;border-radius:8px 8px 2px 2px;background:#0831D9;overflow:hidden;
+    box-shadow:2px 5px 14px rgba(0,0,0,.45);}            /* blue = 4px sizing frame */
+  body.theme-winxp .xp-title{display:flex;align-items:center;height:30px;flex:0 0 30px;
+    gap:6px;padding:0 4px 0 6px;border-radius:8px 8px 0 0;
+    background:linear-gradient(180deg,#0997FF 0%,#0053EE 8%,#0053EE 45%,#0066FF 52%,#0846E0 80%,#003DD2 100%);}
+  .xp-sysicon{width:16px;height:16px;flex:0 0 16px;border-radius:3px;
+    background:radial-gradient(circle at 30% 30%,#fff,#cfe0ff 70%,#7fa8ee);box-shadow:0 0 0 1px rgba(0,0,0,.15);}
+  .xp-caption{color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    font:700 13px "Trebuchet MS","Segoe UI",Tahoma,sans-serif;text-shadow:1px 1px 1px rgba(0,0,40,.5);}
+  .xp-btns{margin-left:auto;display:flex;gap:2px;}
+  .xp-btn{width:21px;height:21px;border-radius:3px;position:relative;cursor:pointer;
+    border:1px solid rgba(255,255,255,.55);box-shadow:inset 0 1px 1px rgba(255,255,255,.65);}
+  /* Minimise omitted: a borderless floating widget has no taskbar entry to minimise into. */
+  body.theme-winxp .xp-min{display:none;}
+  .xp-min,.xp-max{background:linear-gradient(180deg,#5cb0ff,#1D63F0 55%,#0B46CF);}
+  .xp-close{width:23px;flex:0 0 23px;background:linear-gradient(180deg,#F7B39E,#E35F44 55%,#C4382A);}
+  .xp-btn:active{box-shadow:inset 1px 1px 2px rgba(0,0,0,.4);}
+  .xp-min::after{content:"";position:absolute;left:5px;right:5px;bottom:4px;height:2px;background:#fff;}
+  .xp-max::after{content:"";position:absolute;inset:5px;border:1px solid #fff;border-top-width:3px;border-radius:1px;}
+  .xp-close::before,.xp-close::after{content:"";position:absolute;left:50%;top:50%;width:12px;height:2px;background:#fff;border-radius:1px;}
+  .xp-close::before{transform:translate(-50%,-50%) rotate(45deg);}
+  .xp-close::after{transform:translate(-50%,-50%) rotate(-45deg);}
+  /* content/menu inset by 4px to reveal the blue frame on sides + bottom */
+  body.theme-winxp .be-menubar{margin:0 4px;background:#ECE9D8;color:#000;border:none;
+    font:11px Tahoma,"Segoe UI",sans-serif;}
+  body.theme-winxp .be-mid{margin:0 4px;background:#fff;}
+  body.theme-winxp .be-status{margin:0 4px 4px;background:#ECE9D8;color:#000;border:none;}
+  /* XP Luna custom scrollbar (the .sb-* elements) — no BeOS dot grips; Luna gel thumb. */
+  body.theme-winxp .vsb,body.theme-winxp .hsb{background:#d6e5f5;border-color:#aac3e0;}
+  body.theme-winxp .sb-btn{background:linear-gradient(180deg,#eaf2fc,#bcd4ef);border:1px solid #6a93c8;border-radius:0;}
+  body.theme-winxp .sb-trough{background:#d6e5f5;}
+  body.theme-winxp .sb-thumb{border:1px solid #245edb;border-radius:3px;}
+  body.theme-winxp .vsb .sb-thumb{background:linear-gradient(90deg,#aecbfa,#5b8def 50%,#3f78e0);}
+  body.theme-winxp .hsb .sb-thumb{background:linear-gradient(180deg,#aecbfa,#5b8def 50%,#3f78e0);}
+  body.theme-winxp .sb-thumb .grip{display:none;}
+  body.theme-winxp .be-content{background:#fff;}
+  body.theme-winxp .be-item .lbl{border-bottom:none;}
+  body.theme-winxp .be-grid.list .be-item.sel,body.theme-winxp .be-item.sel .lbl{background:#316AC5;color:#fff;}
+
+  /* ===== Maiks Favourite — pixel-art macOS (Big Sur) window ===== */
+  .mf-title{display:none;}
+  body.theme-maiksfav .be-tab,body.theme-maiksfav .m9-title,body.theme-maiksfav .m9-info,body.theme-maiksfav .xp-title{display:none;}
+  body.theme-maiksfav .be-win{top:0;background:#ECECEC;border:2px solid #262626;border-radius:10px;overflow:hidden;
+    box-shadow:inset 2px 2px 0 #ffffff, inset -2px -2px 0 #c4c4c4, 6px 6px 0 rgba(0,0,0,.35);}
+  body.theme-maiksfav .mf-title{display:flex;align-items:center;position:relative;height:28px;flex:0 0 28px;
+    gap:8px;padding:0 10px;background:#E3E3E3;border-bottom:2px solid #262626;
+    font-family:"Pixelify Sans","Silkscreen","ChicagoFLF",monospace;}
+  .mf-lights{display:flex;gap:8px;align-items:center;z-index:2;}
+  .mf-btn{width:12px;height:12px;border-radius:50%;border:1px solid rgba(0,0,0,.30);cursor:pointer;
+    box-shadow:inset 0 1px 1px rgba(255,255,255,.5);}
+  .mf-close{background:#FF5F57;} .mf-min{background:#FEBC2E;} .mf-zoom{background:#28C840;}
+  .mf-caption{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    font-size:14px;font-weight:700;color:#3a3a3a;white-space:nowrap;}
+  body.theme-maiksfav .be-menubar{background:#E3E3E3;color:#262626;border:none;
+    font-family:"Pixelify Sans","ChicagoFLF",monospace;}
+  body.theme-maiksfav .be-mid,body.theme-maiksfav .be-content{background:#fff;}
+  body.theme-maiksfav .be-status{background:#E3E3E3;color:#262626;border:none;}
+  body.theme-maiksfav .be-item .lbl{border-bottom:none;font-family:"Pixelify Sans","ChicagoFLF",monospace;}
+  body.theme-maiksfav .be-grid.list .be-item.sel,body.theme-maiksfav .be-item.sel .lbl{background:#3B76E0;color:#fff;}
+
+  /* ===== Mac OS X — Aqua 10.0–10.4 ===== */
+  .mx-title{display:none;}
+  body.theme-macosx .be-tab,body.theme-macosx .m9-title,body.theme-macosx .m9-info,body.theme-macosx .xp-title,body.theme-macosx .mf-title{display:none;}
+  body.theme-macosx .be-win{top:0;background:#ededed;border:1px solid #7a7a7a;border-radius:6px 6px 3px 3px;overflow:hidden;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.5);}
+  body.theme-macosx .mx-title{display:flex;align-items:center;position:relative;height:22px;flex:0 0 22px;gap:6px;padding:0 8px;
+    background:linear-gradient(to bottom,#fafafa,#ededed 26%,#dadada 60%,#c6c6c6 92%,#bcbcbc);
+    border-bottom:1px solid #888;box-shadow:inset 0 1px 0 rgba(255,255,255,.7);}
+  body.theme-macosx .mx-title::after{content:"";position:absolute;inset:0;pointer-events:none;
+    background:repeating-linear-gradient(to bottom,rgba(255,255,255,.14) 0 1px,rgba(0,0,0,.028) 1px 2px);}
+  .mx-lights{display:flex;gap:6px;align-items:center;position:relative;z-index:1;}
+  .mx-gel{width:14px;height:14px;border-radius:50%;position:relative;flex:0 0 14px;cursor:pointer;
+    box-shadow:inset 0 0 1px .5px rgba(0,0,0,.38),inset 0 -2.5px 3px rgba(0,0,0,.32),inset 0 2px 2px rgba(255,255,255,.30),0 1px 1.5px rgba(0,0,0,.42);}
+  .mx-gel::before{content:"";position:absolute;left:2.5px;right:2.5px;top:1.5px;height:6px;border-radius:50%;z-index:1;
+    background:radial-gradient(ellipse at 50% 0%,rgba(255,255,255,.98),rgba(255,255,255,.55) 52%,rgba(255,255,255,0));}
+  .mx-close{background:radial-gradient(circle at 50% 34%,#ffe6df,#ff8f7c 20%,#fb5038 46%,#e22a16 66%,#b51d0d 84%,#861309);}
+  .mx-min{background:radial-gradient(circle at 50% 34%,#fff1cf,#ffd069 20%,#fcab1e 46%,#ef8d00 66%,#c06d00 84%,#8a4f00);}
+  .mx-zoom{background:radial-gradient(circle at 50% 34%,#e7fbcb,#aef071 20%,#62d227 46%,#3aa90e 66%,#2b8908 84%,#1c6207);}
+  .mx-glyph{position:absolute;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;
+    font:700 11px "Lucida Grande",Helvetica,Arial,sans-serif;color:rgba(0,0,0,.6);
+    text-shadow:0 1px 0 rgba(255,255,255,.4);opacity:0;transition:opacity .08s linear;pointer-events:none;}
+  .mx-glyph{display:none;}
+  .mx-caption{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    font:700 13px "Lucida Grande","Helvetica Neue",Helvetica,Arial,sans-serif;color:#1a1a1a;text-shadow:0 1px 0 rgba(255,255,255,.6);white-space:nowrap;}
+  body.theme-macosx .be-menubar{color:#2a2a2a;border:none;border-bottom:1px solid #9b9b9b;box-shadow:inset 0 1px 0 rgba(255,255,255,.7);
+    background:repeating-linear-gradient(to bottom,rgba(0,0,0,.028) 0 1px,rgba(255,255,255,.12) 1px 2px),linear-gradient(to bottom,#f4f4f4,#dcdcdc);}
+  body.theme-macosx .be-mid,body.theme-macosx .be-content{background:#fff;}
+  body.theme-macosx .be-content{box-shadow:inset 1px 0 0 #e5e5e5;}
+  body.theme-macosx .be-status{color:#333;border:none;border-top:1px solid #c7c7c7;
+    background:linear-gradient(to bottom,#f4f4f4,#dcdcdc);}
+  /* Aqua blue gel scrollbars */
+  body.theme-macosx .vsb,body.theme-macosx .hsb{background:linear-gradient(90deg,#f3f3f3,#e2e2e2);border-color:#c7c7c7;}
+  body.theme-macosx .sb-trough{background:linear-gradient(90deg,#f3f3f3,#e2e2e2);}
+  body.theme-macosx .sb-thumb{border-radius:7px;border:1px solid #3a6398;
+    background:linear-gradient(90deg,#e6f2ff 0%,#abcef6 26%,#6a9ddd 60%,#5184c9 100%);
+    box-shadow:inset 1.5px 1px 1px rgba(255,255,255,.95),inset -1px -1px 2px rgba(20,60,120,.45);}
+  body.theme-macosx .sb-thumb .grip{display:none;}
+  body.theme-macosx .sb-btn{color:#5a6470;border:1px solid #cfcfcf;background:linear-gradient(180deg,#fafafa,#e6e6e6);box-shadow:none;}
+  /* Aqua selection + labels */
+  body.theme-macosx .be-item .lbl{border-bottom:none;border-radius:3px;}
+  body.theme-macosx .be-grid .be-item.sel .lbl,body.theme-macosx .be-grid.list .be-item.sel{background:#3a72c8;color:#fff;}
+
+  /* ===== Windows 98 — SPEC-Farben/-Bevels, leicht skaliert für Lesbarkeit ===== */
+  .w98-ico{width:16px;height:16px;flex:0 0 auto;margin-right:3px;image-rendering:pixelated;image-rendering:-webkit-optimize-contrast;}
+  .w98-ico:not([src]),.w98-ico[src=""]{display:none;}
+  .w98-cap{color:#fff;font:700 12px Tahoma,"Microsoft Sans Serif",sans-serif;
+    flex:1 1 auto;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .w98-btn{width:20px;height:18px;background:#c4c4c4;cursor:pointer;flex:0 0 auto;
+    box-shadow:inset -1px -1px 0 #000,inset 1px 1px 0 #dbdbdb,inset -2px -2px 0 #808080,inset 2px 2px 0 #fff;
+    font:700 13px Tahoma,Verdana,sans-serif;color:#000;display:flex;align-items:center;justify-content:center;line-height:1;}
+  .w98-btn:active{box-shadow:inset 1px 1px 0 #000,inset -1px -1px 0 #dbdbdb,inset 2px 2px 0 #808080,inset -2px -2px 0 #fff;}
+  .w98-btn.w98-dis{color:#808080;text-shadow:1px 1px 0 #fff;cursor:default;}
+  .w98-close{margin-left:3px;}
+  /* Marlett-artige Glyphen (gezeichnet) — identisch zum nativen App-Fenster-Chrome */
+  .w98-btn{font-size:0;position:relative;}
+  #w98close::before,#w98close::after{content:"";position:absolute;left:50%;top:50%;width:11px;height:2px;background:#000;}
+  #w98close::before{transform:translate(-50%,-50%) rotate(45deg);}
+  #w98close::after{transform:translate(-50%,-50%) rotate(-45deg);}
+  #w98min::before{content:"";position:absolute;left:4px;bottom:4px;width:8px;height:2px;background:#808080;box-shadow:1px 1px 0 #fff;}
+  #w98max::before{content:"";position:absolute;left:4px;top:3px;width:10px;height:9px;border:1px solid #808080;border-top-width:2px;box-shadow:1px 1px 0 #fff;}
+  body.theme-win98 .be-tab,body.theme-win98 .m9-title,body.theme-win98 .m9-info,body.theme-win98 .xp-title,body.theme-win98 .mf-title,body.theme-win98 .mx-title{display:none;}
+  .w98-title{display:none;}
+  body.theme-win98 .be-win{top:0;background:#c4c4c4;border-radius:0;border:none;
+    box-shadow:inset -1px -1px 0 #000,inset 1px 1px 0 #fff,inset -2px -2px 0 #808080,inset 2px 2px 0 #dbdbdb;}
+  body.theme-win98 .w98-title{display:flex;align-items:center;gap:2px;height:22px;flex:0 0 22px;margin:3px 3px 0;padding:0 2px 0 6px;
+    background:linear-gradient(90deg,#00007b,#1085d2);}
+  body.theme-win98 .be-menubar{height:20px;background:#c0c0c0;color:#000;border:none;margin:0 3px;box-shadow:none;
+    font:12px "Segoe UI",Tahoma,sans-serif;padding:0 2px;gap:0;}
+  body.theme-win98 .be-menubar span{font-size:12px;padding:2px 5px;height:18px;line-height:14px;border-radius:0;}
+  /* Win98/os-gui: Menubar-Eintrag flach, Hover = erhaben, offen = versenkt+1px versetzt */
+  body.theme-win98 .be-menubar span:hover{background:#c0c0c0;color:#000;
+    box-shadow:inset 1px 1px 0 #fff,inset -1px -1px 0 #808080;}
+  body.theme-win98 .be-menubar span.open{background:#c0c0c0;color:#000;position:relative;top:1px;left:1px;
+    box-shadow:inset 1px 1px 0 #808080,inset -1px -1px 0 #fff;}
+  /* Dropdowns exakt wie os-gui .menu-popup (Solitär/Paint/IE) */
+  body.theme-win98 .menu{background:#c0c0c0;padding:2px;
+    border:1px solid;border-color:#c0c0c0 #000 #000 #c0c0c0;
+    box-shadow:inset 1px 1px 0 #fff,inset -1px -1px 0 #808080,2px 2px 3px rgba(0,0,0,.35);
+    font:12px "Segoe UI",Tahoma,sans-serif;}
+  body.theme-win98 .menu .mi{padding:2px 18px 2px 16px;margin:0 2px;height:17px;line-height:13px;color:#000;}
+  body.theme-win98 .menu .mi.disabled{color:#808080;text-shadow:1px 1px 0 #fff;}
+  body.theme-win98 .menu .mi:not(.disabled):hover{background:#000080;color:#fff;}
+  body.theme-win98 .menu .sep{background:#808080;border-bottom:1px solid #fff;height:0;margin:3px 1px;}
+  /* Explorer furniture: off everywhere, on for the Windows themes. */
+  .w98-toolbar,.w98-addr,.w98-side{display:none;}
+  body.theme-win98 .w98-toolbar{display:flex;align-items:center;gap:2px;height:26px;flex:0 0 26px;
+    margin:1px 3px 0;padding:0 3px;background:#c4c4c4;
+    box-shadow:inset 0 1px 0 #fff,inset 0 -1px 0 #808080;
+    font:11px Tahoma,"MS Sans Serif",sans-serif;color:#000;}
+  body.theme-win98 .w98-tb{display:flex;align-items:center;gap:3px;padding:3px 5px;cursor:default;}
+  body.theme-win98 .w98-tb:hover{box-shadow:inset 1px 1px 0 #fff,inset -1px -1px 0 #808080;}
+  body.theme-win98 .w98-tb:active{box-shadow:inset 1px 1px 0 #808080,inset -1px -1px 0 #fff;}
+  body.theme-win98 .w98-tb.w98-dim{color:#808080;text-shadow:1px 1px 0 #fff;}
+  body.theme-win98 .w98-ic{width:16px;height:16px;flex:0 0 16px;}
+  /* The ribbed handle at the left of every Explorer bar. */
+  body.theme-win98 .w98-grip{width:3px;height:16px;margin:0 4px 0 1px;flex:0 0 3px;
+    box-shadow:inset 1px 0 0 #fff,inset 2px 0 0 #808080;}
+  body.theme-win98 .w98-chev{width:0;height:0;margin-left:3px;
+    border-left:3px solid transparent;border-right:3px solid transparent;border-top:3px solid #000;}
+  body.theme-win98 .w98-tb.w98-dim .w98-chev{border-top-color:#808080;}
+  /* The logo box Explorer parked in the corner. */
+  body.theme-win98 .w98-logo{margin-left:auto;width:26px;height:24px;flex:0 0 26px;background:#000;
+    background-image:linear-gradient(135deg,#e04040 0 45%,#40a040 45% 100%);
+    box-shadow:inset 0 0 0 2px #000;}
+  body.theme-win98 .w98-drop{margin-left:auto;width:15px;height:15px;flex:0 0 15px;background:#c4c4c4;
+    box-shadow:inset 1px 1px 0 #fff,inset -1px -1px 0 #404040,inset 2px 2px 0 #d4d0c8,inset -2px -2px 0 #808080;
+    position:relative;}
+  body.theme-win98 .w98-drop::after{content:"";position:absolute;left:4px;top:6px;
+    border-left:3.5px solid transparent;border-right:3.5px solid transparent;border-top:4px solid #000;}
+  /* Status bar: a wide pane, a narrow one, then the location — the three sunken fields of the
+     original. They live in their own ROW because the Windows status bar is laid out as a column
+     (horizontal scrollbar above, status below), so siblings of the count would stack vertically. */
+  .w98-statusrow{display:none;}
+  body.theme-win98 .be-status .w98-statusrow{display:flex;order:1;width:100%;gap:2px;margin-top:2px;}
+  body.theme-win98 .be-status .w98-statusrow .be-count{order:0;flex:1 1 auto;width:auto;margin-top:0;}
+  body.theme-win98 .be-status .w98-statusrow .be-count,
+  body.theme-win98 .be-status .w98-statusrow .w98-pane{display:flex;align-items:center;height:18px;
+    padding:0 5px;background:#d4d0c8;
+    box-shadow:inset 1px 1px 0 #808080,inset -1px -1px 0 #fff;
+    font:11px Tahoma,"MS Sans Serif",sans-serif;color:#000;}
+  body.theme-win98 .be-status .w98-statusrow .w98-pane{order:1;flex:0 0 auto;width:56px;}
+  body.theme-win98 .be-status .w98-statusrow .w98-pane3{order:2;width:118px;}
+  body.theme-win98 .w98-tbsep{width:0;height:18px;margin:0 3px;
+    box-shadow:inset 1px 0 0 #808080,inset 2px 0 0 #fff;}
+  body.theme-win98 .w98-addr{display:flex;align-items:center;gap:4px;height:22px;flex:0 0 22px;
+    margin:0 3px;padding:0 3px;background:#c4c4c4;
+    font:11px Tahoma,"MS Sans Serif",sans-serif;color:#000;}
+  body.theme-win98 .w98-addrlabel{padding:0 3px;}
+  body.theme-win98 .w98-addrfield{flex:1 1 auto;display:flex;align-items:center;gap:4px;
+    height:17px;padding:0 4px;background:#fff;
+    box-shadow:inset 1px 1px 0 #808080,inset -1px -1px 0 #fff,inset 2px 2px 0 #000;}
+  body.theme-win98 .w98-go{display:flex;align-items:center;gap:3px;padding:2px 5px;cursor:default;}
+  /* The info panel. Its banner is the gradient wash Explorer drew behind the folder name. */
+  body.theme-win98 .w98-side{display:block;flex:0 0 40%;max-width:210px;min-width:120px;
+    background:#fff;overflow:hidden;
+    box-shadow:inset 1px 1px 0 #808080,inset -1px 0 0 #fff;
+    font:11px Tahoma,"MS Sans Serif",sans-serif;color:#000;}
+  /* The wash Explorer drew across the top of the panel: teal-blue into gold, fading to the
+     page white on the right. The folder's name sits UNDER it in black, over a blue rule. */
+  body.theme-win98 .w98-banner{height:46px;
+    background:linear-gradient(90deg,#2c5c96 0%,#6f9ac6 34%,#e8b95a 66%,#fff 100%);}
+
+  /* ===== Windows Me only =====
+     Me shares its chrome with 95 and 98 (see RetroFrameTheme.key), so the era class from
+     AppFolderController is what separates them here.
+
+     Its folder windows drop the navigation toolbar and the address bar: what makes a Me window
+     read as Me is the web-view panel down the left, not the buttons above it. The panel keeps
+     the real banner artwork instead of the gradient that stood in for it. */
+  body.era-windows-me .w98-toolbar,
+  body.era-windows-me .w98-addr{display:none!important;}
+  body.era-windows-me .w98-banner{
+    background:url("active.png") left top no-repeat, #fff;
+    background-size:auto 100%;}
+  body.theme-win98 .w98-sidebody{padding:6px 8px 8px;}
+  body.theme-win98 .w98-sidetitle{margin:0 0 6px;padding:0 0 4px;
+    font:700 14px Tahoma,sans-serif;color:#000;border-bottom:1px solid #2c5c96;}
+  body.theme-win98 .w98-hint{margin:0 0 10px;}
+  body.theme-win98 .w98-desc{margin:0 0 12px;display:inline-block;padding:1px 3px;
+    background:#ffffc0;box-shadow:0 0 0 1px #c0b060;}
+  body.theme-win98 .w98-seealso{margin:0 0 4px;}
+  body.theme-win98 .w98-link{display:block;color:#0000c0;text-decoration:underline;
+    cursor:pointer;margin:2px 0;}
+  body.theme-win98 .w98-link:hover{color:#c00000;}
+  body.theme-win98 .be-mid{margin:0 3px;}
+  body.theme-win98 .be-content{background:#fff;box-shadow:inset 1px 1px 0 #808080,inset -1px -1px 0 #fff;}
+  body.theme-win98 .be-status{background:#c4c4c4;color:#000;border:none;margin:0 3px 3px;
+    box-shadow:inset 1px 1px 0 #808080,inset -1px -1px 0 #fff;}
+  body.theme-win98 .vsb,body.theme-win98 .hsb{background:#c0c0c0;border-color:#808080;}
+  /* Authentic Win95/98 raised bevel: white outer top-left, black outer bottom-right, #dfdfdf/#808080 inner. */
+  body.theme-win98 .sb-btn{background:#c0c0c0;border:none;
+    box-shadow:inset 1px 1px 0 #fff,inset -1px -1px 0 #000,inset 2px 2px 0 #dfdfdf,inset -2px -2px 0 #808080;}
+  body.theme-win98 .sb-btn:active{box-shadow:inset 1px 1px 0 #000,inset -1px -1px 0 #fff,inset 2px 2px 0 #808080;}
+  body.theme-win98 .sb-btn:active svg{transform:translate(1px,1px);}
+  body.theme-win98 .sb-btn svg polygon{fill:#000;}
+  /* Classic 1px white/silver dithered track (checkerboard). */
+  body.theme-win98 .sb-trough{background-color:#fff;box-shadow:none;
+    background-image:linear-gradient(45deg,#c0c0c0 25%,transparent 0,transparent 75%,#c0c0c0 0,#c0c0c0),linear-gradient(45deg,#c0c0c0 25%,transparent 0,transparent 75%,#c0c0c0 0,#c0c0c0);
+    background-position:0 0,1px 1px;background-size:2px 2px;}
+  body.theme-win98 .sb-thumb{background:#c0c0c0;border:none;border-radius:0;
+    box-shadow:inset 1px 1px 0 #fff,inset -1px -1px 0 #000,inset 2px 2px 0 #dfdfdf,inset -2px -2px 0 #808080;}
+  body.theme-win98 .sb-thumb .grip{display:none;}
+  /* Win95/98 scrollbars have a SINGLE arrow at each end (not the BeOS paired-arrow clusters).
+     Top keeps only up, bottom only down; left end only left, right end only right. */
+  body.theme-win98 .vsb .sb-arrows:first-child .sb-btn[data-v="1"],
+  body.theme-win98 .vsb .sb-arrows:last-child  .sb-btn[data-v="-1"],
+  body.theme-win98 .hsb .sb-arrows:first-child .sb-btn[data-h="1"],
+  body.theme-win98 .hsb .sb-arrows:last-child  .sb-btn[data-h="-1"]{display:none;}
+  /* Win95/98: the horizontal scrollbar is its OWN full-width row directly under the content; the
+     status bar ("N items") is a SEPARATE full-width sunken panel beneath it — never side-by-side. */
+  body.theme-win98 .be-status{flex-direction:column;height:auto;padding:0;margin:0 3px 3px;background:transparent;box-shadow:none;border:none;}
+  body.theme-win98 .be-status .hsb{order:0;width:100%;margin:0;}
+  body.theme-win98 .be-status .be-count{order:1;width:100%;min-width:0;height:18px;margin-top:2px;padding:0 6px;
+    background:#c0c0c0;color:#000;border:none;
+    box-shadow:inset 1px 1px 0 #808080,inset -1px -1px 0 #fff;}
+  body.theme-win98 .be-status .be-resize{display:none;}
+  /* Win95/98: folder icons match the Start menu's first-column size (32px), not the 64px
+     BeOS/Mac grid — keeps Fun Stuff / Programs / TV consistent with the rest of the shell. */
+  body.theme-win98 .be-item{width:72px;padding-top:6px;gap:2px;}
+  body.theme-win98 .be-item .ic{width:32px;height:32px;}
+  body.theme-win98 .be-item .lbl{border-bottom:none;font:12px Tahoma,"Microsoft Sans Serif",sans-serif;max-width:70px;}
+  body.theme-win98 .be-grid.list .be-item.sel,body.theme-win98 .be-item.sel .lbl{background:#000080;color:#fff;}
+  /* ===== Windows 7 (Aero glass) — inherits XP structure via dual class (theme-win7 theme-winxp) ===== */
+  body.theme-win7 #win{border-radius:6px 6px 2px 2px;background:rgba(69,128,196,0.34);
+    box-shadow:0 8px 22px rgba(0,0,0,.45),inset 0 0 0 1px rgba(255,255,255,.7);}
+  body.theme-win7 .xp-title{border-radius:6px 6px 0 0;
+    background:linear-gradient(180deg,rgba(255,255,255,.5),rgba(255,255,255,.14) 46%,rgba(0,0,0,.05) 54%,rgba(255,255,255,.22)),rgba(90,137,198,0.30);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.85);}
+  body.theme-win7 .xp-cap,body.theme-win7 .xp-caption{color:#0b1a2e;font-family:"Segoe UI",Tahoma,sans-serif;
+    text-shadow:0 0 4px #fff,0 0 4px #fff,0 0 4px #fff,0 0 3px #fff;}
+  body.theme-win7 .body{background:#f0f0f0;}
+  body.theme-win7 .np-toolbar,body.theme-win7 .np-status,
+  body.theme-win7 .w98-menubar,body.theme-win7 .w98-drop{background:#f0f0f0;}
+  body.theme-win7 .xp-min,body.theme-win7 .xp-max{
+    background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,.3) 45%,rgba(0,0,0,.08) 55%,rgba(255,255,255,.5));
+    border:1px solid rgba(0,0,0,.3);}
+  body.theme-win7 .xp-min::before{background:#1a1a1a;}
+  body.theme-win7 .xp-max::before{border-color:#1a1a1a;}
+  body.theme-win7 .xp-close{background:linear-gradient(180deg,#e7a99e,#d76b58 45%,#d54f36 55%,#c23b22);
+    border:1px solid rgba(0,0,0,.3);}
+  /* ===== Mac OS 9: proxy icon in the title plaque (authentic Platinum) ===== */
+  body.theme-macos9 .m9-plaque{padding:0 8px 0 26px;background:#dadada url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAA7EAAAOxAGVKw4bAAAIvGlUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4gPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iQWRvYmUgWE1QIENvcmUgNS42LWMxNDUgNzkuMTYzNDk5LCAyMDE4LzA4LzEzLTE2OjQwOjIyICAgICAgICAiPiA8cmRmOlJERiB4bWxuczpyZGY9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkvMDIvMjItcmRmLXN5bnRheC1ucyMiPiA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIiB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iIHhtbG5zOmRjPSJodHRwOi8vcHVybC5vcmcvZGMvZWxlbWVudHMvMS4xLyIgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iIHhtbG5zOnN0RXZ0PSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VFdmVudCMiIHhtbG5zOnN0UmVmPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VSZWYjIiB4bWxuczpwaG90b3Nob3A9Imh0dHA6Ly9ucy5hZG9iZS5jb20vcGhvdG9zaG9wLzEuMC8iIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENDIDIwMTkgKFdpbmRvd3MpIiB4bXA6Q3JlYXRlRGF0ZT0iMjAyMS0wOC0xM1QxNTo0MDo1OS0wNzowMCIgeG1wOk1ldGFkYXRhRGF0ZT0iMjAyMS0wOC0xM1QxNTo0MToxMy0wNzowMCIgeG1wOk1vZGlmeURhdGU9IjIwMjEtMDgtMTNUMTU6NDE6MTMtMDc6MDAiIGRjOmZvcm1hdD0iaW1hZ2UvcG5nIiB4bXBNTTpJbnN0YW5jZUlEPSJ4bXAuaWlkOjZjOTM1MGNlLTZjZTgtNmY0NS05MDg0LTBjMzY3MWY5YWFhNSIgeG1wTU06RG9jdW1lbnRJRD0iYWRvYmU6ZG9jaWQ6cGhvdG9zaG9wOjZmNDY0M2NhLTAzYjItZDg0NC1hN2RhLWE4NmNjNjA0MDRiNyIgeG1wTU06T3JpZ2luYWxEb2N1bWVudElEPSJ4bXAuZGlkOmU0OTY4NDFlLTkwNjEtMzA0YS1hMjcyLTVjMzFlNTQ5ZmE5YiIgcGhvdG9zaG9wOkNvbG9yTW9kZT0iMyIgcGhvdG9zaG9wOklDQ1Byb2ZpbGU9InNSR0IgSUVDNjE5NjYtMi4xIj4gPHhtcE1NOkhpc3Rvcnk+IDxyZGY6U2VxPiA8cmRmOmxpIHN0RXZ0OmFjdGlvbj0iY3JlYXRlZCIgc3RFdnQ6aW5zdGFuY2VJRD0ieG1wLmlpZDplNDk2ODQxZS05MDYxLTMwNGEtYTI3Mi01YzMxZTU0OWZhOWIiIHN0RXZ0OndoZW49IjIwMjEtMDgtMTNUMTU6NDA6NTktMDc6MDAiIHN0RXZ0OnNvZnR3YXJlQWdlbnQ9IkFkb2JlIFBob3Rvc2hvcCBDQyAyMDE5IChXaW5kb3dzKSIvPiA8cmRmOmxpIHN0RXZ0OmFjdGlvbj0ic2F2ZWQiIHN0RXZ0Omluc3RhbmNlSUQ9InhtcC5paWQ6YTgyYTNkYWUtZDgxNi0wNjRiLTg4OGItNmVmOTM3ZWFhYThiIiBzdEV2dDp3aGVuPSIyMDIxLTA4LTEzVDE1OjQxOjEzLTA3OjAwIiBzdEV2dDpzb2Z0d2FyZUFnZW50PSJBZG9iZSBQaG90b3Nob3AgQ0MgMjAxOSAoV2luZG93cykiIHN0RXZ0OmNoYW5nZWQ9Ii8iLz4gPHJkZjpsaSBzdEV2dDphY3Rpb249ImNvbnZlcnRlZCIgc3RFdnQ6cGFyYW1ldGVycz0iZnJvbSBhcHBsaWNhdGlvbi92bmQuYWRvYmUucGhvdG9zaG9wIHRvIGltYWdlL3BuZyIvPiA8cmRmOmxpIHN0RXZ0OmFjdGlvbj0iZGVyaXZlZCIgc3RFdnQ6cGFyYW1ldGVycz0iY29udmVydGVkIGZyb20gYXBwbGljYXRpb24vdm5kLmFkb2JlLnBob3Rvc2hvcCB0byBpbWFnZS9wbmciLz4gPHJkZjpsaSBzdEV2dDphY3Rpb249InNhdmVkIiBzdEV2dDppbnN0YW5jZUlEPSJ4bXAuaWlkOjZjOTM1MGNlLTZjZTgtNmY0NS05MDg0LTBjMzY3MWY5YWFhNSIgc3RFdnQ6d2hlbj0iMjAyMS0wOC0xM1QxNTo0MToxMy0wNzowMCIgc3RFdnQ6c29mdHdhcmVBZ2VudD0iQWRvYmUgUGhvdG9zaG9wIENDIDIwMTkgKFdpbmRvd3MpIiBzdEV2dDpjaGFuZ2VkPSIvIi8+IDwvcmRmOlNlcT4gPC94bXBNTTpIaXN0b3J5PiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDphODJhM2RhZS1kODE2LTA2NGItODg4Yi02ZWY5MzdlYWFhOGIiIHN0UmVmOmRvY3VtZW50SUQ9InhtcC5kaWQ6ZTQ5Njg0MWUtOTA2MS0zMDRhLWEyNzItNWMzMWU1NDlmYTliIiBzdFJlZjpvcmlnaW5hbERvY3VtZW50SUQ9InhtcC5kaWQ6ZTQ5Njg0MWUtOTA2MS0zMDRhLWEyNzItNWMzMWU1NDlmYTliIi8+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+mhfL7gAAAUFJREFUWIXt1rEOgjAQBuCbTZidXVxc8A18EBdxd3NkdnQjMSGObr6IiS/kct4BhVIPaaFgTCD5ExNJ72t7aQFEBM46TJET7Z4IACEF1H9DpvoBET4fiOkFR4XUZs7FOWNCspnjqyrIGRNSLj3HFWL0zbILrgZwhTTgnCAiwBaipyvkK6ANIoXfV+95A3SBFIDWVXACuEB4GxTCO8AWovphMIBNs2bnzNAACaIQowJ0iEL8BFA/DybABPgHgH61DgGgIhvKghKYdwPkHxfRxx3vGXCmHCSI/niDCIAbJREgMxCe3hABcC8Q1wJxpGwzhL4XviANABMRU1ZSV/aGtAB4K06UvQjwAbHYgrjog8Dmm80Z0tCEZvF5NloboAtEACRm8XJMW4ALpOEcqBUvx3MF2EIMgFi8F8AGos0+bzhhxd8+x7GrukWI6wAAAABJRU5ErkJggg==") 5px center/16px no-repeat;}
+        /* ===== Mac OS 9 Platinum title bar — matched to os9.ca original (authoritative) ===== */
+  /* Reverse-engineered 1:1 from os9.ca window.min.css */
+  body.theme-macos9 #win{background:#dadada!important;border:1px solid #000!important;
+    box-shadow:1px 1px #111,inset 1px 1px #fff,inset -1px -1px #999!important;}
+  body.theme-macos9 .m9-title{height:22px;border:none!important;
+    background:repeating-linear-gradient(#fff 0 1px,#737373 1px 2px) left 5px/100% 12px no-repeat,#dadada!important;}
+  body.theme-macos9 .m9-plaque{background-color:#dadada!important;font-family:'Charcoal','ChicagoFLF',sans-serif!important;font-weight:normal!important;}
+  body.theme-macos9 .m9-close,body.theme-macos9 .m9-collapse,body.theme-macos9 .m9-zoom{
+    display:block!important;box-sizing:content-box!important;width:9px!important;height:9px!important;position:relative;flex:0 0 auto;
+    border:1px solid #222!important;
+    background:linear-gradient(to bottom right,#999,#aaa,#bbb,#ccc,#ddd,#eee,#fff,#fff)!important;
+    box-shadow:inset 1px 1px #ccc,inset -1px -1px #888,-1px -1px 0 0 #808080,1px 1px 0 0 #fff!important;cursor:pointer;}
+  body.theme-macos9 .m9-close{margin:4px 0 0 5px!important;}
+  body.theme-macos9 .m9-right{margin-left:auto!important;display:flex!important;align-items:flex-start!important;gap:0!important;margin-right:0!important;padding-right:0!important;}
+  body.theme-macos9 .m9-zoom{order:1;margin:4px 4px 0 0!important;}
+  body.theme-macos9 .m9-collapse{order:2;margin:4px 5px 0 4px!important;}
+  body.theme-macos9 .m9-zoom::before{content:""!important;position:absolute;top:1px!important;left:1px!important;width:5px;height:5px;border-bottom:1px solid #202020!important;border-right:1px solid #202020!important;background:none!important;box-shadow:none!important;}
+  body.theme-macos9 .m9-zoom::after{content:none!important;}
+  body.theme-macos9 .m9-collapse::before{content:""!important;position:absolute;left:1px!important;right:1px!important;top:4px!important;height:1px!important;border-top:1px solid #202020!important;border-bottom:1px solid #202020!important;background:none!important;box-shadow:none!important;}
+  body.theme-macos9 .m9-collapse::after{content:none!important;}
+  body.theme-macos9 .body{margin:0 4px 4px 4px!important;border:1px solid #000!important;box-shadow:-1px -1px #9c9c9c,1px 1px #fff,inset 1px 1px #fff,inset -1px -1px #acacac!important;}
+  /* Inactive window (os9.ca .window.blur): grey shadow/borders, 50% title, flat boxes */
+  body.theme-macos9.rm-blur #win,body.theme-macos9.rm-blur .window,body.theme-macos9.rm-blur .be-win{box-shadow:1px 1px #525252!important;border-color:#525252!important;}
+  body.theme-macos9.rm-blur .m9-close,body.theme-macos9.rm-blur .m9-collapse,body.theme-macos9.rm-blur .m9-zoom{border-color:#525252!important;box-shadow:none!important;}
+  body.theme-macos9.rm-blur .m9-zoom::before,body.theme-macos9.rm-blur .m9-zoom::after,body.theme-macos9.rm-blur .m9-collapse::before{border-color:#525252!important;background:#525252!important;}
+  body.theme-macos9.rm-blur .m9-plaque{opacity:.5;}
+</style>
+<style>
+/* Live title-bar button feedback (native DragOverlayView → window.setBtnState); the overlay
+   intercepts mouse events, so these classes stand in for :hover/:active. */
+.xp-close.is-hover,.mf-close.is-hover,.closebox.is-hover{filter:brightness(1.13);}
+.xp-close.is-press,.mf-close.is-press,.closebox.is-press{filter:brightness(.82);}
+.mx-close.is-press,.mx-zoom.is-press{box-shadow:inset 0 0 3px 1px rgba(0,0,0,.45),inset 0 -4px 5px rgba(0,0,0,.32);}
+.w98-btn.is-hover{filter:brightness(1.06);}
+.w98-btn.is-press{box-shadow:inset 2px 2px 0 #000,inset -2px -2px 0 #dbdbdb,inset 4px 4px 0 #808080,inset -4px -4px 0 #fff;}
+.m9-ctl.is-hover{background:#d0d0dc;}
+.m9-ctl.is-press{background:#9c9cb0;box-shadow:inset 0 0 0 2px #7e7e8a;}
+</style>
+</head>
+<body>
+  <div class="be-win active" id="win">
+    <div class="be-tab" id="tab">
+      <span class="be-close" id="close" title="Close"></span>
+      <span class="be-title">Applications</span>
+      <span class="be-zoom"></span>
+    </div>
+    <!-- Mac OS 9 Platinum title bar (shown only in theme-macos9) -->
+    <div class="m9-title" id="m9title">
+      <div class="m9-stripes"></div>
+      <span class="m9-ctl m9-close" id="m9close"></span>
+      <div class="m9-plaque"><span>Applications</span></div>
+      <div class="m9-right"><span class="m9-ctl m9-zoom" id="m9zoom"></span><span class="m9-ctl m9-collapse" id="m9collapse"></span></div>
+    </div>
+    <div class="m9-info" id="m9info">0 items</div>
+    <!-- Windows XP Luna title bar (shown only in theme-winxp) -->
+    <div class="xp-title" id="xptitle">
+      <span class="xp-sysicon"></span>
+      <span class="xp-caption">Programme</span>
+      <span class="xp-btns">
+        <span class="xp-btn xp-min" id="xpmin" title="Minimieren"></span>
+        <span class="xp-btn xp-max" id="xpmax" title="Maximieren"></span>
+        <span class="xp-btn xp-close" id="xpclose" title="Schließen"></span>
+      </span>
+    </div>
+    <!-- Maiks Favourite pixel-macOS title bar (shown only in theme-maiksfav) -->
+    <div class="mf-title" id="mftitle">
+      <span class="mf-lights">
+        <span class="mf-btn mf-close" id="mfclose" title="Close"></span>
+        <span class="mf-btn mf-min" id="mfmin" title="Minimieren"></span>
+        <span class="mf-btn mf-zoom" id="mfzoom" title="Zoom"></span>
+      </span>
+      <span class="mf-caption">Applications</span>
+    </div>
+    <!-- Mac OS X Aqua title bar (shown only in theme-macosx) -->
+    <div class="mx-title" id="mxtitle">
+      <span class="mx-lights">
+        <span class="mx-gel mx-close" id="mxclose" title="Close"><span class="mx-glyph">&times;</span></span>
+        <span class="mx-gel mx-min" id="mxmin" title="Minimieren"><span class="mx-glyph">&minus;</span></span>
+        <span class="mx-gel mx-zoom" id="mxzoom" title="Zoom"><span class="mx-glyph">+</span></span>
+      </span>
+      <span class="mx-caption">Applications</span>
+    </div>
+    <!-- Windows 98 classic title bar (shown only in theme-win98) -->
+    <div class="w98-title" id="w98title">
+      <img class="w98-ico" id="w98ico" alt="">
+      <span class="w98-cap" id="w98cap">Applications</span>
+      <span class="w98-btn w98-dis" id="w98min">_</span>
+      <span class="w98-btn" id="w98max">□</span>
+      <span class="w98-btn" id="w98close">×</span>
+    </div>
+    <div class="be-menubar"><span>File</span><span>Window</span></div>
+    <!-- Windows Explorer furniture (theme-win98 only): toolbar, address bar and the info panel
+         down the left. Everything here is hidden by default and switched on by the theme. -->
+    <div class="w98-toolbar" id="w98toolbar">
+      <span class="w98-grip"></span>
+      <span class="w98-tb"><svg class="w98-ic" viewBox="0 0 16 16"><path d="M7 3 2 8l5 5V9.5h7v-3H7z" fill="#2f6e2f"/></svg>Back<i class="w98-chev"></i></span>
+      <span class="w98-tb w98-dim"><svg class="w98-ic" viewBox="0 0 16 16"><path d="M9 3l5 5-5 5V9.5H2v-3h7z" fill="#7a7a7a"/></svg><i class="w98-chev"></i></span>
+      <span class="w98-tb w98-dim"><svg class="w98-ic" viewBox="0 0 16 16"><rect x="2" y="4" width="12" height="10" fill="#e8d090" stroke="#8a7a40"/><path d="M8 5.5l3 3H9v3H7v-3H5z" fill="#5a5a5a"/></svg></span>
+      <span class="w98-tbsep"></span>
+      <span class="w98-tb"><svg class="w98-ic" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.2" fill="#bfe4ff" stroke="#1b4f7a"/><path d="M10 10l4 4" stroke="#1b4f7a" stroke-width="2" fill="none"/></svg>Search</span>
+      <span class="w98-tb"><svg class="w98-ic" viewBox="0 0 16 16"><path d="M1.5 4h5l1.5 2h6.5v7.5h-13z" fill="#e8d090" stroke="#8a7a40"/></svg>Folders</span>
+      <span class="w98-tb"><svg class="w98-ic" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="#cfe8cf" stroke="#2f6e2f"/><path d="M8 4.5V8l2.5 1.5" stroke="#2f6e2f" stroke-width="1.4" fill="none"/></svg>History</span>
+      <span class="w98-tbsep"></span>
+      <span class="w98-tb w98-dim"><svg class="w98-ic" viewBox="0 0 16 16"><path d="M1.5 4h5l1.5 2h6.5v7.5h-13z" fill="#e8d090" stroke="#8a7a40"/><path d="M11 8.5l3 2-3 2z" fill="#1b4f7a"/></svg></span>
+      <span class="w98-tb w98-dim"><svg class="w98-ic" viewBox="0 0 16 16"><path d="M1.5 4h5l1.5 2h6.5v7.5h-13z" fill="#e8d090" stroke="#8a7a40"/><rect x="9" y="8" width="5" height="5" fill="#fff" stroke="#1b4f7a"/></svg></span>
+      <span class="w98-tb w98-dim"><svg class="w98-ic" viewBox="0 0 16 16"><path d="M3 3l10 10M13 3L3 13" stroke="#a02020" stroke-width="2" fill="none"/></svg></span>
+      <span class="w98-tb w98-dim"><svg class="w98-ic" viewBox="0 0 16 16"><path d="M13 12a5 5 0 0 0-9-3M4 5v4h4" stroke="#2f4f8a" stroke-width="1.6" fill="none"/></svg></span>
+      <span class="w98-tbsep"></span>
+      <span class="w98-tb"><svg class="w98-ic" viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="10" fill="#fff" stroke="#5a5a5a"/><path d="M2 6h12M6 6v7" stroke="#5a5a5a"/></svg><i class="w98-chev"></i></span>
+      <!-- The animated logo box Explorer kept in its top-right corner. -->
+      <span class="w98-logo" id="w98logo"></span>
+    </div>
+    <div class="w98-addr" id="w98addr">
+      <span class="w98-grip"></span>
+      <span class="w98-addrlabel"><u>A</u>ddress</span>
+      <div class="w98-addrfield">
+        <svg class="w98-ic" viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="8" fill="#bfe4ff" stroke="#1b4f7a"/><rect x="5" y="11" width="6" height="2" fill="#8a8a8a"/></svg>
+        <span id="w98addrtext">Applications</span>
+        <span class="w98-drop"></span>
+      </div>
+      <span class="w98-go"><svg class="w98-ic" viewBox="0 0 16 16"><path d="M3 10a5 5 0 0 1 9-3" stroke="#2f6e2f" stroke-width="1.6" fill="none"/><path d="M13 4v4h-4z" fill="#2f6e2f"/></svg>Go</span>
+    </div>
+    <div class="be-mid">
+      <!-- The web-view panel Explorer put down the left in Windows Me. -->
+      <div class="w98-side" id="w98side">
+        <div class="w98-banner"></div>
+        <div class="w98-sidebody">
+          <h1 class="w98-sidetitle" id="w98bannertitle">Applications</h1>
+          <p class="w98-hint">Select an item to view its description.</p>
+          <p class="w98-desc" id="w98desc">Displays the contents of this folder.</p>
+          <p class="w98-seealso">See also:</p>
+          <a class="w98-link" data-open="__docs__">My Documents</a>
+          <a class="w98-link" data-open="__net__">My Network Places</a>
+          <a class="w98-link" data-open="__dial__">Dial-Up Networking</a>
+        </div>
+      </div>
+      <div class="be-content"><div class="be-grid" id="grid"></div></div>
+      <div class="vsb">
+        <div class="sb-arrows"><div class="sb-btn" data-v="-1"></div><div class="sb-btn" data-v="1"></div></div>
+        <div class="sb-trough" data-trough="v"><div class="sb-thumb" data-thumb="v"></div></div>
+        <div class="sb-arrows"><div class="sb-btn" data-v="-1"></div><div class="sb-btn" data-v="1"></div></div>
+      </div>
+    </div>
+    <div class="be-status">
+      <div class="w98-statusrow">
+        <div class="be-count" id="count">0 items</div>
+        <div class="w98-pane" id="w98pane2"></div>
+        <div class="w98-pane w98-pane3"><span id="w98pane3text">Applications</span></div>
+      </div>
+      <div class="hsb">
+        <div class="sb-arrows"><div class="sb-btn" data-h="-1"></div><div class="sb-btn" data-h="1"></div></div>
+        <div class="sb-trough" data-trough="h"><div class="sb-thumb" data-thumb="h"></div></div>
+        <div class="sb-arrows"><div class="sb-btn" data-h="-1"></div><div class="sb-btn" data-h="1"></div></div>
+      </div>
+      <div class="be-resize"></div>
+    </div>
+  </div>
+
+<script src="beos-icons.js"></script>
+<script>
+  const ARROW = {
+    up:'<svg viewBox="0 0 9 9" width="9" height="9"><polygon points="4.5,2 8,7 1,7" fill="#2c2c2c"/></svg>',
+    down:'<svg viewBox="0 0 9 9" width="9" height="9"><polygon points="1,2 8,2 4.5,7" fill="#2c2c2c"/></svg>',
+    left:'<svg viewBox="0 0 9 9" width="9" height="9"><polygon points="2,4.5 7,1 7,8" fill="#2c2c2c"/></svg>',
+    right:'<svg viewBox="0 0 9 9" width="9" height="9"><polygon points="2,1 7,4.5 2,8" fill="#2c2c2c"/></svg>',
+  };
+  document.querySelectorAll('.sb-btn[data-v="-1"]').forEach(b=>b.innerHTML=ARROW.up);
+  document.querySelectorAll('.sb-btn[data-v="1"]').forEach(b=>b.innerHTML=ARROW.down);
+  document.querySelectorAll('.sb-btn[data-h="-1"]').forEach(b=>b.innerHTML=ARROW.left);
+  document.querySelectorAll('.sb-btn[data-h="1"]').forEach(b=>b.innerHTML=ARROW.right);
+  document.querySelectorAll('.sb-thumb').forEach(t=>t.innerHTML='<i class="grip"></i><i class="grip"></i><i class="grip"></i>');
+
+  let viewMode='icon';
+  const VIEW={icon:{CW:90,CH:108}, mini:{CW:80,CH:74}, list:{CW:0,CH:20}}, PAD=8;
+  const win=document.getElementById('win'), grid=document.getElementById('grid');
+  const content=win.querySelector('.be-content');
+  const st={x:0,y:0,gridW:0,gridH:0,maxX:0,maxY:0};
+  let apps=[]; let selected=null; let availSpace='';
+  const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const post=o=>{ if(window.webkit&&window.webkit.messageHandlers&&window.webkit.messageHandlers.appfolder) window.webkit.messageHandlers.appfolder.postMessage(o); };
+
+  function buildGrid(){
+    let v=VIEW[viewMode];
+    // Win95/98 icon view uses the smaller 32px Start-menu icon size → tighter cells.
+    if (viewMode==='icon' && document.body.classList.contains('theme-win98')) v={CW:76,CH:78};
+    grid.className='be-grid'+(viewMode==='mini'?' mini':'')+(viewMode==='list'?' list':'');
+    const list = viewMode==='list';
+    const cols = list ? 1 : Math.max(1, Math.floor((content.clientWidth - PAD*2)/v.CW));
+    const rows=Math.max(1, Math.ceil(apps.length/cols));
+    const listW = Math.max(160, content.clientWidth - PAD*2);
+    st.gridW = list ? content.clientWidth : cols*v.CW+PAD*2;
+    st.gridH = rows*v.CH+PAD*2;
+    grid.style.width=st.gridW+'px'; grid.style.height=st.gridH+'px';
+    grid.innerHTML='';
+    apps.forEach((it,i)=>{
+      const c=i%cols, r=(i/cols)|0;
+      const el=document.createElement('div'); el.className='be-item';
+      el.style.left = list ? PAD+'px' : (PAD+c*v.CW)+'px';
+      el.style.top = (PAD+r*v.CH)+'px';
+      if(list) el.style.width = listW+'px';
+      const cl=document.body.classList, themed=cl.contains('theme-macos6')||cl.contains('theme-macos9')||cl.contains('theme-winxp')||cl.contains('theme-maiksfav')||cl.contains('theme-macosx')||cl.contains('theme-win98');
+      const icHTML=(themed && it.img) ? `<img src="${it.img}">` : BEOS_ICONS.get(it.icon);
+      el.innerHTML=`<div class="ic">${icHTML}</div><div class="lbl">${esc(it.name)}</div>`;
+      el.addEventListener('mousedown',(e)=>{
+        e.preventDefault(); closeMenus();
+        grid.querySelectorAll('.be-item.sel').forEach(s=>s.classList.remove('sel')); el.classList.add('sel');
+        selected = it;
+        // Free-drag the icon within the folder (BeOS Tracker style); a click without
+        // movement just selects, a double-click launches.
+        const sx=e.clientX, sy=e.clientY, ox=parseFloat(el.style.left), oy=parseFloat(el.style.top);
+        let dragging=false;
+        const move=ev=>{
+          if(!dragging && Math.hypot(ev.clientX-sx,ev.clientY-sy)<4) return;
+          dragging=true; el.style.zIndex=5;
+          el.style.left=Math.max(0,ox+(ev.clientX-sx))+'px';
+          el.style.top=Math.max(0,oy+(ev.clientY-sy))+'px';
+        };
+        const up=()=>{ el.style.zIndex=''; window.removeEventListener('mousemove',move); window.removeEventListener('mouseup',up); };
+        window.addEventListener('mousemove',move); window.addEventListener('mouseup',up);
+      });
+      el.addEventListener('dblclick',()=>{ post({a:'open',id:it.id,path:it.path,name:it.name}); });
+      grid.appendChild(el);
+    });
+    // Explorer says "object(s)"; the BeOS/Platinum shells say "items".
+    const isWin = document.body.classList.contains('theme-win98');
+    document.getElementById('count').textContent =
+      apps.length + (isWin ? ' object(s)' : ' items');
+    const m9=document.getElementById('m9info'); if(m9) m9.textContent=apps.length+' items'+(availSpace?', '+availSpace:'');
+    updateScroll();
+  }
+  window.setApps=function(list){ apps=Array.isArray(list)?list:[]; buildGrid(); };
+  window.setDiskFree=function(s){ availSpace=s||''; const m9=document.getElementById('m9info'); if(m9) m9.textContent=apps.length+' items'+(availSpace?', '+availSpace:''); };
+  // Host sets the chrome theme ('beos' default · 'macos9' = Platinum Finder window).
+  window.setTheme=function(k){ var t=k||'beos'; document.body.className='theme-'+t+(t==='win7'?' theme-winxp':'')+(t==='snowleopard'?' theme-macosx':''); buildGrid(); };
+  window.setHover=function(h){ document.body.classList.toggle('hovering', !!h); };
+  // Host sets the window title across all three chromes (BeOS tab / Mac OS 9 plaque / XP caption).
+  window.setTitle=function(t){
+    document.querySelectorAll('.be-title,.xp-caption,.mf-caption,.mx-caption,.w98-cap').forEach(e=>e.textContent=t);
+    const pl=document.querySelector('.m9-plaque span:last-child'); if(pl) pl.textContent=t;
+  };
+  // Host sets the Win95/98 title-bar program icon (data: URL from the theme bundle).
+  window.setWinIcon=function(u){ const e=document.getElementById('w98ico'); if(!e) return;
+    if(u){ e.src=u; } else { e.removeAttribute('src'); } };
+  (function(){
+    const c=document.getElementById('w98close'), m=document.getElementById('w98max');
+    const fire=(el,act)=>{ if(!el) return; ['click','pointerup'].forEach(ev=>
+      el.addEventListener(ev, e=>{ e.stopPropagation(); e.preventDefault(); post({a:act}); })); };
+    fire(c,'close'); fire(m,'zoom');
+  })();
+  window.regions=function(){
+    const cl=document.body.classList, m6=cl.contains('theme-macos6'), m9=cl.contains('theme-macos9'), xp=cl.contains('theme-winxp'), mf=cl.contains('theme-maiksfav'), mx=cl.contains('theme-macosx'), w98=cl.contains('theme-win98');
+    const R=id=>{const e=document.getElementById(id);if(!e)return[0,0,0,0];const b=e.getBoundingClientRect();return[b.x,b.y,b.width,b.height];};
+    // [title, close, minimise/collapse, maximise/zoom]
+    if(w98){
+      // Drag region = caption only; the 3D buttons take real DOM clicks (close/zoom
+      // are posted to the host instead of being mapped through the native overlay).
+      return [...R('w98cap'),0,0,0,0,0,0,0,0,0,0,0,0];
+    }
+    if(mx){ return [...R('mxtitle'),...R('mxclose'),...R('mxmin'),...R('mxzoom')]; }
+    if(mf){ return [...R('mftitle'),...R('mfclose'),...R('mfmin'),...R('mfzoom')]; }
+    if(xp){ return [...R('xptitle'),...R('xpclose'),...R('xpmin'),...R('xpmax')]; }
+    if(m6){ return [...R('m9title'),...R('m9close'),0,0,0,0,...R('m9zoom')]; }   // System 6: close + zoom
+    if(m9){ return [...R('m9title'),...R('m9close'),...R('m9collapse'),...R('m9zoom')]; }
+    return [...R('tab'),...R('close')];
+  };
+
+  function viewSize(){ return {w:content.clientWidth,h:content.clientHeight}; }
+  function clampScroll(){
+    const v=viewSize();
+    st.maxX=Math.max(0,st.gridW-v.w); st.maxY=Math.max(0,st.gridH-v.h);
+    st.x=Math.min(Math.max(0,st.x),st.maxX); st.y=Math.min(Math.max(0,st.y),st.maxY);
+  }
+  function updateScroll(){
+    clampScroll();
+    // Windows themes (95/98/Me/XP/7) show a scrollbar only when its axis actually overflows;
+    // classic Mac/BeOS keep theirs always visible (authentic), so only toggle for Windows.
+    // Mark an axis with nothing to scroll. Classic Mac keeps its bars visible, so the knob has
+    // to say it is inactive instead of a full-length one implying the view is scrollable.
+    // Purely a hook: only themes that style .sb-idle react to it.
+    const vsb0=win.querySelector('.vsb'), hsb0=win.querySelector('.hsb');
+    if(vsb0) vsb0.classList.toggle('sb-idle', !(st.maxY>0));
+    if(hsb0) hsb0.classList.toggle('sb-idle', !(st.maxX>0));
+    const winStyle = document.body.classList.contains('theme-win98') || document.body.classList.contains('theme-winxp');
+    if(winStyle){
+      const vsbEl=win.querySelector('.vsb'), hsbEl=win.querySelector('.hsb');
+      if(vsbEl) vsbEl.style.display = st.maxY>0 ? '' : 'none';
+      if(hsbEl) hsbEl.style.display = st.maxX>0 ? '' : 'none';
+      clampScroll();   // re-clamp: hiding a bar widens/heightens the viewport
+    }
+    grid.style.transform=`translate(${-st.x}px,${-st.y}px)`;
+    const v=viewSize();
+    const vt=win.querySelector('.sb-trough[data-trough="v"]'), vthumb=win.querySelector('.sb-thumb[data-thumb="v"]');
+    const vTrough=vt.clientHeight, vThumbH=Math.max(18,Math.min(1,v.h/st.gridH)*vTrough);
+    vthumb.style.height=vThumbH+'px'; vthumb.style.top=(st.maxY?(st.y/st.maxY)*(vTrough-vThumbH):0)+'px';
+    const ht=win.querySelector('.sb-trough[data-trough="h"]'), hthumb=win.querySelector('.sb-thumb[data-thumb="h"]');
+    const hTrough=ht.clientWidth, hThumbW=Math.max(18,Math.min(1,v.w/st.gridW)*hTrough);
+    hthumb.style.width=hThumbW+'px'; hthumb.style.left=(st.maxX?(st.x/st.maxX)*(hTrough-hThumbW):0)+'px';
+  }
+  content.addEventListener('wheel',e=>{ e.preventDefault(); if(e.shiftKey){st.x+=e.deltaY;}else{st.y+=e.deltaY;st.x+=e.deltaX;} updateScroll(); },{passive:false});
+  win.querySelectorAll('.sb-btn').forEach(btn=>{
+    btn.addEventListener('mousedown',e=>{ e.stopPropagation();
+      const dv=+(btn.dataset.v||0), dh=+(btn.dataset.h||0);
+      const step=()=>{ st.y+=dv*22; st.x+=dh*22; updateScroll(); }; step();
+      const iv=setInterval(step,70); const up=()=>{clearInterval(iv);window.removeEventListener('mouseup',up);}; window.addEventListener('mouseup',up);
+    });
+  });
+  win.querySelectorAll('.sb-trough').forEach(tr=>{
+    tr.addEventListener('mousedown',e=>{ if(e.target.classList.contains('sb-thumb'))return;
+      const v=viewSize(), thumb=tr.querySelector('.sb-thumb');
+      if(tr.dataset.trough==='v'){ st.y+=(e.offsetY<thumb.offsetTop?-1:1)*v.h*0.9; } else { st.x+=(e.offsetX<thumb.offsetLeft?-1:1)*v.w*0.9; }
+      updateScroll();
+    });
+  });
+  function dragThumb(thumb,axis){
+    thumb.addEventListener('mousedown',e=>{ e.stopPropagation(); e.preventDefault();
+      const startM=axis==='v'?e.clientY:e.clientX, tr=thumb.parentElement, start=axis==='v'?st.y:st.x;
+      const move=ev=>{ const cur=axis==='v'?ev.clientY:ev.clientX;
+        const troughLen=axis==='v'?tr.clientHeight:tr.clientWidth, thumbLen=axis==='v'?thumb.offsetHeight:thumb.offsetWidth;
+        const max=axis==='v'?st.maxY:st.maxX, range=troughLen-thumbLen, d=(cur-startM)/(range||1)*max;
+        if(axis==='v')st.y=start+d; else st.x=start+d; updateScroll(); };
+      const up=()=>{window.removeEventListener('mousemove',move);window.removeEventListener('mouseup',up);};
+      window.addEventListener('mousemove',move); window.addEventListener('mouseup',up);
+    });
+  }
+  dragThumb(win.querySelector('.sb-thumb[data-thumb="v"]'),'v');
+  dragThumb(win.querySelector('.sb-thumb[data-thumb="h"]'),'h');
+
+  /* ---------- File / Window menus (BeOS dropdowns) ---------- */
+  const FOLDERS=['Desktop','Documents','Downloads','Home','Applications'];
+  const ICON_KEYS=['generic','folder','browser','mail','messages','maps','photos','video','calendar','people','notes','settings','clock','calculator','terminal','text'];
+  let openMenuEl=null, openSpan=null;
+  function closeMenus(){ if(openMenuEl){openMenuEl.remove();openMenuEl=null;} if(openSpan){openSpan.classList.remove('open');openSpan=null;} }
+
+  function setIcon(app,key){
+    app.icon=key; const i=apps.indexOf(app);
+    if(i>=0 && grid.children[i]) grid.children[i].querySelector('.ic').innerHTML=BEOS_ICONS.get(key);
+  }
+  window.setOwnIcon=function(dataURL){
+    if(!selected) return; const i=apps.indexOf(selected);
+    if(i>=0 && grid.children[i]) grid.children[i].querySelector('.ic').innerHTML='<img src="'+dataURL+'" style="width:44px;height:44px;object-fit:contain">';
+  };
+
+  function fileSpec(){
+    const s=!!selected;
+    return [
+      {label:'Find', action:()=>post({a:'find'})},
+      {label:'New Folder', action:()=>post({a:'newfolder'})},
+      {sep:1},
+      {label:'Open', on:s, action:()=>post({a:'open',id:selected.id,path:selected.path,name:selected.name})},
+      {label:'Get Info', on:s, action:()=>post({a:'getinfo',path:selected.path,name:selected.name})},
+      {label:'Edit Name', on:s, action:()=>post({a:'editname',path:selected.path,name:selected.name})},
+      {label:'Duplicate', on:s, action:()=>post({a:'duplicate',path:selected.path,name:selected.name})},
+      {label:'Move to Trash', on:s, action:()=>post({a:'trash',path:selected.path,name:selected.name})},
+      {sep:1},
+      {label:'Move to', on:s, sub:FOLDERS.map(f=>({label:f, action:()=>post({a:'moveto',path:selected.path,dest:f})}))},
+      {label:'Copy to', on:s, sub:FOLDERS.map(f=>({label:f, action:()=>post({a:'copyto',path:selected.path,dest:f})}))},
+      {label:'Create Link', on:s, action:()=>post({a:'createlink',path:selected.path,name:selected.name})},
+      {label:'Icon', on:s, sub:[...ICON_KEYS.map(k=>({label:k, action:()=>setIcon(selected,k)})), {sep:1}, {label:'Set Custom Icon…', action:()=>post({a:'iconown', id:selected&&selected.id, name:selected&&selected.name})}]},
+      {sep:1},
+      {label:'Add Ons', on:false},
+    ];
+  }
+  function windowSpec(){
+    return [
+      {label:'Icon View', action:()=>{ viewMode='icon'; selected=null; buildGrid(); }},
+      {label:'Mini Icon View', action:()=>{ viewMode='mini'; selected=null; buildGrid(); }},
+      {label:'List View', action:()=>{ viewMode='list'; selected=null; buildGrid(); }},
+      {sep:1},
+      {label:'Resize to fit', action:()=>post({a:'resizefit', w:Math.ceil(st.gridW+17), h:Math.ceil(st.gridH+60)})},
+      {label:'Clean Up', action:()=>{ selected=null; buildGrid(); }},
+      {label:'Select All', action:()=>grid.querySelectorAll('.be-item').forEach(s=>s.classList.add('sel'))},
+      {sep:1},
+      {label:'Open Parent', action:()=>post({a:'openparent'})},
+      {label:'Close', action:()=>post({a:'close'})},
+    ];
+  }
+  function buildMenu(spec){
+    const m=document.createElement('div'); m.className='menu';
+    spec.forEach(it=>{
+      if(it.sep){ const s=document.createElement('div'); s.className='sep'; m.appendChild(s); return; }
+      const d=document.createElement('div');
+      const enabled = it.on!==false;
+      d.className='mi'+(enabled?'':' disabled')+(it.sub?' has-sub':'');
+      d.textContent=it.label; m.appendChild(d);
+      if(!enabled) return;
+      if(it.sub){
+        let sub=null;
+        d.addEventListener('mouseenter',()=>{ if(sub)return; sub=buildMenu(it.sub); sub.classList.add('submenu'); d.appendChild(sub); });
+        d.addEventListener('mouseleave',()=>{ if(sub){sub.remove();sub=null;} });
+      } else {
+        d.addEventListener('mousedown',e=>{ e.stopPropagation(); const fn=it.action; closeMenus(); fn&&fn(); });
+      }
+    });
+    return m;
+  }
+  function openMenu(name,span){
+    closeMenus();
+    const m=buildMenu(name==='File'?fileSpec():windowSpec());
+    document.body.appendChild(m);
+    const r=span.getBoundingClientRect();
+    m.style.left=r.left+'px'; m.style.top=r.bottom+'px';
+    openMenuEl=m; openSpan=span; span.classList.add('open');
+  }
+  document.querySelectorAll('.be-menubar span').forEach(sp=>{
+    sp.addEventListener('mousedown',e=>{ e.stopPropagation(); if(openSpan===sp){closeMenus();return;} openMenu(sp.textContent.trim(),sp); });
+    sp.addEventListener('mouseenter',()=>{ if(openMenuEl && openSpan!==sp) openMenu(sp.textContent.trim(),sp); });
+  });
+  // click empty content → deselect + close menus
+  content.addEventListener('mousedown',e=>{ if(e.target===content||e.target===grid){ selected=null; grid.querySelectorAll('.be-item.sel').forEach(s=>s.classList.remove('sel')); } });
+  document.addEventListener('mousedown',e=>{ if(openMenuEl && !e.target.closest('.menu') && !e.target.closest('.be-menubar')) closeMenus(); });
+
+  // Right-click an item → context menu (incl. Icon ▸ Set Custom Icon…). Always preventDefault
+  // so the native WebView "Reload" menu never appears.
+  function selectItemEl(el){
+    grid.querySelectorAll('.be-item.sel').forEach(s=>s.classList.remove('sel'));
+    el.classList.add('sel');
+    const i=[...grid.children].indexOf(el);
+    selected = (i>=0) ? apps[i] : null;
+  }
+  document.addEventListener('contextmenu',e=>{
+    e.preventDefault();
+    const el=e.target.closest('.be-item');
+    closeMenus();
+    if(!el) return;
+    selectItemEl(el);
+    const m=buildMenu(fileSpec());
+    document.body.appendChild(m);
+    m.style.left=Math.min(e.clientX, window.innerWidth-170)+'px';
+    m.style.top=Math.min(e.clientY, window.innerHeight-20)+'px';
+    openMenuEl=m;
+  });
+
+  window.addEventListener('resize',buildGrid);
+  buildGrid();
+</script>
+<script>
+window.setBtnState = function(slot, state){
+  const cl = document.body.classList;
+  let ids;
+  if (cl.contains('theme-win98'))         ids = {close:'w98close', collapse:'w98min', zoom:'w98max'};
+  else if (cl.contains('theme-macosx'))   ids = {close:'mxclose', collapse:'mxmin', zoom:'mxzoom'};
+  else if (cl.contains('theme-maiksfav')) ids = {close:'mfclose', collapse:'mfmin', zoom:'mfzoom'};
+  else if (cl.contains('theme-winxp'))    ids = {close:'xpclose', collapse:'xpmin', zoom:'xpmax'};
+  else if (cl.contains('theme-macos6'))   ids = {close:'m9close', zoom:'m9zoom'};
+  else if (cl.contains('theme-macos9'))   ids = {close:'m9close', collapse:'m9collapse', zoom:'m9zoom'};
+  else ids = {close:'closebox'};
+  const el = ids[slot] && document.getElementById(ids[slot]);
+  if (!el) return;
+  el.classList.remove('is-hover','is-press');
+  if (state === 'hover') el.classList.add('is-hover');
+  else if (state === 'press') el.classList.add('is-press');
+};
+</script>
+<style>
+/* Mac System 6 (system.css by Sakun Acharige, MIT) — .m9-* markup + .be-* frame */
+@font-face{font-family:Chicago_12;src:url(ChiKareGo2.woff2) format("woff2");}
+@font-face{font-family:Geneva_9;src:url(FindersKeepers.woff2) format("woff2");}
+body.theme-macos6 .be-tab,body.theme-macos6 .be-menubar{display:none;}
+body.theme-macos6 .be-win{top:0;border:2px solid #000;background:#fff;}
+body.theme-macos6 .be-content{box-shadow:none;background:#fff;font-family:Geneva_9,Geneva,sans-serif;}
+body.theme-macos6 .m9-title{display:flex;align-items:center;position:relative;height:22px;flex:0 0 auto;box-sizing:border-box;
+  border-bottom:2px solid #000;image-rendering:auto;padding:4px 3px;
+  background:linear-gradient(#000 50%,transparent 50%);background-size:100% 2.8px;background-clip:content-box;}
+body.theme-macos6 .m9-collapse{display:none;}
+body.theme-macos6 .m9-close,body.theme-macos6 .m9-zoom{position:relative;width:16px;height:16px;flex:0 0 16px;
+  background:#fff;border:2px solid #000;box-shadow:none;box-sizing:border-box;}
+body.theme-macos6 .m9-close{margin-left:6px;}
+body.theme-macos6 .m9-zoom{margin-left:auto;margin-right:6px;}
+body.theme-macos6 .m9-zoom::before{content:"";position:absolute;left:2px;top:2px;width:6px;height:6px;border:1.5px solid #000;background:#fff;}
+body.theme-macos6 .m9-close::before,body.theme-macos6 .m9-close::after{content:"";position:absolute;inset:0;opacity:0;
+  background:linear-gradient(#000,#000) left center/32% 2px no-repeat,linear-gradient(#000,#000) right center/32% 2px no-repeat,
+    linear-gradient(#000,#000) center top/2px 32% no-repeat,linear-gradient(#000,#000) center bottom/2px 32% no-repeat;}
+body.theme-macos6 .m9-close.is-press::before,body.theme-macos6 .m9-close.is-press::after{opacity:1;}
+body.theme-macos6 .m9-close.is-press::after{transform:rotate(45deg) scale(1.1);}
+body.theme-macos6 .m9-zoom.is-press{background:#000;}
+body.theme-macos6 .m9-plaque{background:#fff;padding:0 10px;color:#000;
+  font-family:Chicago_12,"ChiKareGo2",Chicago,sans-serif;font-weight:400;font-size:18px;line-height:1.1;}
+/* System 6 scrollbar: checkered track + white hollow thumb/buttons (system.css) */
+body.theme-macos6 .vsb,body.theme-macos6 .hsb{background:#fff;border-color:#000;}
+body.theme-macos6 .sb-trough{background:linear-gradient(45deg,#000 25%,transparent 0,transparent 75%,#000 0,#000),linear-gradient(45deg,#000 25%,transparent 0,transparent 75%,#000 0,#000);background-color:#fff;background-position:0 0,2px 2px;background-size:4px 4px;}
+body.theme-macos6 .sb-btn{background:#fff;border:1px solid #000;border-radius:0;}
+body.theme-macos6 .sb-thumb{background:#fff;border:2px solid #000;border-radius:0;}
+body.theme-macos6 .sb-thumb .grip{display:none;}
+body.theme-macos6 .be-status{background:#fff;color:#000;border:none;border-top:2px solid #000;font-family:Geneva_9,Geneva,sans-serif;}
+
+  /* ===== Mac OS X 10.6 Snow Leopard ===== */
+  /* Layered ON TOP of the Cheetah rules above; `setTheme` gives this body BOTH classes
+     (like win7 -> winxp), so anything not restated here is inherited.
+     Caption sampled pixel-by-pixel from a real 10.6 title bar at 1x, mirroring the native
+     chrome in Sources/Desktop/SnowLeopardChrome.swift:
+       #E3E3E3 hairline on top . 20px ramp #CFCFCF -> #A8A8A8 . #525252 separator BELOW
+     The dark line sits at the BOTTOM of a 10.6 caption, not the top.
+     SCALE 1: this widget renders its content scaled, so every length here is
+     counter-scaled to land at the same physical size as the other widgets. */
+  body.theme-snowleopard .mx-title{height:22px;flex:0 0 22px;padding:0 8px;
+    background:linear-gradient(to bottom,#cfcfcf,#a8a8a8);border-bottom:none;
+    box-shadow:inset 0 1px 0 #e3e3e3, inset 0 -1px 0 #525252;}
+  body.theme-snowleopard .mx-title::after{display:none;}      /* 10.6 has no pinstripes */
+  body.theme-snowleopard .mx-lights{gap:7px;}
+  /* The lights ARE the reference artwork, embedded, not CSS gradients approximating it. No
+     gradient can draw this orb: its rim runs all the way round while the top still carries the
+     specular and the bottom the shadow, and every border / inset-shadow / radial attempt
+     flattened one of those. The same PNGs are drawn natively from
+     Resources/Chrome/snowleopard/, so widgets and window chrome are identical by construction.
+     Inlined rather than linked so no stale copy can be served from a cache. */
+  body.theme-snowleopard .mx-gel{width:14px;height:14px;flex:0 0 14px;box-sizing:border-box;
+    border:none;box-shadow:none;background:center/14px 14px no-repeat;}
+  body.theme-snowleopard .mx-gel::before{display:none;}
+  body.theme-snowleopard .mx-gel.mx-close{background-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAAXNSR0IArs4c6QAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAADqADAAQAAAABAAAADgAAAACeOBvAAAACaElEQVQoFU1SPUwUURD+3u7b3dvb4/Y4lj3+j0sukRASTIwFEJHKyoJCo8bGQihooJGYWBorExOl8aewM9HECjuDkaiJlY0aRAxyyQF7J3gXPOBY3F1nzmCc5Hs7OzPfm/neewL/2TWgTQGmCeOEPKdC4AvhBeHubcA7KhdHzg3gshDivpu0Ex0DA7DHxgBFoLrwCpufP6G8s1OPoujKLeApc1ReiHQhLuWTwfYOPW+nkB0ZRvuli3CO9aHZ85DySrBNU1b3984NheG3N8BHlceLCfH6RG9OZg0DrqKglchJRYVVXIe5/BV6yUNck7CSSZSq1TMngccyRpp63Eysx7bh+Icwoghy9TtEpQqQEO1nBbaUMISA0HWUMm2JVW9zWpHA2WxXF1KWhbhpQlNVRAd1BNvbCLa2EZKvShUm5dJWHFxL+sYphL7WjAszDCFoZ3DE9xEGv1k+/UsITYNixmDEYnCamkBVeUkdhEbaFOrEBSBfHB7SPdAFsJHmiMkUVw0dOklhjtRSqeKB72eRTjeSCIgQMZhFC2tjMoE32SMJejpdkFZv78tSpXK1q7OzkRTcmYobRrszke4PCAIaIkS5UoHV3b2gHJ+YeLCxu7v/i/W1tEA4Drg7mpv/fnkSjlGOazZqNX9wcvKh+mh+fuvH2ppaLBROO7kcDCIo8TgEg06agUQCO9Ttw/IynJGRm6dmZ583ZqJRMu/m5qYqKyvX6bj1jOvCIiLNiL16HV65jEKxuJ/M5e6MzszcIynlf2+VyO7m0tLwyuLieb9WGwqDoId10mmv64nE2/zo6LOO/v73RCpx/A91kc2wvC974AAAAABJRU5ErkJggg==);background-image:-webkit-image-set(url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAAXNSR0IArs4c6QAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAADqADAAQAAAABAAAADgAAAACeOBvAAAACaElEQVQoFU1SPUwUURD+3u7b3dvb4/Y4lj3+j0sukRASTIwFEJHKyoJCo8bGQihooJGYWBorExOl8aewM9HECjuDkaiJlY0aRAxyyQF7J3gXPOBY3F1nzmCc5Hs7OzPfm/neewL/2TWgTQGmCeOEPKdC4AvhBeHubcA7KhdHzg3gshDivpu0Ex0DA7DHxgBFoLrwCpufP6G8s1OPoujKLeApc1ReiHQhLuWTwfYOPW+nkB0ZRvuli3CO9aHZ85DySrBNU1b3984NheG3N8BHlceLCfH6RG9OZg0DrqKglchJRYVVXIe5/BV6yUNck7CSSZSq1TMngccyRpp63Eysx7bh+Icwoghy9TtEpQqQEO1nBbaUMISA0HWUMm2JVW9zWpHA2WxXF1KWhbhpQlNVRAd1BNvbCLa2EZKvShUm5dJWHFxL+sYphL7WjAszDCFoZ3DE9xEGv1k+/UsITYNixmDEYnCamkBVeUkdhEbaFOrEBSBfHB7SPdAFsJHmiMkUVw0dOklhjtRSqeKB72eRTjeSCIgQMZhFC2tjMoE32SMJejpdkFZv78tSpXK1q7OzkRTcmYobRrszke4PCAIaIkS5UoHV3b2gHJ+YeLCxu7v/i/W1tEA4Drg7mpv/fnkSjlGOazZqNX9wcvKh+mh+fuvH2ppaLBROO7kcDCIo8TgEg06agUQCO9Ttw/IynJGRm6dmZ583ZqJRMu/m5qYqKyvX6bj1jOvCIiLNiL16HV65jEKxuJ/M5e6MzszcIynlf2+VyO7m0tLwyuLieb9WGwqDoId10mmv64nE2/zo6LOO/v73RCpx/A91kc2wvC974AAAAABJRU5ErkJggg==) 1x,url(data:image/png;base64,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) 2x);}
+  body.theme-snowleopard .mx-gel.mx-min{background-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAAXNSR0IArs4c6QAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAADqADAAQAAAABAAAADgAAAACeOBvAAAACjklEQVQoFU2STWgTQRTH/zM7s5vsbtomab5W2tqkNZVY20JrUahW8Qv00IMi6kGPxYteKgWPXgqCoCD4cfCkRcGbB6EIQi32IFj0YNEWWtM0SbU1aWwTY7LjbErFN8zOg/d+7//ezBL8ZyM7EaYUV+HCEHGjzQnZRcyKEl7Cxp1bC8hsp5Nt53ocF5lC7lu7wmaktwdm+xEQQrE+O4H0+xmk5zIlW4jLY5/xzGEU5zPahXOGR3vaeyKhxrvCaOruR2T3KfgjLfB5fiJQX0CD5WWr2dyZPm91bmoFn5SRPoRdGn3Tf7KHxVo9sBqZBDyoq+MwlRWY1XkY1TXohgY94EMmmTm+LyIeK4ejuBFLtAzu7W5G2Mdg6hSqsgFaSYIW58FK36ERAU3j4G4dG+WKml/LVSh343RsTyv8fgOGxwXGOEipClIoAM6WvqJwqehCo8yJJaJgbgwxrpGO0I4IdJPJhDJEpQyIKlARIBAAlYUoA5Owm6kIWCpUjbQxzhWiqhLS6mXSbxAmQVsC/0z68nZBVTCuwqUVwDklTHMbS6VfuRaEvCDcK5McHSqPmp7EJSikurBByiVsFtag6eYiNfyhiWwqiapsUVD5OrwBxBUAXCF5BkG0AIhaX4tVqmVkl5IwvKHXtPPo8IPFb8vF/HpBdij/B6kkh5Nmb6nVfFKL5fPrWEymy53Hhh8qj8Zf/cgszChL8x8PBSNNUHWP5JzlmKgtW86cz+cwPfUOvujBmwMXxl7U4kKI0OSTa1fyqQ+j0fYO1bIs+TRmbbaNzU2kU8uY/zpbNIOJ24OX7t2V869sFXZqCxFMfpk8MDc9fvZPcXW/XSk3Oz0ThadU3f823n/+uRUfmJZQ1unlLzGw3DrScpcWAAAAAElFTkSuQmCC);background-image:-webkit-image-set(url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAAXNSR0IArs4c6QAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAADqADAAQAAAABAAAADgAAAACeOBvAAAACjklEQVQoFU2STWgTQRTH/zM7s5vsbtomab5W2tqkNZVY20JrUahW8Qv00IMi6kGPxYteKgWPXgqCoCD4cfCkRcGbB6EIQi32IFj0YNEWWtM0SbU1aWwTY7LjbErFN8zOg/d+7//ezBL8ZyM7EaYUV+HCEHGjzQnZRcyKEl7Cxp1bC8hsp5Nt53ocF5lC7lu7wmaktwdm+xEQQrE+O4H0+xmk5zIlW4jLY5/xzGEU5zPahXOGR3vaeyKhxrvCaOruR2T3KfgjLfB5fiJQX0CD5WWr2dyZPm91bmoFn5SRPoRdGn3Tf7KHxVo9sBqZBDyoq+MwlRWY1XkY1TXohgY94EMmmTm+LyIeK4ejuBFLtAzu7W5G2Mdg6hSqsgFaSYIW58FK36ERAU3j4G4dG+WKml/LVSh343RsTyv8fgOGxwXGOEipClIoAM6WvqJwqehCo8yJJaJgbgwxrpGO0I4IdJPJhDJEpQyIKlARIBAAlYUoA5Owm6kIWCpUjbQxzhWiqhLS6mXSbxAmQVsC/0z68nZBVTCuwqUVwDklTHMbS6VfuRaEvCDcK5McHSqPmp7EJSikurBByiVsFtag6eYiNfyhiWwqiapsUVD5OrwBxBUAXCF5BkG0AIhaX4tVqmVkl5IwvKHXtPPo8IPFb8vF/HpBdij/B6kkh5Nmb6nVfFKL5fPrWEymy53Hhh8qj8Zf/cgszChL8x8PBSNNUHWP5JzlmKgtW86cz+cwPfUOvujBmwMXxl7U4kKI0OSTa1fyqQ+j0fYO1bIs+TRmbbaNzU2kU8uY/zpbNIOJ24OX7t2V869sFXZqCxFMfpk8MDc9fvZPcXW/XSk3Oz0ThadU3f823n/+uRUfmJZQ1unlLzGw3DrScpcWAAAAAElFTkSuQmCC) 1x,url(data:image/png;base64,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) 2x);}
+  body.theme-snowleopard .mx-gel.mx-zoom{background-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAAXNSR0IArs4c6QAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAADqADAAQAAAABAAAADgAAAACeOBvAAAAClklEQVQoFU1SXUhTURz/nXvO7tfuVHS2LXUTpzMhFYrElFAieggDDaWHeughIkKox6DHnguqhz5e6iGCgnqyXiwIijAKKn1RlGrZdJtTc5vbvbt393Q2MTrcc++fc/4/fh/3T/D/GkZQVXFZVzDqU9HOxV3OwnzRxJQp4RZeIbnbTnYLdQRnGCH3IiG/0R/rQX/4KAiR8CE+jZmFWcST66bL+bniFJ5WMLTyqj2F07omP+nrjcrRDj8G9/dhsHMMzaE2uHoaJWUTDXUG29jKj7OO8pI1jznaOIEgk8nbQwe6WEOLDqNRQjCkw1tDUWQrWOML2HA34dFk1PvqkM5kjutd/CGtO4hrrZHm4bbOEDQ/haJLcGgBW24cSWsRmVIGNuFgCoOm6iiXXDm3nXWYKmMkFg2j3u8FV0pwuC0CcWDzPCDSsWwHEmMwDA+ILCPWHkEqtTzKVAX7mkIBIY3AkRgsx4JddgSgkilAJA806oFCZcEqgwZUiE87YyJKVaMwVA0O8UClCsqcQzw7QJG7RAg8gpVBhquZoiaEeVXtt2llI37mg8Z0IUcC4WKLX1GRyoU/jrKgduE4JRTMP/Bp3jgL1oam19KJ8y3hAFTmFZJqIXh3gIKTcxc2TJTKWeTtItLpBBp8jW+ksYEL95OJZNHKFyFXpTJ4qAQmCXmVLWpV+JSFfzNfQGolWRofvPiAvng0nVlc/kqXfs0ONQciMDSfAFHQqjcxIcIfEWJz2S18/vQRPU1D1ydP3HheHTnOeeDOy8lLP9a+XI22xeRgaK+I36gGVChsI7m6iqXvC8VwfffNKyfv3iaEpP/NqgDvmfv5buD1t8cTOXP9sF02w6IBVJITNar//bHes8+6W4/MiLNUJe6/surrCYKSshQAAAAASUVORK5CYII=);background-image:-webkit-image-set(url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAAXNSR0IArs4c6QAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAADqADAAQAAAABAAAADgAAAACeOBvAAAAClklEQVQoFU1SXUhTURz/nXvO7tfuVHS2LXUTpzMhFYrElFAieggDDaWHeughIkKox6DHnguqhz5e6iGCgnqyXiwIijAKKn1RlGrZdJtTc5vbvbt393Q2MTrcc++fc/4/fh/3T/D/GkZQVXFZVzDqU9HOxV3OwnzRxJQp4RZeIbnbTnYLdQRnGCH3IiG/0R/rQX/4KAiR8CE+jZmFWcST66bL+bniFJ5WMLTyqj2F07omP+nrjcrRDj8G9/dhsHMMzaE2uHoaJWUTDXUG29jKj7OO8pI1jznaOIEgk8nbQwe6WEOLDqNRQjCkw1tDUWQrWOML2HA34dFk1PvqkM5kjutd/CGtO4hrrZHm4bbOEDQ/haJLcGgBW24cSWsRmVIGNuFgCoOm6iiXXDm3nXWYKmMkFg2j3u8FV0pwuC0CcWDzPCDSsWwHEmMwDA+ILCPWHkEqtTzKVAX7mkIBIY3AkRgsx4JddgSgkilAJA806oFCZcEqgwZUiE87YyJKVaMwVA0O8UClCsqcQzw7QJG7RAg8gpVBhquZoiaEeVXtt2llI37mg8Z0IUcC4WKLX1GRyoU/jrKgduE4JRTMP/Bp3jgL1oam19KJ8y3hAFTmFZJqIXh3gIKTcxc2TJTKWeTtItLpBBp8jW+ksYEL95OJZNHKFyFXpTJ4qAQmCXmVLWpV+JSFfzNfQGolWRofvPiAvng0nVlc/kqXfs0ONQciMDSfAFHQqjcxIcIfEWJz2S18/vQRPU1D1ydP3HheHTnOeeDOy8lLP9a+XI22xeRgaK+I36gGVChsI7m6iqXvC8VwfffNKyfv3iaEpP/NqgDvmfv5buD1t8cTOXP9sF02w6IBVJITNar//bHes8+6W4/MiLNUJe6/surrCYKSshQAAAAASUVORK5CYII=) 1x,url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAYAAAByDd+UAAAAAXNSR0IArs4c6QAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAHKADAAQAAAABAAAAHAAAAABHddaYAAAHf0lEQVRIDY1WSYxcVxU97//3h/o1dNlV3V09uts92AEn3REkCCJEIwgKEoQOAiULRAwbFrAAAYJNhFggBJFAKPKCFVgsGBbYoIgERSiJxLDJoqMYbJK2u3qKq+2eXV3Drz9w7qvqJITxV7167/933z3vnnvu+6Xwf1z+Q1iwbXzCsbGgbUzYFopIgTjFfhRhqc2WpvhN61m88L/cqf9mQKDz9PstS2HCc4HAB7IO4GuAACAQjjpAow202FKFqlL4dut3+Ol/8vtvAf1FTFghLiXAPGgREOHs2CimB8YwXhzHQHZcnGOveRM3dq7j2s0VVGu3ceeIqHzOzVTh4oOty+zfdtlvu0f2YTyuElyGhYkg42BuehRzs6cxNXwKM5UZnKncj6GTUyjlh9GXOwkvkyCbczBQysEhC0fNNpIkKVopzvtn8PfwVVx7K8Y/ARY/jsXUwi+UBX98qIy7Z8dQKHrIFjIYKZUwVXknJvvnMXjiFIqFEoJsFpF9iCZ2UE/r8D0LQ+UTSJjgw0bTJ+uP+edQDa/i5WPQNwCLpBEOnmFk/uRYBbOTFbhZG05WIVfwMNJfxkj5FEp9FfTlS3AZfUcfoG3vEqyGg3gfkYpga41SoQDFZB406mCkC5k5/LJ1BfsCyvR3L9vB88xLcXxoEDMTw7AzKTRFoj3AySVQ2TY6/h6OnA06a4lI0dDbiLxdM6ezKTylEbWAqK0wPTlMmwQbtVtFK8Ylmt8rSCbC/sdw3rJwPsh5OHd2hpFZcPIW3MCCFyhGwzHBXS9Boppo4wBH6Raj2sBeZx3b4TbaaccIyWbtgM7AvBTzfdje20WcRJXgHFYbV7BkAPvuwSVLo3hmimLo74ObIyDBBEi7HGsLnEeEFkIc4ijewUFYw35nC3vhHpqdNsKELLBALcumrfQa2tbIZ/LY2tkSaufrr+BHevQzWDCKpDDGR0cIRhqpPMWUK5u9SrnzFJ0kRTPqIMYd2FbdUJpQ/2GUmDmpB5tAikVra7LCkyKyFWVRQqbqIGx0JiaIpWmzqCjn4YEBZAKXFKYmf9AxYhWTdWoupVM6bhKOpwt3LsSkiHgT8qgJ2aek0CKYRbHYjIxGXG8hpP3p0VO4fmNZKF/Uysacy9NjdHAYQeDAoVhsRpdwYcwaidIIDI7jlCcLQXhvsVDlSjghUcq8RToVP5oqtSkeSwC53uaeK/39WN9YRtjCBzTt5gWwdOIkfJ+AQqXb3XEniSBBysIkiRlTSgHw3hBqMPlDGIrE5s418yfRy9hKNa26gMVCHg4xojYmNAMpCgNZHpS+xwUOATUdM36pJZu0xASLuWuhVkAZkDm/ZN40yR/BTKO9pmAEVAAtllUhW2DkwgKKsikOyD0T7TiaiqQzm7TK7gwQS4GFZKCIlJJCc0nHc5Nf/kju6Jy9OOwC0zFBlYhKh91KobF2bF1XKs6FnQaBXbiORztGyCKQyCRPchqLfwMlkR+PjwdUsQyJR8fcqICSERGYxbdAnIZGva5j13XgBbVU3Zlud464SI6khHlwGaGDlJGZgAgisRx/jOdepF2K6ZmgYsxAGakpb6qSQNxmo3lAvoBiUFzW/YXBl24369OHhzucqnCNKDCBQ1AFX4hlTwWKT1kmeRPfvYiklyOsC9wtoUSxXmOCcfPC1c5BjWsV+rInrllzp9/zB8UIXq+tis4NGDXJXaZwSI/LwzSjA2ScAgJpuoCMy57t+FlG5+E7OWMrsue3CybpoMvd3VtQicI7xuZ/b33nsz97wddBLQ4jHBzs0qCbD7uXi2MRiNw1T3jHNJeb6Y5lnjqAFnWSSs113YqUvafYur2BJv8SeDpT+/7nf/VHoXb7vpkPX0wihVdf+xsE2GLEFmvPOKATAy5UMmrTuO1uT+GLUNgE0CG4bEDUKhHFnQ7W1lZYuAr3zz54UbA4p/af/NyvL2d1cbl11MLaKg0SyRyb2TWlzt4cWXQsIhC632ysIgLYcobSzqxLmXcCrq1V0aRPTwU1wRAsiVCu6pc+9oMn7Mitb25sErTKE0ai5EIBI4xxSsBufiQqzvP+uMm8OFNkRsDWV1exub7Jo82tf/WRp74iGGzGhk5V7SP3Prr8rtMPXkhDG+sra1i5fqNLL5MuTvkVux7wMVj33lAoFgSLw5hrr2N1ZRVpqPD+uz75vQ/d82hVMARQ/JiLJwhfsXj3U09/eWFp5blvZAI/V+w7ianJWQwNjZjCFWl3v28sYxn1KpFVvru/g79efZni4zuy0a7PDN134Zuf+snT9PsSAflf4C2AcsPFFXZn/3z1t5Wfv/jdH2rXrniej3wuj1K5jHKpbP44yRtBlrZaLbTbfP/v7+H1m5toNpt81hQNLH/6ga898b67HpaorhBsm7253txq7wFByxyeZdM/fubrD63cuvI4k1IREHPmktZeoJQPN0npx3yFRBFfK4lVmxw8d/ELH33yWU7xbzKWj6nk2Fz/AihPe/TOcyg04/JfLsyv1F55oBHuT7c6jek0iXNMKL9WXWu31ueVlyYqd/9p8b1fXBJ7XnU2iczQaJ70fv4BeN7lNFnAEpAAAAAASUVORK5CYII=) 2x);}
+  /* Scrollbar. The Cheetah rules above run their gradient with `90deg` on BOTH axes, so the
+     horizontal bar ends up shaded along its length — a flat colour ramp instead of a cylinder.
+     Everything here is restated per axis, shading ACROSS the bar in each case, following the
+     construction in jonsterling/AquaUI: a recessed capsule bed in a light rim, a knob shaded
+     dark -> medium -> light across, and a separate bright shine near the leading edge rather
+     than a highlight baked into the same gradient. Colours follow AquaUI's mixer:
+     base #0094CC, dark = +20% black, medium = +20% white, light = +80% white. */
+  body.theme-snowleopard .vsb,body.theme-snowleopard .hsb{background:#e8e8e8;border-color:#c4c4c4;}
+  body.theme-snowleopard .vsb .sb-trough{background:linear-gradient(90deg,#fff,#d9d9d9 50%,#fff);box-shadow:none;}
+  body.theme-snowleopard .hsb .sb-trough{background:linear-gradient(180deg,#fff,#d9d9d9 50%,#fff);box-shadow:none;}
+  /* The bed: a white capsule sunk into the rim. Painted before the thumb, which is a positioned
+     child and therefore stays on top. */
+  body.theme-snowleopard .sb-trough::before{content:"";position:absolute;inset:2px;
+    border-radius:999px;background:#fff;border:1px solid rgba(0,0,0,.26);
+    box-shadow:inset 0 0 3px rgba(120,120,120,.85);}
+  body.theme-snowleopard .sb-thumb{border-radius:999px;border:1px solid rgba(0,0,0,.38);
+    box-shadow:none;}
+  body.theme-snowleopard .vsb .sb-thumb{
+    background:linear-gradient(90deg,#0076a3,#33a9d6 50%,#cce9f5);}
+  body.theme-snowleopard .hsb .sb-thumb{
+    background:linear-gradient(180deg,#0076a3,#33a9d6 50%,#cce9f5);}
+  body.theme-snowleopard .sb-thumb::before{content:"";position:absolute;border-radius:999px;
+    opacity:.7;pointer-events:none;}
+  /* 7 of the bar's 15px, inset 3 along the length — AquaUI's own proportions. A narrower
+     strip disappears at 1x and the knob stops reading as glass. */
+  body.theme-snowleopard .vsb .sb-thumb::before{
+    left:1.5px;top:3px;bottom:3px;width:7px;
+    background:linear-gradient(90deg,#eefaff,#bfe6f4);}
+  body.theme-snowleopard .hsb .sb-thumb::before{
+    top:1.5px;left:3px;right:3px;height:7px;
+    background:linear-gradient(180deg,#eefaff,#bfe6f4);}
+  /* Nothing to scroll on this axis: Mac OS X keeps the bar and its arrows but shows NO knob at
+     all — an empty trough. Greying the knob out instead (AquaUI's inactive scroller) leaves a
+     full-length grey slab, because with nothing to scroll the knob's ratio is 1 and it fills the
+     whole trough. That is what "not blue and too long" was. */
+  body.theme-snowleopard .sb-idle .sb-thumb{display:none;}
+  body.theme-snowleopard .sb-btn{color:#4a4a4a;border:1px solid #c4c4c4;
+    background:linear-gradient(180deg,#fbfbfb,#e4e4e4);}
+  body.theme-snowleopard .sb-idle .sb-btn{color:#a8a8a8;}
+</style>
+</body>
+</html>

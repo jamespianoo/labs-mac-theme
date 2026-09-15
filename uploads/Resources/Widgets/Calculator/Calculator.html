@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  html,body{margin:0;padding:0;background:transparent;overflow:hidden;
+    font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;-webkit-user-select:none;}
+  #win{position:relative;width:236px;}
+
+  /* ---- BeOS yellow tab (default chrome) ---- */
+  .tab{display:flex;align-items:center;gap:8px;height:22px;padding:0 8px;width:fit-content;
+    position:relative;z-index:3;border:1.4px solid #2a2a2a;border-bottom:none;border-radius:5px 5px 0 0;
+    background:linear-gradient(180deg,#fbd85c,#f2bd23);box-shadow:inset 1px 1px 0 rgba(255,255,255,.55);}
+  .tab b{font-size:12px;font-weight:700;color:#2a2306;white-space:nowrap;}
+  .closebox{width:13px;height:13px;border:1.4px solid #6f5a10;cursor:pointer;
+    background:linear-gradient(135deg,#fbe27e,#eab92a);box-shadow:inset 1px 1px 0 rgba(255,255,255,.75);}
+  .body{position:relative;z-index:2;margin-top:-1px;padding:8px;border:1px solid #000;
+    background:#d8d3c0;box-shadow:inset 2px 2px 0 #efeada,inset -2px -2px 0 #b3ad98;}
+
+  /* ---- Calculator (theme-neutral base) ---- */
+  .disp{box-sizing:border-box;width:100%;height:30px;margin-bottom:8px;padding:2px 8px;text-align:right;
+    font:600 20px "Lucida Console","DejaVu Sans Mono",monospace;color:#000;background:#fff;
+    border:1px solid #808080;box-shadow:inset 1px 1px 0 #000,inset -1px -1px 0 #dbdbdb;overflow:hidden;}
+  .grid{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;}
+  /* Top row: the memory indicator sits in the memory column, then Backspace, CE and C share the
+     remaining five. The fr units add up to 6 so it lines up with the keypad underneath. */
+  .toprow{display:grid;grid-template-columns:1fr 2fr 1.5fr 1.5fr;gap:5px;margin-bottom:5px;}
+  .memind{height:26px;background:#d4d0c8;
+    box-shadow:inset 1px 1px 0 #808080,inset -1px -1px 0 #fff,inset 2px 2px 0 #000,inset -2px -2px 0 #dbdbdb;
+    display:flex;align-items:center;justify-content:center;
+    font:700 12px Tahoma,"Segoe UI",sans-serif;color:#c00000;}
+  /* Colours sampled from the original: face #D4D0C8, highlight #FFFFFF, shadows #808080 and
+     #404040. The labels are a thin bitmap face, not bold Tahoma — smoothing off keeps the
+     strokes one pixel wide the way the real thing looked. */
+  .k{height:26px;font:400 13px Tahoma,"MS Sans Serif",Geneva,sans-serif;cursor:pointer;color:#000;
+    -webkit-font-smoothing:none;
+    background:#d4d0c8;border:none;box-shadow:inset -1px -1px 0 #404040,inset 1px 1px 0 #fff,inset -2px -2px 0 #808080,inset 2px 2px 0 #d4d0c8;
+    display:flex;align-items:center;justify-content:center;line-height:1;padding:0;}
+  .k:active{box-shadow:inset 1px 1px 0 #000,inset -1px -1px 0 #fff,inset 2px 2px 0 #808080,inset -2px -2px 0 #dbdbdb;}
+  /* Measured off the original: digits and the function keys (sqrt, %, 1/x, +/-) are blue;
+     memory, the clear row and the operators are red. */
+  .k.dig,.k.fn{color:#0000ff;} .k.op,.k.mem,.k.clr{color:#ff0000;}
+
+  /* ===== hidden title bars by default ===== */
+  .m9-title,.xp-title,.mf-title,.mx-title,.w98-title{display:none;}
+  .w98-menubar{display:none;}
+
+  /* ===== Mac OS 9 (Platinum) ===== */
+  body.theme-macos9 .tab{display:none;}
+  body.theme-macos9 #win{border:1px solid #000;background:#d8d8d8;box-shadow:2px 2px 8px rgba(0,0,0,.3);}
+  body.theme-macos9 .body{border:none;background:#d8d8d8;box-shadow:none;margin:0;}
+  body.theme-macos9 .m9-title{display:flex;align-items:center;position:relative;height:20px;
+    border-top:1px solid #f3f3f3;border-bottom:1px solid #9a9a9a;
+    background:repeating-linear-gradient(#e8e8e8 0 1px,#d0d0d0 1px 2px);image-rendering:pixelated;}
+  .m9-close{position:relative;z-index:2;box-sizing:border-box;width:11px;height:11px;margin-left:7px;
+    background:#c0c0c0;border:1px solid #7e7e8a;box-shadow:inset 0 0 0 1px #dadaff;cursor:pointer;}
+  .m9-plaque{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2;background:#f3f3f3;
+    padding:0 8px;font-size:12px;font-weight:700;color:#000;
+    font-family:"Charcoal","ChicagoFLF","Helvetica Neue",Helvetica,sans-serif;}
+
+  /* ===== Windows XP (Luna) ===== */
+  body.theme-winxp .tab{display:none;}
+  body.theme-winxp #win{border-radius:8px 8px 2px 2px;background:#0831D9;overflow:hidden;box-shadow:2px 5px 14px rgba(0,0,0,.45);}
+  body.theme-winxp .body{border:none;background:#ECE9D8;margin:0 4px 4px;}
+  body.theme-winxp .xp-title{display:flex;align-items:center;height:26px;gap:6px;padding:0 4px 0 8px;
+    border-radius:8px 8px 0 0;background:linear-gradient(180deg,#0997FF,#0053EE 45%,#0066FF 52%,#003DD2);}
+  .xp-cap{color:#fff;font:700 12px "Trebuchet MS",Tahoma,sans-serif;text-shadow:1px 1px 1px rgba(0,0,40,.5);}
+  .xp-close{margin-left:auto;width:21px;height:19px;border-radius:3px;position:relative;cursor:pointer;
+    border:1px solid rgba(255,255,255,.55);background:linear-gradient(180deg,#F7B39E,#E35F44 55%,#C4382A);}
+  .xp-close::before,.xp-close::after{content:"";position:absolute;left:50%;top:50%;width:11px;height:2px;background:#fff;}
+  .xp-close::before{transform:translate(-50%,-50%) rotate(45deg);} .xp-close::after{transform:translate(-50%,-50%) rotate(-45deg);}
+  /* XP Luna keys */
+  body.theme-winxp .k{background:linear-gradient(180deg,#fdfeff,#eaf0fb 45%,#d6e2f5);border:1px solid #7f9fc4;border-radius:3px;box-shadow:none;}
+  body.theme-winxp .k:hover{border-color:#ff9a00;box-shadow:inset 0 0 5px rgba(255,154,0,.55);}
+  body.theme-winxp .k:active{background:linear-gradient(180deg,#cdd9ee,#e6eefc);}
+  body.theme-winxp .disp{background:#fff;border:1px solid #7f9db9;box-shadow:inset 1px 1px 2px rgba(0,0,0,.18);}
+
+  /* ===== Maiks Favourite (pixel macOS) ===== */
+  body.theme-maiksfav .tab{display:none;}
+  body.theme-maiksfav #win{background:#ECECEC;border:2px solid #262626;border-radius:10px;overflow:hidden;
+    box-shadow:inset 2px 2px 0 #fff,inset -2px -2px 0 #c4c4c4,6px 6px 0 rgba(0,0,0,.35);}
+  body.theme-maiksfav .body{border:none;background:#ECECEC;margin:0;}
+  body.theme-maiksfav .mf-title{display:flex;align-items:center;position:relative;height:26px;gap:8px;padding:0 10px;
+    background:#E3E3E3;border-bottom:2px solid #262626;font-family:"Pixelify Sans",monospace;}
+  .mf-close{width:12px;height:12px;border-radius:50%;background:#FF5F57;border:1px solid rgba(0,0,0,.3);cursor:pointer;}
+  .mf-cap{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:13px;font-weight:700;color:#3a3a3a;}
+  body.theme-maiksfav .k{border-radius:5px;box-shadow:inset 1px 1px 0 #fff,inset -1px -1px 0 #c4c4c4;background:#e8e8e8;}
+
+  /* ===== Mac OS X (Aqua 10.0–10.4) ===== */
+  body.theme-macosx .tab{display:none;}
+  body.theme-macosx #win{border-radius:6px 6px 3px 3px;overflow:hidden;border:1px solid #7a7a7a;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.5);}
+  body.theme-macosx .body{border:none;margin:0;padding:10px;background:#ededed;box-shadow:none;}
+  body.theme-macosx .mx-title{display:flex;align-items:center;position:relative;height:22px;gap:6px;padding:0 8px;
+    background:linear-gradient(to bottom,#fafafa,#ededed 26%,#dadada 60%,#c6c6c6 92%,#bcbcbc);
+    border-bottom:1px solid #888;box-shadow:inset 0 1px 0 rgba(255,255,255,.7);}
+  body.theme-macosx .mx-title::after{content:"";position:absolute;inset:0;pointer-events:none;
+    background:repeating-linear-gradient(to bottom,rgba(255,255,255,.14) 0 1px,rgba(0,0,0,.028) 1px 2px);}
+  .mx-lights{display:flex;gap:6px;align-items:center;position:relative;z-index:1;}
+  .mx-gel{width:14px;height:14px;border-radius:50%;position:relative;flex:0 0 14px;
+    box-shadow:inset 0 0 1px .5px rgba(0,0,0,.38),inset 0 -2.5px 3px rgba(0,0,0,.32),inset 0 2px 2px rgba(255,255,255,.30),0 1px 1.5px rgba(0,0,0,.42);}
+  .mx-gel::before{content:"";position:absolute;left:2.5px;right:2.5px;top:1.5px;height:6px;border-radius:50%;z-index:1;
+    background:radial-gradient(ellipse at 50% 0%,rgba(255,255,255,.98),rgba(255,255,255,.55) 52%,rgba(255,255,255,0));}
+  .mx-close{background:radial-gradient(circle at 50% 34%,#ffe6df,#ff8f7c 20%,#fb5038 46%,#e22a16 66%,#b51d0d 84%,#861309);cursor:pointer;}
+  .mx-min,.mx-zoom{background:radial-gradient(circle at 50% 34%,#ffffff,#f2f2f2 20%,#dedede 48%,#c2c2c2 70%,#a6a6a6 86%,#858585);}
+  .mx-min .mx-glyph,.mx-zoom .mx-glyph{display:none;}
+  .mx-cap{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:1;
+    font:700 13px "Lucida Grande","Helvetica Neue",Helvetica,Arial,sans-serif;color:#1a1a1a;text-shadow:0 1px 0 rgba(255,255,255,.6);}
+  .mx-glyph{position:absolute;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;
+    font:700 11px "Lucida Grande",Helvetica,Arial,sans-serif;color:rgba(0,0,0,.6);
+    text-shadow:0 1px 0 rgba(255,255,255,.4);opacity:0;transition:opacity .08s linear;pointer-events:none;}
+  .mx-glyph{display:none;}
+  body.theme-macosx .k{border-radius:5px;border:1px solid #adadad;background:linear-gradient(180deg,#fefefe,#e2e2e2);box-shadow:0 1px 0 rgba(0,0,0,.08);}
+  body.theme-macosx .k:active{background:linear-gradient(180deg,#d6e6ff,#a9c8f5);}
+
+  /* ===== Windows 98 ===== */
+  .w98-ico{display:none;}
+  body.theme-win98 .w98-ico,body.theme-winxp .w98-ico{display:block;width:16px;height:16px;flex:0 0 auto;margin-right:3px;image-rendering:pixelated;image-rendering:-webkit-optimize-contrast;}
+  body.theme-win98 .w98-ico:not([src]),body.theme-winxp .w98-ico:not([src]){display:none;}
+  .w98-cap{color:#fff;font:700 12px Tahoma,"Microsoft Sans Serif",sans-serif;
+    flex:1 1 auto;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .w98-btn{width:20px;height:18px;background:#c4c4c4;cursor:pointer;flex:0 0 auto;
+    box-shadow:inset -1px -1px 0 #000,inset 1px 1px 0 #dbdbdb,inset -2px -2px 0 #808080,inset 2px 2px 0 #fff;
+    font:700 13px Tahoma,Verdana,sans-serif;color:#000;display:flex;align-items:center;justify-content:center;line-height:1;}
+  .w98-btn:active{box-shadow:inset 1px 1px 0 #000,inset -1px -1px 0 #dbdbdb,inset 2px 2px 0 #808080,inset -2px -2px 0 #fff;}
+  .w98-close{margin-left:3px;font-size:0;position:relative;}
+  #w98close::before,#w98close::after{content:"";position:absolute;left:50%;top:50%;width:11px;height:2px;background:#000;}
+  #w98close::before{transform:translate(-50%,-50%) rotate(45deg);}
+  #w98close::after{transform:translate(-50%,-50%) rotate(-45deg);}
+  body.theme-win98 .tab{display:none;}
+  body.theme-win98 #win{background:#c4c4c4;
+    box-shadow:inset -1px -1px 0 #000,inset 1px 1px 0 #fff,inset -2px -2px 0 #808080,inset 2px 2px 0 #dbdbdb;}
+  body.theme-win98 .body{border:none;background:#c4c4c4;box-shadow:none;margin:0;padding:8px;}
+  /* No side margin, because `.body` beneath has none either: it spans the full 236px of #win
+     and paints over the inset bevel. Measured, after guessing wrong once — at 3px, and still at
+     2px, the top strip was four pixels narrower than everything under it, and that difference
+     is what read as an extra grey border down both sides of the title and menu bars. */
+  body.theme-win98 .w98-title{display:flex;align-items:center;gap:2px;height:22px;margin:2px 0 0;padding:0 2px 0 6px;
+    background:linear-gradient(90deg,#00007b,#1085d2);}
+  body.theme-win98 .disp{background:#fff;border:none;box-shadow:inset -1px -1px 0 #dbdbdb,inset 1px 1px 0 #808080,inset -2px -2px 0 #fff,inset 2px 2px 0 #000;color:#000;}
+  /* calc.exe menu bar (Edit / View / Help) */
+  body.theme-win98 .w98-menubar{display:flex;height:16px;margin:1px 0 0;padding:0 6px;
+    background:#c4c4c4;align-items:center;gap:0;
+    font:12px Tahoma,"MS Sans Serif",Verdana,sans-serif;color:#000;}
+  body.theme-win98 .w98-menubar span{padding:1px 6px;line-height:1;cursor:default;}
+  body.theme-win98 .w98-menubar u{text-decoration:underline;}
+
+  /* ===== Windows 7 (Aero glass) — inherits XP structure via dual class ===== */
+  body.theme-win7 #win{border-radius:6px 6px 2px 2px;background:rgba(69,128,196,0.34);
+    box-shadow:0 8px 22px rgba(0,0,0,.45),inset 0 0 0 1px rgba(255,255,255,.7);}
+  body.theme-win7 .xp-title{border-radius:6px 6px 0 0;
+    background:linear-gradient(180deg,rgba(255,255,255,.5),rgba(255,255,255,.14) 46%,rgba(0,0,0,.05) 54%,rgba(255,255,255,.22)),rgba(90,137,198,0.30);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.85);}
+  body.theme-win7 .xp-cap{color:#0b1a2e;font-family:"Segoe UI",Tahoma,sans-serif;text-shadow:0 0 4px #fff,0 0 4px #fff,0 0 3px #fff;}
+  body.theme-win7 .body{background:#f0f0f0;}
+  body.theme-win7 .xp-close{background:linear-gradient(180deg,#e7a99e,#d76b58 45%,#d54f36 55%,#c23b22);border:1px solid rgba(0,0,0,.3);}
+</style>
+<style>
+/* Live title-bar button feedback (native DragOverlayView → window.setBtnState). */
+.xp-close.is-hover,.mf-close.is-hover,.closebox.is-hover{filter:brightness(1.13);}
+.xp-close.is-press,.mf-close.is-press,.closebox.is-press{filter:brightness(.82);}
+.mx-close.is-press{box-shadow:inset 0 0 3px 1px rgba(0,0,0,.45),inset 0 -4px 5px rgba(0,0,0,.32);}
+.w98-btn.is-hover{filter:brightness(1.06);}
+.w98-btn.is-press{box-shadow:inset 2px 2px 0 #000,inset -2px -2px 0 #dbdbdb,inset 4px 4px 0 #808080,inset -4px -4px 0 #fff;}
+
+  /* ===== Mac OS X 10.6 Snow Leopard ===== */
+  /* Layered ON TOP of the Cheetah rules above; `setTheme` gives this body BOTH classes
+     (like win7 -> winxp), so anything not restated here is inherited.
+     Caption sampled pixel-by-pixel from a real 10.6 title bar at 1x, mirroring the native
+     chrome in Sources/Desktop/SnowLeopardChrome.swift:
+       #E3E3E3 hairline on top . 20px ramp #CFCFCF -> #A8A8A8 . #525252 separator BELOW
+     The dark line sits at the BOTTOM of a 10.6 caption, not the top.
+     SCALE 1: this widget renders its content scaled, so every length here is
+     counter-scaled to land at the same physical size as the other widgets. */
+  body.theme-snowleopard .mx-title{height:22px;flex:0 0 22px;padding:0 8px;
+    background:linear-gradient(to bottom,#cfcfcf,#a8a8a8);border-bottom:none;
+    box-shadow:inset 0 1px 0 #e3e3e3, inset 0 -1px 0 #525252;}
+  body.theme-snowleopard .mx-title::after{display:none;}      /* 10.6 has no pinstripes */
+  body.theme-snowleopard .mx-lights{gap:7px;}
+  /* The lights ARE the reference artwork, embedded, not CSS gradients approximating it. No
+     gradient can draw this orb: its rim runs all the way round while the top still carries the
+     specular and the bottom the shadow, and every border / inset-shadow / radial attempt
+     flattened one of those. The same PNGs are drawn natively from
+     Resources/Chrome/snowleopard/, so widgets and window chrome are identical by construction.
+     Inlined rather than linked so no stale copy can be served from a cache. */
+  body.theme-snowleopard .mx-gel{width:14px;height:14px;flex:0 0 14px;box-sizing:border-box;
+    border:none;box-shadow:none;background:center/14px 14px no-repeat;}
+  body.theme-snowleopard .mx-gel::before{display:none;}
+  body.theme-snowleopard .mx-gel.mx-close{background-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAAXNSR0IArs4c6QAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAADqADAAQAAAABAAAADgAAAACeOBvAAAACaElEQVQoFU1SPUwUURD+3u7b3dvb4/Y4lj3+j0sukRASTIwFEJHKyoJCo8bGQihooJGYWBorExOl8aewM9HECjuDkaiJlY0aRAxyyQF7J3gXPOBY3F1nzmCc5Hs7OzPfm/neewL/2TWgTQGmCeOEPKdC4AvhBeHubcA7KhdHzg3gshDivpu0Ex0DA7DHxgBFoLrwCpufP6G8s1OPoujKLeApc1ReiHQhLuWTwfYOPW+nkB0ZRvuli3CO9aHZ85DySrBNU1b3984NheG3N8BHlceLCfH6RG9OZg0DrqKglchJRYVVXIe5/BV6yUNck7CSSZSq1TMngccyRpp63Eysx7bh+Icwoghy9TtEpQqQEO1nBbaUMISA0HWUMm2JVW9zWpHA2WxXF1KWhbhpQlNVRAd1BNvbCLa2EZKvShUm5dJWHFxL+sYphL7WjAszDCFoZ3DE9xEGv1k+/UsITYNixmDEYnCamkBVeUkdhEbaFOrEBSBfHB7SPdAFsJHmiMkUVw0dOklhjtRSqeKB72eRTjeSCIgQMZhFC2tjMoE32SMJejpdkFZv78tSpXK1q7OzkRTcmYobRrszke4PCAIaIkS5UoHV3b2gHJ+YeLCxu7v/i/W1tEA4Drg7mpv/fnkSjlGOazZqNX9wcvKh+mh+fuvH2ppaLBROO7kcDCIo8TgEg06agUQCO9Ttw/IynJGRm6dmZ583ZqJRMu/m5qYqKyvX6bj1jOvCIiLNiL16HV65jEKxuJ/M5e6MzszcIynlf2+VyO7m0tLwyuLieb9WGwqDoId10mmv64nE2/zo6LOO/v73RCpx/A91kc2wvC974AAAAABJRU5ErkJggg==);background-image:-webkit-image-set(url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAAXNSR0IArs4c6QAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAADqADAAQAAAABAAAADgAAAACeOBvAAAACaElEQVQoFU1SPUwUURD+3u7b3dvb4/Y4lj3+j0sukRASTIwFEJHKyoJCo8bGQihooJGYWBorExOl8aewM9HECjuDkaiJlY0aRAxyyQF7J3gXPOBY3F1nzmCc5Hs7OzPfm/neewL/2TWgTQGmCeOEPKdC4AvhBeHubcA7KhdHzg3gshDivpu0Ex0DA7DHxgBFoLrwCpufP6G8s1OPoujKLeApc1ReiHQhLuWTwfYOPW+nkB0ZRvuli3CO9aHZ85DySrBNU1b3984NheG3N8BHlceLCfH6RG9OZg0DrqKglchJRYVVXIe5/BV6yUNck7CSSZSq1TMngccyRpp63Eysx7bh+Icwoghy9TtEpQqQEO1nBbaUMISA0HWUMm2JVW9zWpHA2WxXF1KWhbhpQlNVRAd1BNvbCLa2EZKvShUm5dJWHFxL+sYphL7WjAszDCFoZ3DE9xEGv1k+/UsITYNixmDEYnCamkBVeUkdhEbaFOrEBSBfHB7SPdAFsJHmiMkUVw0dOklhjtRSqeKB72eRTjeSCIgQMZhFC2tjMoE32SMJejpdkFZv78tSpXK1q7OzkRTcmYobRrszke4PCAIaIkS5UoHV3b2gHJ+YeLCxu7v/i/W1tEA4Drg7mpv/fnkSjlGOazZqNX9wcvKh+mh+fuvH2ppaLBROO7kcDCIo8TgEg06agUQCO9Ttw/IynJGRm6dmZ583ZqJRMu/m5qYqKyvX6bj1jOvCIiLNiL16HV65jEKxuJ/M5e6MzszcIynlf2+VyO7m0tLwyuLieb9WGwqDoId10mmv64nE2/zo6LOO/v73RCpx/A91kc2wvC974AAAAABJRU5ErkJggg==) 1x,url(data:image/png;base64,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) 2x);}
+  /* No working minimise/zoom here, so 10.6 would grey them out. */
+  body.theme-snowleopard .mx-gel.mx-min,body.theme-snowleopard .mx-gel.mx-zoom{background-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAAXNSR0IArs4c6QAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAADqADAAQAAAABAAAADgAAAACeOBvAAAACEUlEQVQoFWVSO8saURCdXdf3WzQqaET9fICoYCEk1dpYiMVXJKSwSZ3GNr8gTSCQVEmadJGkTmUIWKSwlARBJIIBFaOFIuKq+MicC/sRyIXZHWbOuXNm7kj0z1FVNXQ4HJomk+nW6XTeILXdbgcc+2I2m193Op25Dpd0p1qtNi6Xy1uv1+vI5XKUTqdJkiQaDAbU7/dpvV7vZVl+2m63P4FjwKderz+x2Wwf8/m8KRaLUbFYpEKhQOFwmBRFIYPBQH6/X+Hqj5LJ5K/hcPjTUKvVQhaLpVMqlZRIJEI+n0+Y3W6n6/VK+/1eVHa5XARbLBbVeDz+QWHtTa5iiUaj5Ha7ieUQS6blcgkxwsdliFmtVlqtVo7xeNwEsZ5IJEQVlisAAJ3PZ0FEnyDgQsgGdjab3bKvZIPBIDkcDtELSDDIxDEajYIEIiwQCAB3o/BHQpIri150EirpZPggYUj8VPhLCjsTTdNiSCKIAx+GA7Jux+ORdrsd8TB/yx6P5+t8PqfT6STAIHNCKIAKGGK4CH0Dy8vxTVZV9d1kMtE2m82dNF0iKuqV4QMznU6PlUrlvczv+COVSr3s9XpYr//I+iXIAZPNZl+AIxrhZLDVaj3jMT/nzTBhYzBlkNATx2k0GmmhUOhVo9F4wyoWd7vKoHu8Sg+73e5jHtYD7vk+5PEEp7xF38vl8udMJtNl0h/E/wIrRe2r97xTmgAAAABJRU5ErkJggg==);background-image:-webkit-image-set(url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAAXNSR0IArs4c6QAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAADqADAAQAAAABAAAADgAAAACeOBvAAAACEUlEQVQoFWVSO8saURCdXdf3WzQqaET9fICoYCEk1dpYiMVXJKSwSZ3GNr8gTSCQVEmadJGkTmUIWKSwlARBJIIBFaOFIuKq+MicC/sRyIXZHWbOuXNm7kj0z1FVNXQ4HJomk+nW6XTeILXdbgcc+2I2m193Op25Dpd0p1qtNi6Xy1uv1+vI5XKUTqdJkiQaDAbU7/dpvV7vZVl+2m63P4FjwKderz+x2Wwf8/m8KRaLUbFYpEKhQOFwmBRFIYPBQH6/X+Hqj5LJ5K/hcPjTUKvVQhaLpVMqlZRIJEI+n0+Y3W6n6/VK+/1eVHa5XARbLBbVeDz+QWHtTa5iiUaj5Ha7ieUQS6blcgkxwsdliFmtVlqtVo7xeNwEsZ5IJEQVlisAAJ3PZ0FEnyDgQsgGdjab3bKvZIPBIDkcDtELSDDIxDEajYIEIiwQCAB3o/BHQpIri150EirpZPggYUj8VPhLCjsTTdNiSCKIAx+GA7Jux+ORdrsd8TB/yx6P5+t8PqfT6STAIHNCKIAKGGK4CH0Dy8vxTVZV9d1kMtE2m82dNF0iKuqV4QMznU6PlUrlvczv+COVSr3s9XpYr//I+iXIAZPNZl+AIxrhZLDVaj3jMT/nzTBhYzBlkNATx2k0GmmhUOhVo9F4wyoWd7vKoHu8Sg+73e5jHtYD7vk+5PEEp7xF38vl8udMJtNl0h/E/wIrRe2r97xTmgAAAABJRU5ErkJggg==) 1x,url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAYAAAByDd+UAAAAAXNSR0IArs4c6QAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAHKADAAQAAAABAAAAHAAAAABHddaYAAAFR0lEQVRIDY2WO0isVxDHj+v6XnXVqOsLV1ERETUQUEiRjZVW2ULEQrhaWojeKtVFUqZKmttfG0lsroGIBgzZQAIWtzASQfC1Pll11VXX9yvzO9mRL954kwPzzTlzZuY/M+f1JZn/0dra2gJJSUlfpKSkBNxut1/Ii9nd3V3s+vp67vb2du7h4eGH2dnZ0H+5S/qQQiAQ6BOHI+IMEJOVlWUyMzONABuRmZubG3NxcWHOz8+N6Jnk5OSwzH0VCoXePOf3XwE7Ojr8EvVboRbJwrhcLlNdXW3KyspMfn6+8XptgiYej5vd3V2zublptre3zdXVlSGwBPDn09PT4afA7wEK2AuJ/tv7+3svmZSWlpq8vDxTUFBgioqKTGFhoUlPT7d+Li8vzd7entnf3zfRaNRy+hKokSWISaD9U1NTE07QZOegs7MzKErfSYTpPp/PZpWdnW1LCRgZEgBZ5uTk2PKKYwsASEZGhg0ImQRDVD11dXXhpaWlPxTnETAYDPpFcQqwiooK4/f7rQOceDyex+zIlrVETmMtKSXrKbYmLS3NBsQynJ2doRJoaGj4fnFxMcbAzYcmhr+IgbekpMRmRjkhnKSmplqiz5riPGFj1xcQKgFnnmwJmLazs+OV5Xkr3Y8Z2wwluz6JqI9M6uvrbUY4IAuINQOMDUG5cMquZIdCrCUZESCgGig7+ujoCH2f+F2XLOc0wxGUiIq10ZLhBAKELMns5OTEyoiWcpINczpWGcFhK2toFhYW0BsRnTfJXV1dAZkYJiPNjsjIjGgVVDmZasM5jYyZ1/LDGdMAZicLoFfW8le3GAWJsLi42O46wCghMoyk/pYwBkCdkzVzOmbeGZQColNeXm5WV1fZXEG3TDRTTrY9QJCuAwDPgWoAAKOjnL7TjpJzhjc2NsjyM9awhbTZ7poZASgQjtQZjhQIrnPPcd217AswpPnJ0ItzJikjE4lJ6xAQJSwUlD4NMG0amMooJ8GzTGCI3GthGbDQEApwdYwRTcfqnDGOlSN3AiIncN1ACUBk7rjoergtaAqOAcRY+8xr9PRpzCFzyrVPsPQ1aAGPu6WUEbGr4SA7HROZOoSrE+V2Uj7Y0HCqwaGjvuA8XzQ538vu3Nzcd3KYazjQaswkRjjQ/lMglatjqygfgCGV0+e2gctZX3TV1tb+zKTcefZMsY05W+qQTFkL1laJzUXfKadPgBqYAsMPDg4sYFVV1U+ugYGBkChGKGksFrMTGq0zYw1AHcKVVN/JsSVwHmheDQkwMjg4+Bs1izY2No5yT8q7ZZ8aosJAHcIZP0fM01SfPmAkkTjwXJujIo66RCk2NDQ0IWVaPj09Nevr6/ZCxjlNuR184KOgqBAwgPjiN4QKDg8PT4D1964wJtzT0/NKnMf5PyEqDBQMjkO4yhTbOdZ5AAHb2trCT7y3t/el6IexsYDiLNLa2rosT8lryrC2tmZWVlZsedUhHFDI2Z4Ggj22AHK2m5ubvxbfYTCwe7QWh/yDfDI2NhaQtfxS7lUP96vsLMP/DbtVwZQrMNUgq8PDQyOPrN188jDHKysrX/f39/8oeu/E5hL9R0AGAuoTVj8/P++bnJz8Rra6j3eRPwFufIh7kSNB46Uni+PjY/ubqK+/gC/LD9mrpqYmsvpTwKLWQD7/AEQooB8Jqxdyj4+Pd8j/5gsx8HHONEsyhMiKUsM5v8Ij8mc32t3dPS32t0LLomdLKX3b3gNEmihvi3Qps5mZmWmRi+FTyYArsEYce5DL7otLEBG5subkT+/39vb2OeTSuJ/JzJbRShKfvwAKqTVvUw5R/gAAAABJRU5ErkJggg==) 2x);}
+</style>
+</head>
+<body>
+  <div id="win">
+    <!-- BeOS tab (default) -->
+    <div class="tab" id="tab"><span class="closebox" id="bxclose" title="Close"></span><b>Calculator</b></div>
+    <!-- Mac OS 9 -->
+    <div class="m9-title" id="m9title"><span class="m9-close" id="m9close"></span><div class="m9-plaque">Calculator</div></div>
+    <!-- Windows XP -->
+    <div class="xp-title" id="xptitle"><span class="xp-cap">Calculator</span><span class="xp-close" id="xpclose"></span></div>
+    <!-- Maiks Favourite -->
+    <div class="mf-title" id="mftitle"><span class="mf-close" id="mfclose"></span><span class="mf-cap">Calculator</span></div>
+    <!-- Mac OS X Aqua -->
+    <div class="mx-title" id="mxtitle">
+      <span class="mx-lights"><span class="mx-gel mx-close" id="mxclose" title="Close"><span class="mx-glyph">&times;</span></span><span class="mx-gel mx-min"><span class="mx-glyph">&minus;</span></span><span class="mx-gel mx-zoom"><span class="mx-glyph">+</span></span></span>
+      <span class="mx-cap">Calculator</span>
+    </div>
+    <!-- Windows 98 -->
+    <div class="w98-title" id="w98title"><img class="w98-ico" id="w98ico" alt=""><span class="w98-cap">Calculator</span><span class="w98-btn w98-close" id="w98close">×</span></div>
+    <div class="w98-menubar" id="w98menu"><span><u>E</u>dit</span><span><u>V</u>iew</span><span><u>H</u>elp</span></div>
+    <div class="body">
+      <div class="disp" id="disp">0</div>
+      <div class="toprow">
+        <div class="memind" id="memind"></div>
+        <button class="k clr" data-k="back">Backspace</button>
+        <button class="k clr" data-k="ce">CE</button>
+        <button class="k clr" data-k="c">C</button>
+      </div>
+      <div class="grid">
+        <button class="k mem" data-k="mc">MC</button>
+        <button class="k dig" data-k="7">7</button>
+        <button class="k dig" data-k="8">8</button>
+        <button class="k dig" data-k="9">9</button>
+        <button class="k op" data-k="/">/</button>
+        <button class="k fn" data-k="sqrt">sqrt</button>
+
+        <button class="k mem" data-k="mr">MR</button>
+        <button class="k dig" data-k="4">4</button>
+        <button class="k dig" data-k="5">5</button>
+        <button class="k dig" data-k="6">6</button>
+        <button class="k op" data-k="*">*</button>
+        <button class="k fn" data-k="pct">%</button>
+
+        <button class="k mem" data-k="ms">MS</button>
+        <button class="k dig" data-k="1">1</button>
+        <button class="k dig" data-k="2">2</button>
+        <button class="k dig" data-k="3">3</button>
+        <button class="k op" data-k="-">-</button>
+        <button class="k fn" data-k="inv">1/x</button>
+
+        <button class="k mem" data-k="mp">M+</button>
+        <button class="k dig" data-k="0">0</button>
+        <button class="k fn" data-k="neg">+/-</button>
+        <button class="k dig" data-k=".">.</button>
+        <button class="k op" data-k="+">+</button>
+        <button class="k op" data-k="eq">=</button>
+      </div>
+    </div>
+  </div>
+<script>
+  const disp = document.getElementById('disp');
+  let acc = null, op = null, cur = '0', fresh = true, mem = 0;
+  // Windows put an M in the little box whenever anything was stored.
+  const memind = document.getElementById('memind');
+  function showMem(){ if (memind) memind.textContent = mem ? 'M' : ''; }
+
+  function show(){ let s = cur; if (s.length > 16) s = String(Number(s)); disp.textContent = s; }
+  function num(){ return parseFloat(cur) || 0; }
+  function setNum(n){ if (!isFinite(n)) { cur = 'Error'; fresh = true; return; }
+    cur = String(Math.round(n * 1e12) / 1e12); fresh = true; }
+
+  function digit(d){ if (cur === 'Error') clearAll();
+    if (fresh) { cur = (d === '.') ? '0.' : d; fresh = false; }
+    else if (d === '.') { if (!cur.includes('.')) cur += '.'; }
+    else { cur = (cur === '0') ? d : cur + d; } show(); }
+
+  function apply(a, o, b){ switch(o){ case '+':return a+b; case '-':return a-b;
+    case '*':return a*b; case '/':return b===0?NaN:a/b; } return b; }
+
+  function operator(o){ if (cur === 'Error') return;
+    if (op !== null && !fresh) { acc = apply(acc, op, num()); setNum(acc); }
+    else { acc = num(); }
+    op = o; fresh = true; show(); }
+
+  function equals(){ if (op === null || cur === 'Error') return;
+    acc = apply(acc, op, num()); setNum(acc); op = null; show(); }
+
+  function clearAll(){ acc = null; op = null; cur = '0'; fresh = true; show(); }
+  function clearEntry(){ cur = '0'; fresh = true; show(); }
+  function back(){ if (fresh || cur === 'Error') return;
+    cur = cur.length > 1 ? cur.slice(0, -1) : '0'; if (cur === '-') cur = '0'; show(); }
+
+  function key(k){
+    if (/^[0-9.]$/.test(k)) return digit(k);
+    switch(k){
+      case '+': case '-': case '*': case '/': return operator(k);
+      case 'eq': return equals();
+      case 'c': return clearAll();
+      case 'ce': return clearEntry();
+      case 'back': return back();
+      case 'neg': if (cur !== '0' && cur !== 'Error') { cur = cur.startsWith('-') ? cur.slice(1) : '-' + cur; show(); } return;
+      case 'sqrt': setNum(Math.sqrt(num())); show(); return;
+      case 'inv': setNum(num()===0?NaN:1/num()); show(); return;
+      case 'pct': setNum(acc!==null ? acc*num()/100 : 0); show(); return;
+      case 'mc': mem = 0; showMem(); return;
+      case 'mr': setNum(mem); show(); return;
+      case 'ms': mem = num(); showMem(); return;
+      case 'mp': mem += num(); showMem(); return;
+    }
+  }
+
+  document.querySelectorAll('.k').forEach(b=>{
+    b.addEventListener('click', ev=>{ ev.stopPropagation(); key(b.dataset.k); });
+  });
+  // Physical keyboard
+  window.addEventListener('keydown', ev=>{
+    const m = {'Enter':'eq','=':'eq','Escape':'c','Backspace':'back','%':'pct'};
+    if (/^[0-9.]$/.test(ev.key)) { digit(ev.key); ev.preventDefault(); return; }
+    if ('+-*/'.includes(ev.key)) { operator(ev.key); ev.preventDefault(); return; }
+    if (m[ev.key]) { key(m[ev.key]); ev.preventDefault(); }
+  });
+  show();
+
+  window.setTheme=function(k){ theme=k||'beos'; document.body.className='theme-'+theme+(k==='win7'?' theme-winxp':'')+(k==='snowleopard'?' theme-macosx':''); };
+  window.setWinIcon=function(u){ const e=document.getElementById('w98ico'); if(!e) return; if(u){ e.src=u; } else { e.removeAttribute('src'); } };
+  window.setHover=function(h){ document.body.classList.toggle('hovering', !!h); };
+
+  function postClose(){ if(window.webkit&&webkit.messageHandlers&&webkit.messageHandlers.calculator) webkit.messageHandlers.calculator.postMessage('close'); }
+  ['bxclose','m9close','xpclose','mfclose','mxclose','w98close'].forEach(id=>{ const e=document.getElementById(id); if(e) e.addEventListener('click',ev=>{ev.stopPropagation();postClose();}); });
+
+  window.regions=function(){
+    const cl=document.body.classList;
+    const R=id=>{const e=document.getElementById(id);if(!e)return[0,0,0,0];const b=e.getBoundingClientRect();return[b.x,b.y,b.width,b.height];};
+    if(cl.contains('theme-win98'))    return [...R('w98title'),...R('w98close')];
+    if(cl.contains('theme-macosx'))   return [...R('mxtitle'),...R('mxclose')];
+    if(cl.contains('theme-maiksfav')) return [...R('mftitle'),...R('mfclose')];
+    if(cl.contains('theme-winxp'))    return [...R('xptitle'),...R('xpclose')];
+    if(cl.contains('theme-macos9'))   return [...R('m9title'),...R('m9close')];
+    return [...R('tab'),...R('bxclose')];
+  };
+  window.widgetSize=function(){ const w=document.getElementById('win'); return [w.offsetWidth, w.offsetHeight]; };
+  let theme='beos';
+</script>
+<script>
+window.setBtnState = function(slot, state){
+  const cl = document.body.classList;
+  let ids;
+  if (cl.contains('theme-win98'))         ids = {close:'w98close'};
+  else if (cl.contains('theme-macosx'))   ids = {close:'mxclose'};
+  else if (cl.contains('theme-maiksfav')) ids = {close:'mfclose'};
+  else if (cl.contains('theme-winxp'))    ids = {close:'xpclose'};
+  else if (cl.contains('theme-macos9'))   ids = {close:'m9close'};
+  else ids = {close:'closebox'};
+  const el = ids[slot] && document.getElementById(ids[slot]);
+  if (!el) return;
+  el.classList.remove('is-hover','is-press');
+  if (state === 'hover') el.classList.add('is-hover');
+  else if (state === 'press') el.classList.add('is-press');
+};
+</script>
+</body>
+</html>

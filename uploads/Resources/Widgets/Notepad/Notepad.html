@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  html,body{margin:0;padding:0;height:100%;background:transparent;overflow:hidden;
+    font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;-webkit-user-select:none;}
+  #win{position:relative;width:100%;height:100vh;display:flex;flex-direction:column;}
+
+  /* ---- Noto-like editor (gutter + contenteditable pad) ---- */
+  #npedit{position:relative;display:flex;flex:1 1 auto;min-height:0;overflow:hidden;background:var(--bg);
+    --bg:#ffffff;--fg:#1a1a1a;--gutterbg:#f3f3f3;--gutterfg:#a0a0a0;--caret:#1a1a1a;--sel:#b3d4fc;}
+  #npgutter{flex:0 0 auto;min-width:34px;box-sizing:border-box;padding:8px 6px 8px 0;
+    text-align:right;background:var(--gutterbg);color:var(--gutterfg);
+    font-family:Menlo,Monaco,"Courier New",monospace;font-size:12px;line-height:1.45;
+    overflow:hidden;-webkit-user-select:none;user-select:none;white-space:pre;
+    border-right:1px solid rgba(0,0,0,.10);}
+  #pad{flex:1 1 auto;min-width:0;display:block;box-sizing:border-box;border:none;outline:none;margin:0;
+    padding:8px;font-family:Menlo,Monaco,"Courier New",monospace;font-size:12px;line-height:1.45;
+    color:var(--fg);background:var(--bg);caret-color:var(--caret);
+    white-space:pre-wrap;word-wrap:break-word;overflow:auto;-webkit-user-select:text;user-select:text;cursor:text;tab-size:4;}
+  #pad:empty:before{content:attr(data-ph);color:var(--gutterfg);}
+  #pad::selection{background:var(--sel);}
+  #pad::-webkit-scrollbar{width:9px;height:9px;}
+  #pad::-webkit-scrollbar-thumb{background:rgba(0,0,0,.25);border-radius:5px;}
+  .np-hit{background:#fde047;}
+  .np-cur{background:#f59e0b;}
+
+  /* ---- Find & Replace bar ---- */
+  #npfind{display:none;align-items:center;gap:4px;flex-wrap:wrap;flex:0 0 auto;padding:4px 6px;
+    border-bottom:1px solid rgba(0,0,0,.2);background:rgba(0,0,0,.06);}
+  #npfind input{font:11px Menlo,Monaco,monospace;padding:2px 5px;border:1px solid rgba(0,0,0,.3);
+    border-radius:4px;background:#fff;color:#222;width:96px;}
+  #npfind button{font:600 11px -apple-system,"Helvetica Neue",sans-serif;padding:2px 6px;
+    border:1px solid rgba(0,0,0,.32);border-radius:4px;background:linear-gradient(#ffffff,#e2e2e2);
+    color:#222;cursor:pointer;-webkit-user-select:none;}
+  #npfind button:active{background:linear-gradient(#d6d6d6,#ececec);}
+  #npfc{font:11px -apple-system,"Helvetica Neue",sans-serif;color:#555;min-width:34px;text-align:center;}
+  #npfind .npfsp{flex:1;}
+
+  /* ---- BeOS yellow tab (default chrome) ---- */
+  .tab{display:flex;align-items:center;gap:8px;height:22px;padding:0 8px;width:fit-content;
+    position:relative;z-index:3;border:1.4px solid #2a2a2a;border-bottom:none;border-radius:5px 5px 0 0;
+    background:linear-gradient(180deg,#fbd85c,#f2bd23);box-shadow:inset 1px 1px 0 rgba(255,255,255,.55);flex:0 0 auto;}
+  .tab b{font-size:12px;font-weight:700;color:#2a2306;white-space:nowrap;}
+  .closebox{width:13px;height:13px;border:1.4px solid #6f5a10;cursor:pointer;
+    background:linear-gradient(135deg,#fbe27e,#eab92a);box-shadow:inset 1px 1px 0 rgba(255,255,255,.75);}
+  .body{position:relative;z-index:2;margin-top:-1px;border:1px solid #000;flex:1 1 auto;min-height:0;
+    display:flex;flex-direction:column;
+    background:#d8d3c0;box-shadow:inset 2px 2px 0 #efeada,inset -2px -2px 0 #b3ad98;padding:3px;}
+
+  .m9-title,.xp-title,.mf-title,.mx-title,.w98-title{display:none;}
+
+  /* ===== Futurama (theme-futurama): sage title bar, 3 traffic lights, centered title ===== */
+  body.theme-futurama .tab{width:auto;box-sizing:border-box;justify-content:center;height:26px;padding:0 12px;
+    border:1px solid #46695c;border-bottom:none;border-radius:9px 9px 0 0;
+    background:linear-gradient(180deg,#b8ceba,#9fbcaa);box-shadow:inset 0 1px 0 rgba(255,255,255,.45);}
+  body.theme-futurama .tab b{color:#16281f;font-size:13px;font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;}
+  body.theme-futurama .closebox{position:absolute;left:11px;top:50%;transform:translateY(-50%);
+    width:12px;height:12px;border-radius:50%;border:1px solid rgba(0,0,0,.35);background:#ef5350;box-shadow:none;}
+  body.theme-futurama .tab::before{content:'';position:absolute;left:29px;top:50%;transform:translateY(-50%);
+    width:12px;height:12px;border-radius:50%;background:#f5bd39;border:1px solid rgba(0,0,0,.3);
+    box-shadow:20px 0 0 0 #5cc85c,20px 0 0 1px rgba(0,0,0,.3);}
+  body.theme-futurama .body{border:1px solid #46695c;background:#f2ecdd;
+    box-shadow:inset 1px 1px 0 #fbf7ee,inset -1px -1px 0 #d8d2c2;}
+
+
+  /* ===== Mac OS 9 (Platinum) ===== */
+  body.theme-macos9 .tab{display:none;}
+  body.theme-macos9 #win{border:1px solid #000;background:#d8d8d8;box-shadow:2px 2px 8px rgba(0,0,0,.3);}
+  body.theme-macos9 .body{border:none;background:#d8d8d8;box-shadow:none;margin:0;padding:0;}
+  /* Mac OS 9 Platinum title bar — faithful to the Mac OS 9 UI Kit (Figma) */
+  body.theme-macos9 .m9-title{display:flex;align-items:center;position:relative;height:20px;flex:0 0 auto;
+    border-top:1px solid #f3f3f3;border-bottom:1px solid #9a9a9a;
+    background:repeating-linear-gradient(#e8e8e8 0 1px,#d0d0d0 1px 2px);
+    image-rendering:pixelated;image-rendering:crisp-edges;}
+  .m9-close{position:relative;z-index:2;box-sizing:border-box;width:11px;height:11px;margin-left:7px;
+    background:#c0c0c0;border:1px solid #7e7e8a;box-shadow:inset 0 0 0 1px #dadaff;cursor:pointer;}
+  .m9-plaque{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2;background:#f3f3f3;
+    padding:0 8px;font-size:12px;font-weight:700;color:#000;
+    font-family:"Charcoal","ChicagoFLF","Helvetica Neue",Helvetica,sans-serif;}
+
+  /* ===== Windows XP (Luna) ===== */
+  body.theme-winxp .tab{display:none;}
+
+  /* ===== XP Luna scrollbars + controls (theme-winxp) ===== */
+  body.theme-winxp ::-webkit-scrollbar,
+  body.theme-winxp #pad::-webkit-scrollbar{width:17px;height:17px;}
+  body.theme-winxp ::-webkit-scrollbar-track,
+  body.theme-winxp #pad::-webkit-scrollbar-track{background:#d6e5f5;border-left:1px solid #aac3e0;}
+  body.theme-winxp ::-webkit-scrollbar-thumb,
+  body.theme-winxp #pad::-webkit-scrollbar-thumb{
+    background:linear-gradient(90deg,#7fb1f5,#2f6fdd 50%,#4f8fe8);
+    border:1px solid #1c4aa0;border-radius:3px;}
+  body.theme-winxp ::-webkit-scrollbar-thumb:hover,
+  body.theme-winxp #pad::-webkit-scrollbar-thumb:hover{
+    background:linear-gradient(90deg,#93c0fb,#4f8fe8 50%,#5f9ff2);}
+  body.theme-winxp ::-webkit-scrollbar-button{
+    height:17px;width:17px;background:linear-gradient(180deg,#eaf2fc,#bcd4ef);
+    border:1px solid #6a93c8;border-radius:2px;}
+  body.theme-winxp ::-webkit-scrollbar-corner{background:#d6e5f5;}
+  body.theme-winxp button{
+    font:12px Tahoma,"Segoe UI",sans-serif;padding:2px 12px;border-radius:3px;border:1px solid #003c74;
+    background:linear-gradient(180deg,#fdfeff,#eaf0fb 45%,#d6e2f5);color:#000;}
+  body.theme-winxp button:hover{border-color:#ff9a00;box-shadow:inset 0 0 5px rgba(255,154,0,.55);}
+  body.theme-winxp button:active{background:linear-gradient(180deg,#cdd9ee,#e6eefc);}
+  body.theme-winxp input,body.theme-winxp textarea,body.theme-winxp select{
+    border:1px solid #7f9db9;background:#fff;border-radius:0;padding:2px 4px;font:12px Tahoma,"Segoe UI",sans-serif;}
+  body.theme-winxp input:focus,body.theme-winxp textarea:focus,body.theme-winxp select:focus{
+    outline:none;border-color:#2f6fdd;box-shadow:0 0 3px rgba(47,111,221,.7);}
+
+  body.theme-winxp #win{border-radius:8px 8px 2px 2px;background:#0831D9;overflow:hidden;box-shadow:2px 5px 14px rgba(0,0,0,.45);}
+  body.theme-winxp .body{border:none;background:#ECE9D8;margin:0 4px 4px;padding:0;}
+  body.theme-winxp .xp-title{display:flex;align-items:center;height:26px;gap:6px;padding:0 4px 0 8px;flex:0 0 auto;
+    border-radius:8px 8px 0 0;background:linear-gradient(180deg,#0997FF,#0053EE 45%,#0066FF 52%,#003DD2);}
+  .xp-cap{color:#fff;font:700 14px "Trebuchet MS",Tahoma,sans-serif;text-shadow:1px 1px 1px rgba(0,0,40,.5);
+    flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .xp-min,.xp-max,.xp-close{width:21px;height:19px;border-radius:3px;position:relative;cursor:pointer;flex:0 0 auto;
+    border:1px solid rgba(255,255,255,.55);}
+  .xp-min,.xp-max{background:linear-gradient(180deg,#5b9df4,#2f6fdd 55%,#1a52c4);}
+  .xp-close{background:linear-gradient(180deg,#F7B39E,#E35F44 55%,#C4382A);}
+  .xp-close::before,.xp-close::after{content:"";position:absolute;left:50%;top:50%;width:11px;height:2px;background:#fff;}
+  .xp-close::before{transform:translate(-50%,-50%) rotate(45deg);} .xp-close::after{transform:translate(-50%,-50%) rotate(-45deg);}
+  .xp-min::before{content:"";position:absolute;left:5px;bottom:4px;width:9px;height:2px;background:#fff;}
+  .xp-max::before{content:"";position:absolute;left:5px;top:4px;width:10px;height:8px;border:1px solid #fff;border-top-width:2px;}
+
+  /* ===== Maiks Favourite (pixel macOS) ===== */
+  body.theme-maiksfav .tab{display:none;}
+  body.theme-maiksfav #win{background:#ECECEC;border:2px solid #262626;border-radius:10px;overflow:hidden;
+    box-shadow:inset 2px 2px 0 #fff,inset -2px -2px 0 #c4c4c4,6px 6px 0 rgba(0,0,0,.35);}
+  body.theme-maiksfav .body{border:none;background:#ECECEC;margin:0;padding:0;}
+  body.theme-maiksfav .mf-title{display:flex;align-items:center;position:relative;height:26px;gap:8px;padding:0 10px;flex:0 0 auto;
+    background:#E3E3E3;border-bottom:2px solid #262626;font-family:"Pixelify Sans",monospace;}
+  .mf-close{width:12px;height:12px;border-radius:50%;background:#FF5F57;border:1px solid rgba(0,0,0,.3);cursor:pointer;}
+  .mf-cap{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:13px;font-weight:700;color:#3a3a3a;}
+
+  /* ===== Mac OS X (Aqua 10.0–10.4) ===== */
+  body.theme-macosx .tab{display:none;}
+  body.theme-macosx #win{border-radius:6px 6px 3px 3px;overflow:hidden;
+    border:1px solid #7a7a7a;box-shadow:inset 0 0 0 1px rgba(255,255,255,.5);}
+  body.theme-macosx .body{border:none;margin:0;padding:0;background:#ededed;box-shadow:none;}
+  body.theme-macosx .mx-title{display:flex;align-items:center;position:relative;height:22px;gap:6px;padding:0 8px;flex:0 0 auto;
+    background:linear-gradient(to bottom,#fafafa,#ededed 26%,#dadada 60%,#c6c6c6 92%,#bcbcbc);
+    border-bottom:1px solid #888;box-shadow:inset 0 1px 0 rgba(255,255,255,.7);}
+  body.theme-macosx .mx-title::after{content:"";position:absolute;inset:0;pointer-events:none;
+    background:repeating-linear-gradient(to bottom,rgba(255,255,255,.14) 0 1px,rgba(0,0,0,.028) 1px 2px);}
+  .mx-lights{display:flex;gap:6px;align-items:center;position:relative;z-index:1;}
+  .mx-gel{width:14px;height:14px;border-radius:50%;position:relative;flex:0 0 14px;cursor:default;
+    box-shadow:inset 0 0 1px .5px rgba(0,0,0,.38),inset 0 -2.5px 3px rgba(0,0,0,.32),inset 0 2px 2px rgba(255,255,255,.30),0 1px 1.5px rgba(0,0,0,.42);}
+  .mx-gel::before{content:"";position:absolute;left:2.5px;right:2.5px;top:1.5px;height:6px;border-radius:50%;z-index:1;
+    background:radial-gradient(ellipse at 50% 0%,rgba(255,255,255,.98),rgba(255,255,255,.55) 52%,rgba(255,255,255,0));}
+  .mx-close{background:radial-gradient(circle at 50% 34%,#ffe6df,#ff8f7c 20%,#fb5038 46%,#e22a16 66%,#b51d0d 84%,#861309);cursor:pointer;}
+  .mx-min{background:radial-gradient(circle at 50% 34%,#fff1cf,#ffd069 20%,#fcab1e 46%,#ef8d00 66%,#c06d00 84%,#8a4f00);}
+  .mx-zoom{background:radial-gradient(circle at 50% 34%,#e7fbcb,#aef071 20%,#62d227 46%,#3aa90e 66%,#2b8908 84%,#1c6207);}
+  .mx-cap{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:1;
+    font:700 13px "Lucida Grande","Helvetica Neue",Helvetica,Arial,sans-serif;color:#1a1a1a;text-shadow:0 1px 0 rgba(255,255,255,.6);white-space:nowrap;}
+  .mx-glyph{position:absolute;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;
+    font:700 11px "Lucida Grande",Helvetica,Arial,sans-serif;color:rgba(0,0,0,.6);
+    text-shadow:0 1px 0 rgba(255,255,255,.4);opacity:0;transition:opacity .08s linear;pointer-events:none;}
+  .mx-glyph{display:none;}
+
+  /* ---- Toolbar + status bar (all themes) ---- */
+  .np-toolbar{display:flex;align-items:center;gap:4px;padding:4px 6px;flex-wrap:wrap;flex:0 0 auto;
+    border-bottom:1px solid rgba(0,0,0,.2);background:rgba(0,0,0,.05);}
+  .np-toolbar button{font:600 11px -apple-system,"Helvetica Neue",sans-serif;padding:2px 7px;
+    border:1px solid rgba(0,0,0,.32);border-radius:4px;background:linear-gradient(#ffffff,#e2e2e2);
+    color:#222;cursor:pointer;-webkit-user-select:none;}
+  .np-toolbar button:active{background:linear-gradient(#d6d6d6,#ececec);}
+  .np-sp{flex:1;}
+  .np-div{width:1px;height:16px;background:rgba(0,0,0,.2);margin:0 2px;}
+  .np-toolbar select{font:600 11px -apple-system,"Helvetica Neue",sans-serif;padding:1px 2px;border:1px solid rgba(0,0,0,.32);border-radius:4px;background:#fff;color:#222;max-width:96px;}
+  .np-toolbar button.on{background:linear-gradient(#bcd4f5,#9cc0ef);border-color:#5a8ad0;}
+  .np-status{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:3px 8px;flex:0 0 auto;
+    font:11px -apple-system,"Helvetica Neue",sans-serif;color:#444;
+    border-top:1px solid rgba(0,0,0,.18);background:rgba(0,0,0,.05);}
+  #npfile{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:62%;}
+  #npcount{white-space:nowrap;}
+  body.theme-macosx .np-toolbar,body.theme-macosx .np-status{background:linear-gradient(to bottom,#f4f4f4,#dcdcdc);border-color:#aaa;}
+  body.theme-macosx .np-toolbar button{border:1px solid #9a9a9a;border-radius:9px;background:linear-gradient(to bottom,#ffffff,#dfe3ea);box-shadow:inset 0 1px 0 #fff;color:#1a1a1a;}
+  body.theme-winxp .np-toolbar,body.theme-winxp .np-status{background:#ECE9D8;}
+  body.theme-maiksfav .np-toolbar button{font-family:"Pixelify Sans",monospace;}
+
+  /* ===== Windows 98 — SPEC-Farben/-Bevels, leicht skaliert für Lesbarkeit ===== */
+  .w98-cap{color:#fff;font:700 12px Tahoma,"Microsoft Sans Serif",sans-serif;
+    flex:1 1 auto;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .w98-btn{width:20px;height:18px;background:#c0c0c0;cursor:pointer;flex:0 0 auto;
+    box-shadow:inset -1px -1px 0 #000,inset 1px 1px 0 #dbdbdb,inset -2px -2px 0 #808080,inset 2px 2px 0 #fff;
+    font:700 13px Tahoma,Verdana,sans-serif;color:#000;display:flex;align-items:center;justify-content:center;line-height:1;}
+  .w98-btn:active{box-shadow:inset 1px 1px 0 #000,inset -1px -1px 0 #dbdbdb,inset 2px 2px 0 #808080,inset -2px -2px 0 #fff;}
+  .w98-btn.w98-dis{color:#808080;text-shadow:1px 1px 0 #fff;cursor:default;}
+  .w98-close{margin-left:3px;}
+  /* Marlett-artige Glyphen (gezeichnet) — identisch zum nativen App-Fenster-Chrome */
+  .w98-btn{font-size:0;position:relative;}
+  #w98close::before,#w98close::after{content:"";position:absolute;left:50%;top:50%;width:11px;height:2px;background:#000;}
+  #w98close::before{transform:translate(-50%,-50%) rotate(45deg);}
+  #w98close::after{transform:translate(-50%,-50%) rotate(-45deg);}
+  #w98min::before{content:"";position:absolute;left:4px;bottom:4px;width:8px;height:2px;background:#808080;box-shadow:1px 1px 0 #fff;}
+  #w98max::before{content:"";position:absolute;left:4px;top:3px;width:10px;height:9px;border:1px solid #808080;border-top-width:2px;box-shadow:1px 1px 0 #fff;}
+  body.theme-win98 .tab{display:none;}
+  body.theme-win98 #win{background:#c0c0c0;
+    box-shadow:inset -1px -1px 0 #000,inset 1px 1px 0 #fff,inset -2px -2px 0 #808080,inset 2px 2px 0 #dbdbdb;}
+  body.theme-win98 .body{border:none;background:#c0c0c0;box-shadow:none;margin:0 3px 3px;padding:0;}
+  body.theme-win98 .w98-title{display:flex;align-items:center;gap:2px;height:24px;margin:3px 3px 1px;padding:0 3px 0 4px;
+    background:linear-gradient(90deg,#00007b,#1085d2);}
+  body.theme-win98 .np-toolbar,body.theme-win98 .np-status{background:#c0c0c0;}
+
+  /* ===== SimpleText (Mac OS 9) / TeachText (Mac OS 6) — window only ===== */
+  @font-face{font-family:"GenevaRM";src:url("fonts/Geneva12-Medium.ttf");}
+  @font-face{font-family:"ChicagoRM";src:url("fonts/Chicago-12.ttf");}
+  #ctxmenu{display:none;} .m9-collapse,.m9-zoom{display:none;} #stgrip{display:none;}
+  body.np-collapsed .body{display:none;}   /* WindowShade: roll up to the title bar */
+  /* Title bar harmonised with the CPU/Applications widgets: same Platinum size the CPU
+     renders after its 0.6 scale (≈20px bar, 11px boxes). The fine 1×2 pinstripe from the
+     base theme-macos9 rule matches the CPU widget's rendered stripe density. */
+  body.app-simpletext .m9-close,body.app-teachtext .m9-close{cursor:default;}
+  /* title-bar boxes: close (left), WindowShade (collapse) + zoom (right pair) — 11px Platinum boxes like CPU */
+  body.app-simpletext .m9-right,body.app-teachtext .m9-right{margin-left:auto;display:flex;gap:5px;
+    padding-right:7px;align-items:center;z-index:2;}
+  body.app-simpletext .m9-collapse,body.app-teachtext .m9-collapse,
+  body.app-simpletext .m9-zoom,body.app-teachtext .m9-zoom{display:block;position:relative;box-sizing:border-box;
+    width:11px;height:11px;background:#c0c0c0;border:1px solid #7e7e8a;box-shadow:inset 0 0 0 1px #dadaff;cursor:default;}
+  /* zoom = box-in-box glyph; collapse = single horizontal line (WindowShade) */
+  body.app-simpletext .m9-zoom::before,body.app-teachtext .m9-zoom::before{content:"";position:absolute;
+    left:1px;top:1px;width:4px;height:4px;border:1px solid #7e7e8a;background:#c0c0c0;}
+  body.app-simpletext .m9-collapse::before,body.app-teachtext .m9-collapse::before{content:"";position:absolute;
+    left:2px;right:2px;top:4px;height:0;border-top:1px solid #7e7e8a;}
+  /* no toolbar / line numbers / status bar; proportional Geneva; white paper */
+  body.app-simpletext #nptoolbar,body.app-teachtext #nptoolbar{display:none;}
+  body.app-simpletext #npgutter,body.app-teachtext #npgutter{display:none;}
+  body.app-simpletext #npfind,body.app-teachtext #npfind{font-family:"GenevaRM","Geneva",sans-serif;}
+  body.app-simpletext .np-status,body.app-teachtext .np-status{display:none;}
+  body.app-simpletext #npedit,body.app-teachtext #npedit{background:#fff;}
+  body.app-simpletext #pad,body.app-teachtext #pad{
+    font-family:"GenevaRM","Geneva","Helvetica Neue",sans-serif;font-size:15px;line-height:1.25;padding:8px 10px;background:#fff;color:#000;}
+  body.app-teachtext #pad{font-family:"ChicagoRM","Chicago","GenevaRM",sans-serif;}
+  body.app-simpletext .m9-plaque,body.app-teachtext .m9-plaque{font-family:"ChicagoRM","Charcoal","ChicagoFLF",sans-serif;}
+  /* classic Mac scroll bar */
+  body.app-simpletext #pad::-webkit-scrollbar,body.app-teachtext #pad::-webkit-scrollbar{width:16px;}
+  body.app-simpletext #pad::-webkit-scrollbar-track,body.app-teachtext #pad::-webkit-scrollbar-track{background:#e8e8e8;border-left:1px solid #000;}
+  body.app-simpletext #pad::-webkit-scrollbar-thumb,body.app-teachtext #pad::-webkit-scrollbar-thumb{
+    background:#c0c0c0;border:1px solid #000;box-shadow:inset 1px 1px 0 #fff,inset -1px -1px 0 #808080;}
+  body.app-simpletext #pad::-webkit-scrollbar-button,body.app-teachtext #pad::-webkit-scrollbar-button{
+    display:block;height:16px;background:#c0c0c0;border:1px solid #000;box-shadow:inset 1px 1px 0 #fff,inset -1px -1px 0 #808080;}
+  /* resize grip (bottom-right — native corners do the resizing) */
+  body.app-simpletext #stgrip,body.app-teachtext #stgrip{display:block;position:absolute;right:0;bottom:0;width:15px;height:15px;z-index:3;
+    background:#fff;border-left:1px solid #000;border-top:1px solid #000;
+    background-image:linear-gradient(135deg,transparent 42%,#000 42% 48%,transparent 48% 62%,#000 62% 68%,transparent 68%);}
+  /* right-click context menu (classic popup) */
+  #ctxmenu{position:fixed;z-index:200;background:#fff;border:1px solid #000;box-shadow:2px 2px 0 rgba(0,0,0,.35);padding:2px 0;
+    font:13px/1 "ChicagoRM","Charcoal","Helvetica Neue",sans-serif;color:#000;min-width:158px;}
+  #ctxmenu .ci{padding:4px 24px 4px 16px;white-space:nowrap;position:relative;cursor:default;}
+  #ctxmenu .ci:hover{background:#000;color:#fff;}
+  #ctxmenu .ci.sep{padding:0;margin:3px 0;border-top:1px solid #b0b0b0;pointer-events:none;}
+  #ctxmenu .ci.sub::after{content:"\25B8";position:absolute;right:7px;}
+  #ctxmenu .csub{display:none;position:absolute;left:100%;top:-3px;background:#fff;border:1px solid #000;
+    box-shadow:2px 2px 0 rgba(0,0,0,.35);padding:2px 0;min-width:118px;color:#000;}
+  /* the parent .ci.sub turns white on hover — pin submenu items back to black so they're not white-on-white */
+  #ctxmenu .csub .ci{color:#000;}
+  #ctxmenu .csub .ci:hover{color:#fff;}
+  #ctxmenu .ci.sub:hover>.csub{display:block;}
+  /* TeachText (System 6) shares the same Platinum window chrome as the CPU/Applications
+     widgets; only the paper keeps the Chicago font (set above). */
+
+  /* ===== Windows Notepad — authentic (shared by Windows 98 + XP) ===== */
+  @font-face{font-family:"W95FA";src:url("fonts/W95FA.woff") format("woff");}
+  /* title-bar document icon + minimise/maximise (win98) */
+  .w98-ico{display:none;}
+  body.theme-win98 .w98-ico,body.theme-winxp .w98-ico{display:block;width:16px;height:16px;flex:0 0 16px;margin-right:4px;
+    background:url("notepad-icon.png") center/contain no-repeat;}
+  #w98min,#w98max{display:none;}
+  body.theme-win98 #w98min,body.theme-win98 #w98max{display:flex;}
+  body.theme-win98 .w98-title{font-family:"W95FA","MS Sans Serif",Tahoma,sans-serif;-webkit-font-smoothing:none;}
+  body.theme-win98 .w98-cap{font-family:inherit;font-size:15px;}
+  /* menu bar (File / Edit / Search / Help) */
+  .w98-menubar{display:none;}
+  body.theme-win98 .w98-menubar,body.theme-winxp .w98-menubar{display:flex;align-items:stretch;height:23px;flex:0 0 auto;
+    padding:0 2px;background:#c0c0c0;font:15px "W95FA","MS Sans Serif",Tahoma,sans-serif;-webkit-font-smoothing:none;
+    color:#000;user-select:none;position:relative;z-index:40;}
+  body.theme-winxp .w98-menubar{background:#ECE9D8;font:13px Tahoma,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased;}
+  .w98-m{position:relative;display:flex;align-items:center;padding:0 7px;cursor:default;}
+  .w98-m.open{box-shadow:inset 1px 1px 0 #808080,inset -1px -1px 0 #fff;}
+  .w98-m u{text-decoration:underline;}
+  .w98-drop{display:none;position:absolute;top:100%;left:0;min-width:214px;background:#c0c0c0;padding:2px;z-index:60;
+    box-shadow:inset 1px 1px #dfdfdf,inset -1px -1px #000,inset 2px 2px #fff,inset -2px -2px #808080,2px 2px 3px rgba(0,0,0,.35);}
+  .w98-m.open .w98-drop{display:block;}
+  body.theme-winxp .w98-drop{background:#ECE9D8;}   /* dropdown matches the XP menu-bar colour */
+  .w98-mi{display:flex;justify-content:space-between;gap:24px;white-space:nowrap;padding:3px 20px 3px 22px;
+    color:#000;cursor:default;position:relative;}
+  .w98-mi:hover{background:#000080;color:#fff;}
+  .w98-mi u{text-decoration:underline;}
+  .w98-mi.w98-dis,.w98-mi.w98-dis:hover{color:#808080;text-shadow:1px 1px #fff;background:transparent;}
+  .w98-sep{height:0;margin:3px 1px;border-top:1px solid #808080;border-bottom:1px solid #fff;}
+  .w98-check{position:absolute;left:8px;top:3px;}
+  /* editor body: drop the generic toolbar/status/gutter; sunken client; monospace paper */
+  body.theme-win98 #nptoolbar,body.theme-winxp #nptoolbar,
+  body.theme-win98 .np-status,body.theme-winxp .np-status,
+  body.theme-win98 #npgutter,body.theme-winxp #npgutter{display:none;}
+  body.theme-win98 #npedit{background:#c0c0c0;padding:2px;margin:0 3px 3px;
+    box-shadow:inset 1px 1px #808080,inset -1px -1px #fff,inset 2px 2px #404040,inset -2px -2px #dfdfdf;}
+  body.theme-winxp #npedit{background:#ECE9D8;padding:0;margin:0 4px 4px;
+    box-shadow:inset 1px 1px #7f9db9,inset -1px -1px #fff;}
+  body.theme-win98 #pad,body.theme-winxp #pad{background:#fff;color:#000;
+    font-family:"Lucida Console","Courier New",monospace;font-size:14px;line-height:1.2;padding:1px 3px;}
+  /* Notepad is plain text — neutralise any rich formatting persisted from other themes */
+  body.theme-win98 #pad *,body.theme-winxp #pad *{
+    text-decoration:none!important;font-weight:normal!important;font-style:normal!important;
+    background:transparent!important;color:#000!important;font-size:14px!important;font-family:inherit!important;}
+  /* Notepad opens with Word Wrap OFF → long lines scroll horizontally; bars show only when needed */
+  body.theme-win98 #pad:not(.w98-wrap),body.theme-winxp #pad:not(.w98-wrap){white-space:pre;word-wrap:normal;overflow:auto;}
+  body.theme-win98 #pad.w98-wrap,body.theme-winxp #pad.w98-wrap{white-space:pre-wrap;word-wrap:break-word;overflow-x:hidden;overflow-y:auto;}
+  /* classic Win98 scroll bars (dithered track, beveled arrow buttons) */
+  body.theme-win98 #pad::-webkit-scrollbar{width:16px;height:16px;}
+  body.theme-win98 #pad::-webkit-scrollbar-track{background-color:#fff;
+    background-image:conic-gradient(#c0c0c0 90deg,#fff 90deg 180deg,#c0c0c0 180deg 270deg,#fff 270deg);background-size:2px 2px;}
+  body.theme-win98 #pad::-webkit-scrollbar-thumb{background:#c0c0c0;
+    box-shadow:inset 1px 1px #fff,inset -1px -1px #000,inset 2px 2px #dfdfdf,inset -2px -2px #808080;}
+  body.theme-win98 #pad::-webkit-scrollbar-button{display:block;width:16px;height:16px;background:#c0c0c0;
+    box-shadow:inset 1px 1px #fff,inset -1px -1px #000,inset 2px 2px #dfdfdf,inset -2px -2px #808080;}
+  body.theme-win98 #pad::-webkit-scrollbar-corner{background:#c0c0c0;}
+  /* About dialog (98 style) */
+  #w98about{display:none;position:fixed;inset:0;z-index:300;align-items:center;justify-content:center;background:rgba(0,0,0,.15);}
+  #w98about.show{display:flex;}
+  .w98-dlg{width:300px;background:#c0c0c0;font:12px "W95FA","MS Sans Serif",Tahoma,sans-serif;-webkit-font-smoothing:none;color:#000;
+    box-shadow:inset 1px 1px #dfdfdf,inset -1px -1px #000,inset 2px 2px #fff,inset -2px -2px #808080;padding:3px;}
+  .w98-dlg-tb{height:20px;display:flex;align-items:center;padding:0 3px;color:#fff;font-weight:bold;font-size:11px;
+    background:linear-gradient(90deg,#00007b,#1085d2);}
+  .w98-dlg-bd{padding:16px 14px;display:flex;gap:14px;align-items:flex-start;}
+  .w98-dlg-bd .w98-ico2{width:32px;height:32px;flex:0 0 32px;
+    background:url("notepad-icon.png") center/contain no-repeat;}
+  .w98-dlg-btn{display:flex;justify-content:center;padding:6px 0 12px;}
+  .w98-dlg-btn button{font:12px "W95FA","MS Sans Serif",Tahoma,sans-serif;padding:3px 18px;min-width:75px;background:#c0c0c0;
+    box-shadow:inset -1px -1px 0 #000,inset 1px 1px 0 #dbdbdb,inset -2px -2px 0 #808080,inset 2px 2px 0 #fff;cursor:default;}
+  .w98-dlg-btn button:active{box-shadow:inset 1px 1px 0 #000,inset -1px -1px 0 #dbdbdb,inset 2px 2px 0 #808080,inset -2px -2px 0 #fff;}
+  /* ===== Windows 7 (Aero glass) — inherits XP structure via dual class (theme-win7 theme-winxp) ===== */
+  body.theme-win7 #win{border-radius:6px 6px 2px 2px;background:rgba(69,128,196,0.34);
+    box-shadow:0 8px 22px rgba(0,0,0,.45),inset 0 0 0 1px rgba(255,255,255,.7);}
+  body.theme-win7 .xp-title{border-radius:6px 6px 0 0;
+    background:linear-gradient(180deg,rgba(255,255,255,.5),rgba(255,255,255,.14) 46%,rgba(0,0,0,.05) 54%,rgba(255,255,255,.22)),rgba(90,137,198,0.30);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.85);}
+  body.theme-win7 .xp-cap,body.theme-win7 .xp-caption{color:#0b1a2e;font-family:"Segoe UI",Tahoma,sans-serif;
+    text-shadow:0 0 4px #fff,0 0 4px #fff,0 0 4px #fff,0 0 3px #fff;}
+  body.theme-win7 .body{background:#f0f0f0;}
+  body.theme-win7 .np-toolbar,body.theme-win7 .np-status,
+  body.theme-win7 .w98-menubar,body.theme-win7 .w98-drop{background:#f0f0f0;}
+  body.theme-win7 .xp-min,body.theme-win7 .xp-max{
+    background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,.3) 45%,rgba(0,0,0,.08) 55%,rgba(255,255,255,.5));
+    border:1px solid rgba(0,0,0,.3);}
+  body.theme-win7 .xp-min::before{background:#1a1a1a;}
+  body.theme-win7 .xp-max::before{border-color:#1a1a1a;}
+  body.theme-win7 .xp-close{background:linear-gradient(180deg,#e7a99e,#d76b58 45%,#d54f36 55%,#c23b22);
+    border:1px solid rgba(0,0,0,.3);}
+  /* ===== Mac OS 9: proxy icon in the title plaque (authentic Platinum) ===== */
+  body.theme-macos9 .m9-plaque{padding:0 8px 0 26px;background:#dadada url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAA7EAAAOxAGVKw4bAAAF+mlUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4gPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iQWRvYmUgWE1QIENvcmUgNS42LWMxNDUgNzkuMTYzNDk5LCAyMDE4LzA4LzEzLTE2OjQwOjIyICAgICAgICAiPiA8cmRmOlJERiB4bWxuczpyZGY9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkvMDIvMjItcmRmLXN5bnRheC1ucyMiPiA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIiB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iIHhtbG5zOmRjPSJodHRwOi8vcHVybC5vcmcvZGMvZWxlbWVudHMvMS4xLyIgeG1sbnM6cGhvdG9zaG9wPSJodHRwOi8vbnMuYWRvYmUuY29tL3Bob3Rvc2hvcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RFdnQ9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZUV2ZW50IyIgeG1wOkNyZWF0b3JUb29sPSJBZG9iZSBQaG90b3Nob3AgQ0MgMjAxOSAoV2luZG93cykiIHhtcDpDcmVhdGVEYXRlPSIyMDIxLTA5LTE5VDAyOjA2OjMzLTA3OjAwIiB4bXA6TW9kaWZ5RGF0ZT0iMjAyMS0wOS0xOVQwMjoxMDozOC0wNzowMCIgeG1wOk1ldGFkYXRhRGF0ZT0iMjAyMS0wOS0xOVQwMjoxMDozOC0wNzowMCIgZGM6Zm9ybWF0PSJpbWFnZS9wbmciIHBob3Rvc2hvcDpDb2xvck1vZGU9IjMiIHBob3Rvc2hvcDpJQ0NQcm9maWxlPSJzUkdCIElFQzYxOTY2LTIuMSIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDpjN2U5YmQxNC0xNzI1LTY1NDMtOTViMi1jY2M3N2I2MDNhNTAiIHhtcE1NOkRvY3VtZW50SUQ9ImFkb2JlOmRvY2lkOnBob3Rvc2hvcDoyZWI4ZTc2NC04YTY2LWQxNGItYWFlNS01NTZlYmEyODc5ODkiIHhtcE1NOk9yaWdpbmFsRG9jdW1lbnRJRD0ieG1wLmRpZDo1MGIyZjdkMy1hOWNkLWRhNGEtOGVjNi1lZTNkODUyMGI1MjYiPiA8eG1wTU06SGlzdG9yeT4gPHJkZjpTZXE+IDxyZGY6bGkgc3RFdnQ6YWN0aW9uPSJjcmVhdGVkIiBzdEV2dDppbnN0YW5jZUlEPSJ4bXAuaWlkOjUwYjJmN2QzLWE5Y2QtZGE0YS04ZWM2LWVlM2Q4NTIwYjUyNiIgc3RFdnQ6d2hlbj0iMjAyMS0wOS0xOVQwMjowNjozMy0wNzowMCIgc3RFdnQ6c29mdHdhcmVBZ2VudD0iQWRvYmUgUGhvdG9zaG9wIENDIDIwMTkgKFdpbmRvd3MpIi8+IDxyZGY6bGkgc3RFdnQ6YWN0aW9uPSJzYXZlZCIgc3RFdnQ6aW5zdGFuY2VJRD0ieG1wLmlpZDpjN2U5YmQxNC0xNzI1LTY1NDMtOTViMi1jY2M3N2I2MDNhNTAiIHN0RXZ0OndoZW49IjIwMjEtMDktMTlUMDI6MTA6MzgtMDc6MDAiIHN0RXZ0OnNvZnR3YXJlQWdlbnQ9IkFkb2JlIFBob3Rvc2hvcCBDQyAyMDE5IChXaW5kb3dzKSIgc3RFdnQ6Y2hhbmdlZD0iLyIvPiA8L3JkZjpTZXE+IDwveG1wTU06SGlzdG9yeT4gPC9yZGY6RGVzY3JpcHRpb24+IDwvcmRmOlJERj4gPC94OnhtcG1ldGE+IDw/eHBhY2tldCBlbmQ9InIiPz5LgiMhAAABA0lEQVRYw72X0Q3DIAxEGakdKd2qEhNF6iL9yApuQKJCCY7hziGSPyih7+qC8QURCWjsjzDr83cw8O27CSuCgpdgRNBwVoQLvFdEmi8xLKAF1z7T1j8fL4lLlM8q//dc4ZqIIzy+JY9zNjzgV5nQ4GlsCkDh9ZwGNzOAwOtxD1zdA7PgTQHWUdNSjcBPAmb852ohmpH25hFFzjkKb9WJab9crRPWxusRI+sYvF7rU/F2ASlG4V2nwNoTtYAiYuTWdLl4jjFyZUP3PhqXdeBuEWqfwHRALLyrIWFFmG2aRy+IwumekIW7d8VIi+7mC1B/4OKMGHNCe8OpzugOgxpoe0264x8dzurS4/2+nAAAAABJRU5ErkJggg==") 5px center/16px no-repeat;}
+          /* ===== Mac OS 9 Platinum title bar — matched to os9.ca original (authoritative) ===== */
+  /* Reverse-engineered 1:1 from os9.ca window.min.css */
+  body.theme-macos9 #win{background:#dadada!important;border:1px solid #000!important;
+    box-shadow:1px 1px #111,inset 1px 1px #fff,inset -1px -1px #999!important;}
+  body.theme-macos9 .m9-title{height:22px;border:none!important;
+    background:repeating-linear-gradient(#fff 0 1px,#737373 1px 2px) left 5px/100% 12px no-repeat,#dadada!important;}
+  body.theme-macos9 .m9-plaque{background-color:#dadada!important;font-family:'Charcoal','ChicagoFLF',sans-serif!important;font-weight:normal!important;}
+  body.theme-macos9 .m9-close,body.theme-macos9 .m9-collapse,body.theme-macos9 .m9-zoom{
+    display:block!important;box-sizing:content-box!important;width:9px!important;height:9px!important;position:relative;flex:0 0 auto;
+    border:1px solid #222!important;
+    background:linear-gradient(to bottom right,#999,#aaa,#bbb,#ccc,#ddd,#eee,#fff,#fff)!important;
+    box-shadow:inset 1px 1px #ccc,inset -1px -1px #888,-1px -1px 0 0 #808080,1px 1px 0 0 #fff!important;cursor:pointer;}
+  body.theme-macos9 .m9-close{margin:4px 0 0 5px!important;}
+  body.theme-macos9 .m9-right{margin-left:auto!important;display:flex!important;align-items:flex-start!important;gap:0!important;margin-right:0!important;padding-right:0!important;}
+  body.theme-macos9 .m9-zoom{order:1;margin:4px 4px 0 0!important;}
+  body.theme-macos9 .m9-collapse{order:2;margin:4px 5px 0 4px!important;}
+  body.theme-macos9 .m9-zoom::before{content:""!important;position:absolute;top:1px!important;left:1px!important;width:5px;height:5px;border-bottom:1px solid #202020!important;border-right:1px solid #202020!important;background:none!important;box-shadow:none!important;}
+  body.theme-macos9 .m9-zoom::after{content:none!important;}
+  body.theme-macos9 .m9-collapse::before{content:""!important;position:absolute;left:1px!important;right:1px!important;top:4px!important;height:1px!important;border-top:1px solid #202020!important;border-bottom:1px solid #202020!important;background:none!important;box-shadow:none!important;}
+  body.theme-macos9 .m9-collapse::after{content:none!important;}
+  body.theme-macos9 .body{margin:0 4px 4px 4px!important;border:1px solid #000!important;box-shadow:-1px -1px #9c9c9c,1px 1px #fff,inset 1px 1px #fff,inset -1px -1px #acacac!important;}
+  /* Inactive window (os9.ca .window.blur): grey shadow/borders, 50% title, flat boxes */
+  body.theme-macos9.rm-blur #win,body.theme-macos9.rm-blur .window,body.theme-macos9.rm-blur .be-win{box-shadow:1px 1px #525252!important;border-color:#525252!important;}
+  body.theme-macos9.rm-blur .m9-close,body.theme-macos9.rm-blur .m9-collapse,body.theme-macos9.rm-blur .m9-zoom{border-color:#525252!important;box-shadow:none!important;}
+  body.theme-macos9.rm-blur .m9-zoom::before,body.theme-macos9.rm-blur .m9-zoom::after,body.theme-macos9.rm-blur .m9-collapse::before{border-color:#525252!important;background:#525252!important;}
+  body.theme-macos9.rm-blur .m9-plaque{opacity:.5;}
+
+  /* ===== NeXTSTEP (theme-nextstep) — black title bar, close on the RIGHT, chiseled grey frame ===== */
+  body.theme-nextstep{background:transparent;}
+  body.theme-nextstep .window{background:#8a8a98;border:none;border-radius:0;overflow:hidden;
+    box-shadow:inset 2px 2px 0 #fff, inset -2px -2px 0 #3d3e45, 0 0 0 1px #000;}
+  body.theme-nextstep .m9-title,body.theme-nextstep .xp-title,body.theme-nextstep .mf-title,
+  body.theme-nextstep .mx-title,body.theme-nextstep .w98-title,body.theme-nextstep .marker{display:none;}
+  body.theme-nextstep .tab{position:relative;display:block;width:100%;box-sizing:border-box;
+    height:22px;background:#000;border:none;border-radius:0;padding:0;margin:0;overflow:hidden;}
+  body.theme-nextstep .tab b{position:absolute;left:24px;right:24px;top:0;line-height:22px;text-align:center;
+    color:#fff;font:700 13px Helvetica,Arial,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  /* miniaturize square, top-left (decorative) */
+  body.theme-nextstep .tab::before{content:"";position:absolute;left:3px;top:3px;width:16px;height:16px;
+    background:#aaaab7;box-shadow:inset 1px 1px 0 #fff, inset -1px -1px 0 #555;}
+  body.theme-nextstep .tab::after{content:"";position:absolute;left:8px;top:8px;width:6px;height:6px;border:1px solid #000;}
+  /* close box, top-right, with an X (keeps the functional #closebox / #bxclose element) */
+  body.theme-nextstep .closebox{position:absolute;right:3px;top:3px;left:auto;width:16px;height:16px;
+    background:#aaaab7;border:none;border-radius:0;box-shadow:inset 1px 1px 0 #fff, inset -1px -1px 0 #555;}
+  body.theme-nextstep .closebox::before,body.theme-nextstep .closebox::after{content:"";position:absolute;
+    left:2px;top:7px;width:12px;height:2px;background:#000;}
+  body.theme-nextstep .closebox::before{transform:rotate(45deg);}
+  body.theme-nextstep .closebox::after{transform:rotate(-45deg);}
+  body.theme-nextstep .body{background:#8a8a98;border:none;box-shadow:none;margin:2px;}
+
+</style>
+<style>
+/* Live title-bar button feedback (native DragOverlayView → window.setBtnState); the overlay
+   intercepts mouse events, so these classes stand in for :hover/:active. */
+.xp-close.is-hover,.mf-close.is-hover,.closebox.is-hover{filter:brightness(1.13);}
+.xp-close.is-press,.mf-close.is-press,.closebox.is-press{filter:brightness(.82);}
+.mx-close.is-press,.mx-zoom.is-press{box-shadow:inset 0 0 3px 1px rgba(0,0,0,.45),inset 0 -4px 5px rgba(0,0,0,.32);}
+.w98-btn.is-hover{filter:brightness(1.06);}
+.w98-btn.is-press{box-shadow:inset 2px 2px 0 #000,inset -2px -2px 0 #dbdbdb,inset 4px 4px 0 #808080,inset -4px -4px 0 #fff;}
+.m9-ctl.is-hover{background:#d0d0dc;}
+.m9-ctl.is-press{background:#9c9cb0;box-shadow:inset 0 0 0 2px #7e7e8a;}
+</style>
+</head>
+<body>
+  <div id="win">
+    <!-- BeOS tab (default) -->
+    <div class="tab" id="tab"><span class="closebox" id="bxclose" title="Close"></span><b>Notepad</b></div>
+    <!-- Mac OS 9 -->
+    <div class="m9-title" id="m9title"><span class="m9-close" id="m9close"></span><div class="m9-plaque">Notepad</div><span class="m9-right"><span class="m9-collapse" id="m9collapse"></span><span class="m9-zoom" id="m9zoom"></span></span></div>
+    <!-- Windows XP -->
+    <div class="xp-title" id="xptitle"><span class="w98-ico"></span><span class="xp-cap">Untitled - Notepad</span><span class="xp-min" id="xpmin" title="Minimieren"></span><span class="xp-max" id="xpmax" title="Maximieren"></span><span class="xp-close" id="xpclose" title="Schließen"></span></div>
+    <!-- Maiks Favourite -->
+    <div class="mf-title" id="mftitle"><span class="mf-close" id="mfclose"></span><span class="mf-cap">Notepad</span></div>
+    <!-- Mac OS X Aqua -->
+    <div class="mx-title" id="mxtitle">
+      <span class="mx-lights"><span class="mx-gel mx-close" id="mxclose" title="Close"><span class="mx-glyph">&times;</span></span><span class="mx-gel mx-min"><span class="mx-glyph">&minus;</span></span><span class="mx-gel mx-zoom"><span class="mx-glyph">+</span></span></span>
+      <span class="mx-cap">Notepad</span>
+    </div>
+    <!-- Windows 98 -->
+    <div class="w98-title" id="w98title"><span class="w98-ico"></span><span class="w98-cap">Untitled - Notepad</span><span class="w98-btn" id="w98min" title="Minimieren"></span><span class="w98-btn" id="w98max" title="Maximieren"></span><span class="w98-btn w98-close" id="w98close" title="Schließen"></span></div>
+    <div class="body">
+      <!-- Windows Notepad menu bar (win98 + winxp) -->
+      <div class="w98-menubar" id="w98menu">
+        <div class="w98-m" data-menu="file"><u>F</u>ile<div class="w98-drop">
+          <div class="w98-mi" data-cmd="new"><span><u>N</u>ew</span><span>Ctrl+N</span></div>
+          <div class="w98-mi" data-cmd="open"><span><u>O</u>pen...</span><span>Ctrl+O</span></div>
+          <div class="w98-mi" data-cmd="save"><span><u>S</u>ave</span><span>Ctrl+S</span></div>
+          <div class="w98-mi" data-cmd="saveAs"><span>Save <u>A</u>s...</span><span>Ctrl+Shift+S</span></div>
+          <div class="w98-sep"></div>
+          <div class="w98-mi w98-dis"><span>Page Set<u>u</u>p...</span><span></span></div>
+          <div class="w98-mi w98-dis"><span><u>P</u>rint...</span><span>Ctrl+P</span></div>
+          <div class="w98-sep"></div>
+          <div class="w98-mi" data-cmd="close"><span>E<u>x</u>it</span><span></span></div>
+        </div></div>
+        <div class="w98-m" data-menu="edit"><u>E</u>dit<div class="w98-drop">
+          <div class="w98-mi" data-cmd="undo"><span><u>U</u>ndo</span><span>Ctrl+Z</span></div>
+          <div class="w98-sep"></div>
+          <div class="w98-mi" data-cmd="cut"><span>Cu<u>t</u></span><span>Ctrl+X</span></div>
+          <div class="w98-mi" data-cmd="copy"><span><u>C</u>opy</span><span>Ctrl+C</span></div>
+          <div class="w98-mi" data-cmd="paste"><span><u>P</u>aste</span><span>Ctrl+V</span></div>
+          <div class="w98-mi" data-cmd="delete"><span>Del<u>e</u>te</span><span>Del</span></div>
+          <div class="w98-sep"></div>
+          <div class="w98-mi" data-cmd="selectall"><span>Select <u>A</u>ll</span><span>Ctrl+A</span></div>
+          <div class="w98-mi" data-cmd="timedate"><span>Time/<u>D</u>ate</span><span>F5</span></div>
+          <div class="w98-sep"></div>
+          <div class="w98-mi" data-cmd="wordwrap"><span class="w98-check" id="w98wrapck"></span><span><u>W</u>ord Wrap</span><span></span></div>
+        </div></div>
+        <div class="w98-m" data-menu="search"><u>S</u>earch<div class="w98-drop">
+          <div class="w98-mi" data-cmd="find"><span><u>F</u>ind...</span><span>Ctrl+F</span></div>
+          <div class="w98-mi" data-cmd="findnext"><span>Find <u>N</u>ext</span><span>F3</span></div>
+        </div></div>
+        <div class="w98-m" data-menu="help"><u>H</u>elp<div class="w98-drop">
+          <div class="w98-mi" data-cmd="helptopics"><span><u>H</u>elp Topics</span></div>
+          <div class="w98-sep"></div>
+          <div class="w98-mi" data-cmd="about"><span><u>A</u>bout Notepad</span></div>
+        </div></div>
+      </div>
+      <div class="np-toolbar" id="nptoolbar">
+        <button data-act="new" title="New (⌘N)">New</button>
+        <button data-act="open" title="Open (⌘O)">Open…</button>
+        <button data-act="saveFile" title="Save (⌘S)">Save</button>
+        <button data-act="saveAs" title="Save As… (⇧⌘S)">Save As…</button>
+        <span class="np-div"></span>
+        <button data-act="bold" title="Bold (⌘B)" style="font-weight:800">B</button>
+        <button data-act="italic" title="Italic (⌘I)" style="font-style:italic">I</button>
+        <button data-act="underline" title="Underline (⌘U)" style="text-decoration:underline">U</button>
+        <span class="np-div"></span>
+        <select id="npfont" title="Font">
+          <option value="Menlo, Monaco, monospace">Menlo</option>
+          <option value="Monaco, Menlo, monospace">Monaco</option>
+          <option value="&quot;Courier New&quot;, Courier, monospace">Courier</option>
+          <option value="&quot;SF Mono&quot;, Menlo, monospace">SF Mono</option>
+          <option value="&quot;Helvetica Neue&quot;, Helvetica, sans-serif">Helvetica</option>
+          <option value="Georgia, serif">Georgia</option>
+        </select>
+        <button data-act="fdec" title="Smaller">A−</button>
+        <button data-act="finc" title="Larger">A+</button>
+        <span class="np-div"></span>
+        <select id="nptheme" title="Editor theme">
+          <option value="light">Light</option>
+          <option value="dark">Dark</option>
+          <option value="solar-light">Solarized Light</option>
+          <option value="solar-dark">Solarized Dark</option>
+          <option value="dracula">Dracula</option>
+          <option value="aqua">Aqua</option>
+        </select>
+        <span class="np-sp"></span>
+        <button data-act="find" title="Find &amp; Replace (⌘F)">Find</button>
+      </div>
+      <div id="npfind">
+        <input id="npq" type="text" placeholder="Find" spellcheck="false">
+        <button data-act="fprev" title="Previous">‹</button>
+        <button data-act="fnext" title="Next">›</button>
+        <span id="npfc">0/0</span>
+        <input id="npr" type="text" placeholder="Replace" spellcheck="false">
+        <button data-act="frep" title="Replace">Replace</button>
+        <button data-act="frepall" title="Replace All">All</button>
+        <span class="npfsp"></span>
+        <button data-act="fclose" title="Close (Esc)">×</button>
+      </div>
+      <div id="npedit">
+        <div id="npgutter">1</div>
+        <div id="pad" contenteditable="true" spellcheck="false" data-ph="Type a note…"></div>
+      </div>
+      <div class="np-status"><span id="npfile">Untitled</span><span id="npcount">0 words · 0 chars</span></div>
+      <div id="stgrip" title="Größe ändern"></div>
+    </div>
+  </div>
+  <!-- Right-click context menu (SimpleText / TeachText — menus live here, not in a bar) -->
+  <div id="ctxmenu">
+    <div class="ci" data-cmd="cut">Ausschneiden</div>
+    <div class="ci" data-cmd="copy">Kopieren</div>
+    <div class="ci" data-cmd="paste">Einsetzen</div>
+    <div class="ci" data-cmd="selectall">Alles auswählen</div>
+    <div class="ci sep"></div>
+    <div class="ci sub">Schrift<div class="csub">
+      <div class="ci" data-font='"GenevaRM","Geneva",sans-serif'>Geneva</div>
+      <div class="ci" data-font='"ChicagoRM","Chicago",sans-serif'>Chicago</div>
+      <div class="ci" data-font='"Courier New",Courier,monospace'>Courier</div>
+      <div class="ci" data-font='Monaco,Menlo,monospace'>Monaco</div>
+      <div class="ci" data-font='"Helvetica Neue",Helvetica,sans-serif'>Helvetica</div>
+    </div></div>
+    <div class="ci sub">Größe<div class="csub">
+      <div class="ci" data-size="9">9</div><div class="ci" data-size="10">10</div><div class="ci" data-size="12">12</div>
+      <div class="ci" data-size="14">14</div><div class="ci" data-size="18">18</div><div class="ci" data-size="24">24</div>
+    </div></div>
+    <div class="ci sub">Stil<div class="csub">
+      <div class="ci" data-cmd="bold">Fett</div><div class="ci" data-cmd="italic">Kursiv</div>
+      <div class="ci" data-cmd="underline">Unterstrichen</div><div class="ci" data-cmd="plain">Normal</div>
+    </div></div>
+    <div class="ci sep"></div>
+    <div class="ci" data-cmd="find">Suchen…</div>
+    <div class="ci" data-cmd="open">Öffnen…</div>
+    <div class="ci" data-cmd="save">Sichern</div>
+  </div>
+  <!-- Windows Notepad "About" dialog -->
+  <div id="w98about">
+    <div class="w98-dlg">
+      <div class="w98-dlg-tb">Notepad</div>
+      <div class="w98-dlg-bd">
+        <div class="w98-ico2"></div>
+        <div><b>Notepad</b><br>RetroMac Edition<br><br>A faithful recreation of the classic<br>Windows text editor.</div>
+      </div>
+      <div class="w98-dlg-btn"><button id="w98aok">OK</button></div>
+    </div>
+  </div>
+<script>
+  const pad      = document.getElementById('pad');
+  const gutter   = document.getElementById('npgutter');
+  const editor   = document.getElementById('npedit');
+  const findbar  = document.getElementById('npfind');
+  const qInput   = document.getElementById('npq');
+  const rInput   = document.getElementById('npr');
+  const fcEl      = document.getElementById('npfc');
+  let theme = 'beos';
+
+  function post(obj){
+    if(window.webkit&&webkit.messageHandlers&&webkit.messageHandlers.notepad)
+      webkit.messageHandlers.notepad.postMessage(obj);
+  }
+
+  /* ---- Editor color themes ---- */
+  const THEMES = {
+    'light':       {bg:'#ffffff',fg:'#1a1a1a',gutterbg:'#f3f3f3',gutterfg:'#a0a0a0',caret:'#1a1a1a',sel:'#b3d4fc'},
+    'dark':        {bg:'#1e1e1e',fg:'#e6e6e6',gutterbg:'#252526',gutterfg:'#6e7681',caret:'#ffffff',sel:'#264f78'},
+    'solar-light': {bg:'#fdf6e3',fg:'#586e75',gutterbg:'#eee8d5',gutterfg:'#93a1a1',caret:'#586e75',sel:'#e9e2c6'},
+    'solar-dark':  {bg:'#002b36',fg:'#93a1a1',gutterbg:'#073642',gutterfg:'#586e75',caret:'#93a1a1',sel:'#073642'},
+    'dracula':     {bg:'#282a36',fg:'#f8f8f2',gutterbg:'#21222c',gutterfg:'#6272a4',caret:'#f8f8f2',sel:'#44475a'},
+    'aqua':        {bg:'#ffffff',fg:'#0a2a4a',gutterbg:'#eaf2fb',gutterfg:'#7fa8d6',caret:'#0066ff',sel:'#aaccff'}
+  };
+  function applyEditorTheme(k){
+    const t = THEMES[k] || THEMES.light;
+    editor.style.setProperty('--bg',t.bg);
+    editor.style.setProperty('--fg',t.fg);
+    editor.style.setProperty('--gutterbg',t.gutterbg);
+    editor.style.setProperty('--gutterfg',t.gutterfg);
+    editor.style.setProperty('--caret',t.caret);
+    editor.style.setProperty('--sel',t.sel);
+    try{ localStorage.setItem('np.theme',k); }catch(e){}
+  }
+
+  /* ---- Font + size ---- */
+  let fontPx = 12;
+  function setFont(px){
+    fontPx = Math.max(9,Math.min(28,px));
+    pad.style.fontSize = fontPx+'px';
+    gutter.style.fontSize = fontPx+'px';
+    try{ localStorage.setItem('np.size',String(fontPx)); }catch(e){}
+    refreshGutter();
+  }
+  function setFontFamily(f){
+    document.execCommand('fontName', false, f);
+    pad.style.fontFamily = f;
+    gutter.style.fontFamily = f;
+    try{ localStorage.setItem('np.font',f); }catch(e){}
+    pad.focus();
+  }
+
+  /* ---- Gutter (best-effort logical line count) ---- */
+  function refreshGutter(){
+    const lines = (pad.innerText.split('\n').length) || 1;
+    let s = '';
+    for(let i=1;i<=lines;i++) s += (i>1?'\n':'') + i;
+    gutter.textContent = s;
+    gutter.scrollTop = pad.scrollTop;
+  }
+
+  /* ---- Status / count ---- */
+  function updateCount(){
+    const t = pad.innerText, chars = t.length;
+    const words = (t.trim().match(/\S+/g)||[]).length;
+    const el = document.getElementById('npcount');
+    if(el) el.textContent = words+' words · '+chars+' chars';
+  }
+  function refresh(){ refreshGutter(); updateCount(); }
+
+  /* ---- Clean HTML (strip search highlight wrappers) ---- */
+  function cleanHTML(){
+    if(!findbar || findbar.style.display!=='flex') {
+      // not searching; innerHTML is already clean
+      return pad.innerHTML;
+    }
+    const clone = pad.cloneNode(true);
+    clone.querySelectorAll('span.np-hit').forEach(s=>{
+      const t=document.createTextNode(s.textContent);
+      s.replaceWith(t);
+    });
+    clone.normalize();
+    return clone.innerHTML;
+  }
+
+  /* ---- Autosave (rich html, highlights stripped) ---- */
+  let saveTimer=null;
+  function autosave(){ clearTimeout(saveTimer); saveTimer=setTimeout(()=>post({action:'save',text:cleanHTML()}),350); }
+
+  function newDoc(){ pad.innerHTML=''; window.setFile('Untitled'); refresh(); post({action:'save',text:''}); pad.focus(); }
+  function doSave(as){ post({action:as?'saveAs':'saveFile', html:cleanHTML(), plain:pad.innerText}); }
+
+  pad.addEventListener('input',()=>{ refresh(); autosave(); });
+  pad.addEventListener('keyup',()=>{ updateCount(); updateBIU(); });
+  pad.addEventListener('mouseup',()=>{ updateCount(); updateBIU(); });
+  pad.addEventListener('click',()=>{ updateCount(); updateBIU(); });
+  pad.addEventListener('scroll',()=>{ gutter.scrollTop = pad.scrollTop; });
+
+  /* ---- Rich-text formatting (Bold / Italic / Underline) ---- */
+  const biuBtns = {
+    bold:      document.querySelector('#nptoolbar button[data-act="bold"]'),
+    italic:    document.querySelector('#nptoolbar button[data-act="italic"]'),
+    underline: document.querySelector('#nptoolbar button[data-act="underline"]')
+  };
+  function updateBIU(){
+    for(const k in biuBtns){
+      const b=biuBtns[k]; if(!b) continue;
+      let on=false; try{ on=document.queryCommandState(k); }catch(e){}
+      b.classList.toggle('on', on);
+    }
+  }
+  function exec(cmd){ document.execCommand(cmd); pad.focus(); refresh(); autosave(); updateBIU(); }
+
+  /* ---- Toolbar ---- */
+  const tb=document.getElementById('nptoolbar');
+  // Keep the editor selection for B/I/U buttons, but NOT for <select>s — preventing
+  // mousedown on a <select> stops its dropdown from opening in WebKit.
+  tb.addEventListener('mousedown',ev=>{ if(ev.target.closest('button')) ev.preventDefault(); });
+  tb.addEventListener('click',ev=>{
+    const b=ev.target.closest('button'); if(!b) return; const a=b.dataset.act;
+    if(a==='new') newDoc();
+    else if(a==='open') post({action:'open'});
+    else if(a==='saveFile') doSave(false);
+    else if(a==='saveAs') doSave(true);
+    else if(a==='bold') exec('bold');
+    else if(a==='italic') exec('italic');
+    else if(a==='underline') exec('underline');
+    else if(a==='finc') setFont(fontPx+1);
+    else if(a==='fdec') setFont(fontPx-1);
+    else if(a==='find') openFind();
+  });
+  document.getElementById('npfont').addEventListener('change',function(){ setFontFamily(this.value); });
+  document.getElementById('nptheme').addEventListener('change',function(){ applyEditorTheme(this.value); });
+
+  /* ---- Find = highlight only (no focus theft, no caret move) ---- */
+  let hits=[], curHit=-1;
+  function escRe(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
+
+  // remove all .np-hit wrappers, restoring original text
+  function unwrap(){
+    const spans = pad.querySelectorAll('span.np-hit');
+    if(!spans.length){ hits=[]; curHit=-1; return; }
+    spans.forEach(s=>{ const t=document.createTextNode(s.textContent); s.replaceWith(t); });
+    pad.normalize();
+    hits=[]; curHit=-1;
+  }
+
+  // wrap all case-insensitive matches of q in #pad text nodes
+  function highlight(q){
+    unwrap();
+    if(!q){ updateFc(); return; }
+    const re=new RegExp(escRe(q),'gi');
+    // collect text nodes first (live walk would break as we mutate)
+    const nodes=[]; const walker=document.createTreeWalker(pad, NodeFilter.SHOW_TEXT, null);
+    let n; while((n=walker.nextNode())) nodes.push(n);
+    nodes.forEach(node=>{
+      const text=node.nodeValue; re.lastIndex=0;
+      if(!re.test(text)) return;
+      re.lastIndex=0;
+      const frag=document.createDocumentFragment();
+      let last=0, m;
+      while((m=re.exec(text))){
+        if(m.index>last) frag.appendChild(document.createTextNode(text.slice(last,m.index)));
+        const span=document.createElement('span');
+        span.className='np-hit'; span.textContent=m[0];
+        frag.appendChild(span);
+        last=m.index+m[0].length;
+        if(m.index===re.lastIndex) re.lastIndex++;
+      }
+      if(last<text.length) frag.appendChild(document.createTextNode(text.slice(last)));
+      node.parentNode.replaceChild(frag,node);
+    });
+    hits=Array.from(pad.querySelectorAll('span.np-hit'));
+    if(hits.length){ curHit=0; markCur(); } else { curHit=-1; }
+    updateFc();
+  }
+
+  function markCur(){
+    hits.forEach((h,i)=>h.classList.toggle('np-cur', i===curHit));
+    if(curHit>=0 && hits[curHit]){
+      // scroll into view WITHOUT focusing pad or moving caret
+      hits[curHit].scrollIntoView({block:'nearest'});
+      gutter.scrollTop = pad.scrollTop;
+    }
+  }
+  function updateFc(){ fcEl.textContent=(hits.length?(curHit+1):0)+'/'+hits.length; }
+
+  function findNext(d){
+    if(!hits.length){ highlight(qInput.value); if(!hits.length) return; }
+    else { curHit=(curHit+d+hits.length)%hits.length; markCur(); }
+    updateFc();
+    qInput.focus(); // keep focus in find field
+  }
+
+  function replaceCurrent(){
+    if(curHit<0||curHit>=hits.length){ findNext(1); return; }
+    const span=hits[curHit];
+    if(span){ span.replaceWith(document.createTextNode(rInput.value)); pad.normalize(); }
+    refresh(); autosave();
+    const prev=curHit;
+    highlight(qInput.value);
+    if(hits.length){ curHit=Math.min(prev,hits.length-1); markCur(); updateFc(); }
+    qInput.focus();
+  }
+  function replaceAll(){
+    if(!qInput.value || !hits.length) return;
+    hits.forEach(span=>span.replaceWith(document.createTextNode(rInput.value)));
+    pad.normalize();
+    refresh(); autosave();
+    highlight(qInput.value);
+    qInput.focus();
+  }
+
+  function openFind(){ findbar.style.display='flex'; highlight(qInput.value); qInput.focus(); qInput.select(); }
+  function closeFind(){ unwrap(); updateFc(); findbar.style.display='none'; }
+
+  findbar.addEventListener('mousedown',ev=>{ if(ev.target.closest('button')) ev.preventDefault(); });
+  findbar.addEventListener('click',ev=>{
+    const b=ev.target.closest('button'); if(!b) return; const a=b.dataset.act;
+    if(a==='fnext') findNext(1);
+    else if(a==='fprev') findNext(-1);
+    else if(a==='frep') replaceCurrent();
+    else if(a==='frepall') replaceAll();
+    else if(a==='fclose') closeFind();
+  });
+  qInput.addEventListener('input',()=>{ highlight(qInput.value); });
+  qInput.addEventListener('keydown',e=>{
+    if(e.key==='Enter'){ e.preventDefault(); findNext(e.shiftKey?-1:1); }
+    else if(e.key==='Escape'){ e.preventDefault(); closeFind(); }
+  });
+  rInput.addEventListener('keydown',e=>{
+    if(e.key==='Enter'){ e.preventDefault(); replaceCurrent(); }
+    else if(e.key==='Escape'){ e.preventDefault(); closeFind(); }
+  });
+
+  /* ---- Keyboard shortcuts ---- */
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape' && findbar.style.display==='flex'){ closeFind(); return; }
+    if(!(e.metaKey||e.ctrlKey)) return; const k=e.key.toLowerCase();
+    if(k==='s'){ e.preventDefault(); doSave(e.shiftKey); }
+    else if(k==='o'){ e.preventDefault(); post({action:'open'}); }
+    else if(k==='n'){ e.preventDefault(); newDoc(); }
+    else if(k==='f'){ e.preventDefault(); openFind(); }
+    else if(k==='b'){ e.preventDefault(); exec('bold'); }
+    else if(k==='i'){ e.preventDefault(); exec('italic'); }
+    else if(k==='u'){ e.preventDefault(); exec('underline'); }
+  });
+
+  /* ---- Native-callable API ---- */
+  /* ---- Classic Mac editors: SimpleText (Mac OS 9) / TeachText (Mac OS 6) — window only ---- */
+  let editorApp='';
+  /* Classic Mac windows show the DOCUMENT name in the title bar (not the app name). */
+  function syncTitle(){
+    const plq=document.querySelector('.m9-plaque'); if(!plq) return;
+    if(!editorApp){ plq.textContent='Notepad'; return; }
+    const f=document.getElementById('npfile');
+    plq.textContent=(f&&f.textContent)||'Ohne Titel';
+  }
+  function applyEditorApp(){
+    document.body.classList.remove('app-simpletext','app-teachtext');
+    if(!editorApp){
+      syncTitle();
+      const cl=document.body.classList;
+      if(cl.contains('theme-win98')||cl.contains('theme-winxp')){ pad.style.fontFamily=''; pad.style.fontSize=''; }  // Win98 CSS styles the paper
+      else { pad.style.fontFamily=document.getElementById('npfont').value; pad.style.fontSize=fontPx+'px'; }
+      return;
+    }
+    document.body.classList.add('app-'+editorApp);
+    syncTitle();
+    applyEditorTheme('light');   // classic Mac editors are always white paper / black ink
+    pad.style.fontFamily = editorApp==='teachtext'
+      ? '"ChicagoRM","Chicago","GenevaRM",sans-serif'
+      : '"GenevaRM","Geneva","Helvetica Neue",sans-serif';
+    pad.style.fontSize='15px';   // Geneva reads a touch larger, like the original
+  }
+  window.setEditorApp=function(a){ editorApp=a||''; applyEditorApp(); };
+
+  /* Right-click context menu — the classic menus (Schrift/Größe/Stil/Bearbeiten) live here. */
+  const ctx=document.getElementById('ctxmenu');
+  function runMenuCmd(d){
+    if(d.font!==undefined){ setFontFamily(d.font); return; }
+    if(d.size!==undefined){ setFont(parseInt(d.size,10)); return; }
+    switch(d.cmd){
+      case 'new': newDoc(); break;
+      case 'open': post({action:'open'}); break;
+      case 'save': doSave(false); break;
+      case 'saveAs': doSave(true); break;
+      case 'undo': document.execCommand('undo'); break;
+      case 'cut': document.execCommand('cut'); break;
+      case 'copy': document.execCommand('copy'); break;
+      case 'paste': document.execCommand('paste'); break;
+      case 'selectall': document.execCommand('selectAll'); break;
+      case 'find': openFind(); break;
+      case 'findnext': openFind(); break;
+      case 'delete': document.execCommand('delete'); break;
+      case 'timedate': insertTimeDate(); break;
+      case 'wordwrap': toggleWordWrap(); break;
+      case 'about': case 'helptopics': showW98About(true); break;
+      case 'close': post({action:'save',text:cleanHTML()}); post({action:'close'}); break;
+      case 'plain': document.execCommand('removeFormat'); pad.focus(); break;
+      case 'bold': exec('bold'); break;
+      case 'italic': exec('italic'); break;
+      case 'underline': exec('underline'); break;
+    }
+    refresh(); autosave();
+  }
+  /* ---- Windows Notepad: menu bar + Word Wrap + Time/Date + About ---- */
+  const w98menu=document.getElementById('w98menu');
+  function closeW98Menus(){ if(w98menu) w98menu.querySelectorAll('.w98-m.open').forEach(m=>m.classList.remove('open')); }
+  function toggleWordWrap(){ const on=pad.classList.toggle('w98-wrap');
+    const ck=document.getElementById('w98wrapck'); if(ck) ck.textContent=on?'✓':''; }
+  function insertTimeDate(){ const d=new Date();
+    const t=d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})+' '+d.toLocaleDateString();
+    document.execCommand('insertText',false,t); }
+  const w98about=document.getElementById('w98about');
+  function showW98About(v){ if(w98about) w98about.classList.toggle('show', !!v); }
+  if(w98menu){
+    w98menu.querySelectorAll('.w98-m').forEach(m=>{
+      m.addEventListener('mousedown',ev=>{
+        if(ev.target.closest('.w98-mi')) return;   // item clicks handled below
+        ev.preventDefault();
+        const was=m.classList.contains('open'); closeW98Menus(); if(!was) m.classList.add('open');
+      });
+      m.addEventListener('mouseenter',()=>{ if(w98menu.querySelector('.w98-m.open')){ closeW98Menus(); m.classList.add('open'); } });
+    });
+    w98menu.addEventListener('click',ev=>{ const mi=ev.target.closest('.w98-mi');
+      if(mi && !mi.classList.contains('w98-dis')){ runMenuCmd(mi.dataset); closeW98Menus(); } });
+    document.addEventListener('mousedown',ev=>{ if(!ev.target.closest('#w98menu')) closeW98Menus(); });
+  }
+  const w98aok=document.getElementById('w98aok');
+  if(w98aok) w98aok.addEventListener('click',()=>showW98About(false));
+  if(w98about) w98about.addEventListener('mousedown',ev=>{ if(ev.target===w98about) showW98About(false); });
+  document.addEventListener('keydown',ev=>{
+    if(ev.key==='Escape'){ closeW98Menus(); showW98About(false); }
+    const win=document.body.classList.contains('theme-win98')||document.body.classList.contains('theme-winxp');
+    if(!win) return;
+    if(ev.key==='F5'){ ev.preventDefault(); insertTimeDate(); refresh(); autosave(); return; }
+    if((ev.ctrlKey||ev.metaKey)){
+      const k=ev.key.toLowerCase();
+      if(ev.shiftKey && k==='s'){ ev.preventDefault(); doSave(true); }
+      else if(k==='n'){ ev.preventDefault(); newDoc(); }
+      else if(k==='o'){ ev.preventDefault(); post({action:'open'}); }
+      else if(k==='s'){ ev.preventDefault(); doSave(false); }
+      else if(k==='f'){ ev.preventDefault(); openFind(); }
+    }
+  });
+  /* Universal edit shortcuts (all themes) — the host app has no Edit menu, so the standard
+     ⌘A/⌘C/⌘X/⌘V/⌘Z would not reach the editable region. Wire them here. */
+  document.addEventListener('keydown',ev=>{
+    if(!(ev.metaKey||ev.ctrlKey) || ev.altKey) return;
+    const ae=document.activeElement;
+    if(ae && (ae.tagName==='INPUT'||ae.tagName==='SELECT'||ae.tagName==='TEXTAREA')) return; // find/replace fields keep native behaviour
+    const k=ev.key.toLowerCase();
+    switch(k){
+      case 'a': ev.preventDefault(); pad.focus(); document.execCommand('selectAll'); break;
+      case 'c': ev.preventDefault(); document.execCommand('copy'); break;
+      case 'x': ev.preventDefault(); document.execCommand('cut'); refresh(); autosave(); break;
+      case 'v': ev.preventDefault(); document.execCommand('paste'); refresh(); autosave(); break;
+      case 'z': ev.preventDefault(); document.execCommand(ev.shiftKey?'redo':'undo'); refresh(); autosave(); break;
+    }
+  });
+  function hideCtx(){ ctx.style.display='none'; }
+  pad.addEventListener('contextmenu',ev=>{
+    if(!editorApp) return;   // normal Notepad keeps the system context menu
+    ev.preventDefault(); ctx.style.display='block';
+    const r=ctx.getBoundingClientRect();
+    ctx.style.left=Math.max(2,Math.min(ev.clientX, innerWidth-r.width-4))+'px';
+    ctx.style.top=Math.max(2,Math.min(ev.clientY, innerHeight-r.height-4))+'px';
+  });
+  ctx.addEventListener('mousedown',ev=>ev.preventDefault());   // keep the selection
+  ctx.addEventListener('click',ev=>{ const ci=ev.target.closest('.ci');
+    if(ci && !ci.classList.contains('sub')){ runMenuCmd(ci.dataset); hideCtx(); } });
+  document.addEventListener('mousedown',ev=>{ if(!ev.target.closest('#ctxmenu')) hideCtx(); });
+  document.addEventListener('keydown',ev=>{ if(ev.key==='Escape') hideCtx(); });
+
+  window.setTheme=function(k){ theme=k||'beos'; document.body.className='theme-'+theme+(theme==='win7'?' theme-winxp':'')+(theme==='snowleopard'?' theme-macosx':''); if(editorApp) applyEditorApp(); };
+  window.setHover=function(h){ document.body.classList.toggle('hovering', !!h); };
+  window.setText=function(t){ pad.innerHTML=t||''; refresh(); };
+  function updateWinCaps(name){ const cap=(name||'Untitled')+' - Notepad';
+    document.querySelectorAll('.w98-cap,.xp-cap').forEach(el=>el.textContent=cap); }
+  window.setFile=function(name){ const el=document.getElementById('npfile'); if(el) el.textContent=name||'Untitled'; syncTitle(); updateWinCaps(name); };
+  window.loadFile=function(name,content,isHTML){ pad.innerHTML = content||''; window.setFile(name); refresh(); };
+
+  /* ---- Close handlers ---- */
+  ['bxclose','m9close','xpclose','mfclose','mxclose','w98close'].forEach(id=>{ const e=document.getElementById(id);
+    if(e) e.addEventListener('click',ev=>{ ev.stopPropagation(); post({action:'save',text:cleanHTML()}); post({action:'close'}); }); });
+
+  /* ---- Title + close rects for the native drag/close overlay ---- */
+  window.regions=function(){
+    const cl=document.body.classList;
+    const R=id=>{const e=document.getElementById(id);if(!e)return[0,0,0,0];const b=e.getBoundingClientRect();return[b.x,b.y,b.width,b.height];};
+    if(cl.contains('theme-win98'))   return [...R('w98title'),...R('w98close'),...R('w98min'),...R('w98max')];
+    if(cl.contains('theme-macosx'))  return [...R('mxtitle'),...R('mxclose')];
+    if(cl.contains('theme-maiksfav'))return [...R('mftitle'),...R('mfclose')];
+    if(cl.contains('theme-winxp'))   return [...R('xptitle'),...R('xpclose'),...R('xpmin'),...R('xpmax')];
+    if(cl.contains('theme-macos6')) return [...R('m9title'),...R('m9close'),0,0,0,0,...R('m9zoom')];   // System 6: close + zoom
+    if(cl.contains('theme-macos9')){
+      if(cl.contains('app-simpletext')||cl.contains('app-teachtext'))
+        return [...R('m9title'),...R('m9close'),...R('m9collapse'),...R('m9zoom')];
+      return [...R('m9title'),...R('m9close')];
+    }
+    return [...R('tab'),...R('bxclose')];
+  };
+  window.widgetSize=function(){ const w=document.getElementById('win'); return [w.offsetWidth, w.offsetHeight]; };
+
+  /* ---- WindowShade (collapse) + Zoom — same mechanism as the CPU/Applications widgets:
+         mutate the DOM, return the new [w,h]; the native side resizes the panel to match. ---- */
+  let npCollapsed=false, npSavedH=0, npZoomed=false, npZoomSaved=null;
+  window.toggleCollapse=function(){
+    const win=document.getElementById('win');
+    const cl=document.body.classList;
+    if(cl.contains('theme-win98')||cl.contains('theme-winxp')){
+      // Windows has no WindowShade — "minimise" removes the window from the screen
+      // (text is autosaved; reopen from the desktop icon).
+      post({action:'save',text:cleanHTML()}); post({action:'close'});
+      return [win.offsetWidth, win.offsetHeight];
+    }
+    if(!npCollapsed){
+      npSavedH = win.offsetHeight;
+      // collapsed height = title-bar bottom relative to the window top (accounts for frame/margins)
+      const reg=window.regions(), winr=win.getBoundingClientRect();
+      const barh = Math.max(16, Math.round(reg[1] + reg[3] - winr.top) + 4);
+      document.body.classList.add('np-collapsed');           // hides .body → only the title bar shows
+      npCollapsed=true;
+      return [win.offsetWidth, barh];
+    } else {
+      document.body.classList.remove('np-collapsed');
+      npCollapsed=false;
+      return [win.offsetWidth, npSavedH || 420];
+    }
+  };
+  window.toggleZoom=function(){
+    const win=document.getElementById('win');
+    if(!npZoomed){
+      npZoomSaved=[win.offsetWidth, win.offsetHeight];
+      npZoomed=true;
+      return [520, 640];   // classic "ideal" document size
+    } else {
+      npZoomed=false;
+      return npZoomSaved || [win.offsetWidth, win.offsetHeight];
+    }
+  };
+
+  /* ---- Restore persisted prefs ---- */
+  (function init(){
+    try{
+      const sz=parseInt(localStorage.getItem('np.size'),10); if(sz) fontPx=Math.max(9,Math.min(28,sz));
+      const f=localStorage.getItem('np.font'); if(f){ const sel=document.getElementById('npfont'); sel.value=f; if(sel.value!==f) sel.selectedIndex=0; }
+      const th=localStorage.getItem('np.theme')||'light'; const ts=document.getElementById('nptheme');
+      if(THEMES[th]) ts.value=th; applyEditorTheme(ts.value);
+      setFont(fontPx);
+      if(f){ pad.style.fontFamily=document.getElementById('npfont').value; gutter.style.fontFamily=document.getElementById('npfont').value; }
+    }catch(e){ applyEditorTheme('light'); setFont(12); }
+    refresh();
+  })();
+</script>
+<script>
+window.setBtnState = function(slot, state){
+  const cl = document.body.classList;
+  let ids;
+  if (cl.contains('theme-win98'))         ids = {close:'w98close', collapse:'w98min', zoom:'w98max'};
+  else if (cl.contains('theme-macosx'))   ids = {close:'mxclose', collapse:'mxmin', zoom:'mxzoom'};
+  else if (cl.contains('theme-maiksfav')) ids = {close:'mfclose', collapse:'mfmin', zoom:'mfzoom'};
+  else if (cl.contains('theme-winxp'))    ids = {close:'xpclose', collapse:'xpmin', zoom:'xpmax'};
+  else if (cl.contains('theme-macos6'))   ids = {close:'m9close', zoom:'m9zoom'};
+  else if (cl.contains('theme-macos9'))   ids = {close:'m9close', collapse:'m9collapse', zoom:'m9zoom'};
+  else ids = {close:'closebox'};
+  const el = ids[slot] && document.getElementById(ids[slot]);
+  if (!el) return;
+  el.classList.remove('is-hover','is-press');
+  if (state === 'hover') el.classList.add('is-hover');
+  else if (state === 'press') el.classList.add('is-press');
+};
+</script>
+<style>
+/* Mac System 6 (system.css by Sakun Acharige, MIT) */
+@font-face{font-family:Chicago_12;src:url(ChiKareGo2.woff2) format("woff2");}
+@font-face{font-family:Geneva_9;src:url(FindersKeepers.woff2) format("woff2");}
+body.theme-macos6 .tab{display:none;}
+body.theme-macos6 #win{border:2px solid #000;background:#fff;box-shadow:2px 2px 0 rgba(0,0,0,.35);}
+body.theme-macos6 .m9-title{display:flex;align-items:center;position:relative;height:22px;flex:0 0 auto;box-sizing:border-box;
+  border-bottom:2px solid #000;image-rendering:auto;padding:4px 3px;
+  background:linear-gradient(#000 50%,transparent 50%);background-size:100% 2.8px;background-clip:content-box;}
+body.theme-macos6 .m9-collapse{display:none;}
+body.theme-macos6 .m9-close,body.theme-macos6 .m9-zoom{position:relative;width:16px;height:16px;flex:0 0 16px;
+  background:#fff;border:2px solid #000;box-shadow:none;box-sizing:border-box;}
+body.theme-macos6 .m9-close{margin-left:6px;}
+body.theme-macos6 .m9-zoom{margin-left:auto;margin-right:6px;}
+body.theme-macos6 .m9-zoom::before{content:"";position:absolute;left:2px;top:2px;width:6px;height:6px;border:1.5px solid #000;background:#fff;}
+body.theme-macos6 .m9-close::before,body.theme-macos6 .m9-close::after{content:"";position:absolute;inset:0;opacity:0;
+  background:linear-gradient(#000,#000) left center/32% 2px no-repeat,linear-gradient(#000,#000) right center/32% 2px no-repeat,
+    linear-gradient(#000,#000) center top/2px 32% no-repeat,linear-gradient(#000,#000) center bottom/2px 32% no-repeat;}
+body.theme-macos6 .m9-close.is-press::before,body.theme-macos6 .m9-close.is-press::after{opacity:1;}
+body.theme-macos6 .m9-close.is-press::after{transform:rotate(45deg) scale(1.1);}
+body.theme-macos6 .m9-zoom.is-press{background:#000;}
+body.theme-macos6 .m9-plaque{background:#fff;padding:0 10px;color:#000;
+  font-family:Chicago_12,"ChiKareGo2",Chicago,sans-serif;font-weight:400;font-size:18px;line-height:1.1;}
+
+  /* ===== Mac OS X 10.6 Snow Leopard ===== */
+  /* Layered ON TOP of the Cheetah rules above; `setTheme` gives this body BOTH classes
+     (like win7 -> winxp), so anything not restated here is inherited.
+     Caption sampled pixel-by-pixel from a real 10.6 title bar at 1x, mirroring the native
+     chrome in Sources/Desktop/SnowLeopardChrome.swift:
+       #E3E3E3 hairline on top . 20px ramp #CFCFCF -> #A8A8A8 . #525252 separator BELOW
+     The dark line sits at the BOTTOM of a 10.6 caption, not the top.
+     SCALE 1: this widget renders its content scaled, so every length here is
+     counter-scaled to land at the same physical size as the other widgets. */
+  body.theme-snowleopard .mx-title{height:22px;flex:0 0 22px;padding:0 8px;
+    background:linear-gradient(to bottom,#cfcfcf,#a8a8a8);border-bottom:none;
+    box-shadow:inset 0 1px 0 #e3e3e3, inset 0 -1px 0 #525252;}
+  body.theme-snowleopard .mx-title::after{display:none;}      /* 10.6 has no pinstripes */
+  body.theme-snowleopard .mx-lights{gap:7px;}
+  /* The lights ARE the reference artwork, embedded, not CSS gradients approximating it. No
+     gradient can draw this orb: its rim runs all the way round while the top still carries the
+     specular and the bottom the shadow, and every border / inset-shadow / radial attempt
+     flattened one of those. The same PNGs are drawn natively from
+     Resources/Chrome/snowleopard/, so widgets and window chrome are identical by construction.
+     Inlined rather than linked so no stale copy can be served from a cache. */
+  body.theme-snowleopard .mx-gel{width:14px;height:14px;flex:0 0 14px;box-sizing:border-box;
+    border:none;box-shadow:none;background:center/14px 14px no-repeat;}
+  body.theme-snowleopard .mx-gel::before{display:none;}
+  body.theme-snowleopard .mx-gel.mx-close{background-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAAXNSR0IArs4c6QAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAADqADAAQAAAABAAAADgAAAACeOBvAAAACaElEQVQoFU1SPUwUURD+3u7b3dvb4/Y4lj3+j0sukRASTIwFEJHKyoJCo8bGQihooJGYWBorExOl8aewM9HECjuDkaiJlY0aRAxyyQF7J3gXPOBY3F1nzmCc5Hs7OzPfm/neewL/2TWgTQGmCeOEPKdC4AvhBeHubcA7KhdHzg3gshDivpu0Ex0DA7DHxgBFoLrwCpufP6G8s1OPoujKLeApc1ReiHQhLuWTwfYOPW+nkB0ZRvuli3CO9aHZ85DySrBNU1b3984NheG3N8BHlceLCfH6RG9OZg0DrqKglchJRYVVXIe5/BV6yUNck7CSSZSq1TMngccyRpp63Eysx7bh+Icwoghy9TtEpQqQEO1nBbaUMISA0HWUMm2JVW9zWpHA2WxXF1KWhbhpQlNVRAd1BNvbCLa2EZKvShUm5dJWHFxL+sYphL7WjAszDCFoZ3DE9xEGv1k+/UsITYNixmDEYnCamkBVeUkdhEbaFOrEBSBfHB7SPdAFsJHmiMkUVw0dOklhjtRSqeKB72eRTjeSCIgQMZhFC2tjMoE32SMJejpdkFZv78tSpXK1q7OzkRTcmYobRrszke4PCAIaIkS5UoHV3b2gHJ+YeLCxu7v/i/W1tEA4Drg7mpv/fnkSjlGOazZqNX9wcvKh+mh+fuvH2ppaLBROO7kcDCIo8TgEg06agUQCO9Ttw/IynJGRm6dmZ583ZqJRMu/m5qYqKyvX6bj1jOvCIiLNiL16HV65jEKxuJ/M5e6MzszcIynlf2+VyO7m0tLwyuLieb9WGwqDoId10mmv64nE2/zo6LOO/v73RCpx/A91kc2wvC974AAAAABJRU5ErkJggg==);background-image:-webkit-image-set(url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAAXNSR0IArs4c6QAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAADqADAAQAAAABAAAADgAAAACeOBvAAAACaElEQVQoFU1SPUwUURD+3u7b3dvb4/Y4lj3+j0sukRASTIwFEJHKyoJCo8bGQihooJGYWBorExOl8aewM9HECjuDkaiJlY0aRAxyyQF7J3gXPOBY3F1nzmCc5Hs7OzPfm/neewL/2TWgTQGmCeOEPKdC4AvhBeHubcA7KhdHzg3gshDivpu0Ex0DA7DHxgBFoLrwCpufP6G8s1OPoujKLeApc1ReiHQhLuWTwfYOPW+nkB0ZRvuli3CO9aHZ85DySrBNU1b3984NheG3N8BHlceLCfH6RG9OZg0DrqKglchJRYVVXIe5/BV6yUNck7CSSZSq1TMngccyRpp63Eysx7bh+Icwoghy9TtEpQqQEO1nBbaUMISA0HWUMm2JVW9zWpHA2WxXF1KWhbhpQlNVRAd1BNvbCLa2EZKvShUm5dJWHFxL+sYphL7WjAszDCFoZ3DE9xEGv1k+/UsITYNixmDEYnCamkBVeUkdhEbaFOrEBSBfHB7SPdAFsJHmiMkUVw0dOklhjtRSqeKB72eRTjeSCIgQMZhFC2tjMoE32SMJejpdkFZv78tSpXK1q7OzkRTcmYobRrszke4PCAIaIkS5UoHV3b2gHJ+YeLCxu7v/i/W1tEA4Drg7mpv/fnkSjlGOazZqNX9wcvKh+mh+fuvH2ppaLBROO7kcDCIo8TgEg06agUQCO9Ttw/IynJGRm6dmZ583ZqJRMu/m5qYqKyvX6bj1jOvCIiLNiL16HV65jEKxuJ/M5e6MzszcIynlf2+VyO7m0tLwyuLieb9WGwqDoId10mmv64nE2/zo6LOO/v73RCpx/A91kc2wvC974AAAAABJRU5ErkJggg==) 1x,url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAYAAAByDd+UAAAAAXNSR0IArs4c6QAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAHKADAAQAAAABAAAAHAAAAABHddaYAAAG20lEQVRIDY2Wy29UVRzHv/cxjzsz7QzTqR0LNG2pWEKiNSGlRFEgLNgJccMK+Q+MK/EVNHGhKzWGnURl5YJETFxogvEBJJqY0CaaoDQytKUdaZlpy9R53nv9fs/MII1oPOlvzr3n8fv8XufcWvgf7RRwIASe5dIDNjDMPsN3WMAq+2kJnz9/G/iWw//ZuO7fG0EnOXuaCocJgsShaJOAagHFp+idUuDcmwR/zNcHtgcC3yCgDnzGHRNaELEdDDycR3rbNsQHt1IeJtVC4/ZtbBQKKM/NoXznDmrNpoEITDlIcMEM3Pcjgze1V4HnafUFhS7huhjN5jBCUP/2IWQeeQTpyUkkd43DGxqCt2ULkn6AtOMgF40iGgSot5rwgyDD/SefAn69DFy7H7AJ+DJwlAs/dYF4vjeNHX05ZCIRpLwEevIDyOzejd69k0iNjSGZz8NL9SC2tga3VIKzfhepMESWY4pKtV6Pszu+n15eAma6UOputzfoUQv4SBZsy2axPbMFcSqIBxSGLxWPw0smEaE6OxbjKgsBx5sEeJzb4HOVoY/aFuK5HCL0+la5BOp8j7q/oxS4CfeAjP43fMkMEjZKzzwmwRPQCuExVF69gXh5Fe78AqxqVXsRrtxBq1SGyzmHoY25DmI0pEoXRwgN2C+WShnqVj08oT0mpK8w3oSdTDEP48xVj2UjxcUp24ZHkYeKT4TjbrUGmxBncQn2/DysxUXYS0uwalU4NNClhzb32PTWS6VQXl9H0/fzTwI3GdppAzxACyL0bgdhD3FRr0JoIBZi7BUehx47tRqsyl3gTglYvg0U/wD+oNBj228Z6x2CBAMLDnQgwjQss4LZJr4H3ndf42GmM8NJ5mWQhZBk+BItH/FWC1HLh02rOY8w8BHW6wjpHew1KeBgiLDZQEgYi43e2XDooSVgxIVPQ/uZIo/wSqs1LJbWHVUi+3P9iLMiPUosxhKnda7jUgEtJtHyfQRUHvCshTRGEjQIazBDnJNVtsNQco/2SleCEo9GsHXrNlMsPG5HXa573AAHBjgZRYweRqjAYSj5BzRZZ7pKeI+EhPmcU44YYV4zHKPnahbHQI8USoegCPsY3+Mcz+b6ULhZEPQZASeUyHRfFlEuihDo+g5hnJFIkaBUbBFgwsgQGpcMSSGkAfQO9M5iKBVOh7oUoRjnUj29PE4Ab69hl8syAsY8j1XICiPQZg6NxYJJZDk9CzknryzlTkhFQDCzTt5J2lCbvUOgqjZBA6hFUc/IQ+aJ5U6lDkVFwkMFMEddmCWQ8qRepDAwhSSiiYQByss20FQo4bb0cY0rJ+QMdbt2NFqhxakmCwA8ElJgaaORFixaakAd7wxRRslSwQXjHgNXWFlkYcdL6RIkoPHymNCKG+3tLYYbG2MNlryVTrcVcJEBCcYbRB4pd6YZDzvPgoosoCll9R2o3tW4789KxRjBy37W7Rkc/Kl+48bYOi/hkOfQhKW9lMlnqgXq6u9CpcuMKZd8Mbo7vSLU2a8lASNTXlkxwEQud80dnJr6enZh4XiRV9Sj/BqoAAKKCa02Guvb73972bHATLfVt/n8VejVaFxICZj7crmMkEduYM+er5i+cOz90dFLXrOZn5yaQp6Xrs6Obg0DZW+gAnebPNX7/b1htIECtQiuUeZ4307PzKAaiRRf+P33/dSGlaGDBz/x+YmZvX4dDQJCPoPHxEok7oneofGu6BOlMQnXSWyt592pMemQrrmFBQR8FkMsl16s0qILH+7b99xGvT42Vyzi0V27zME11dr1VN50RZ52vZOnHZFnOqsKY4syXyiY7yTS6eKxs2cviCUP1QpPnz79etDbW1lgvOf4v0qLloayVtLxwDx333mEHjSnPT7XS8c8/xPw0+nKobfeelEMgVj3MtAq0rrZG1eunFmemXnppqqKCkd27ECMyZZVyqBuGOOZNql18hqyN8L5Os9zgWEsLC+j1dOD0f3739l55EhBDLPFbOQPgfrG7rn8wQcHlq5efSlq26keWjo8MoKHeLHrpjBALur2AtIEI/p3Y3V1Fb9du4a7PHf1MKzkdu48c+jUqS+45CcCa+zvHRk9C5pnN1748cf8zPnz7/JKy0d54ySY9L6+PmT5bUsyZLoG1Wq8LOqUNX7Vl27dQo03Cr/uOr+zjx079vrw3r3y6mfCVswG/ihSmxqhOQ6MU9wfzp07Upqbe15gcxdykJs3bdKpCxhKCc9wMTs09MnUiRNfcliflFmuN6Hks2n/AGq0E94JPirM+OXixYnS/PyTjWp1zG80xnh7sGIIt+0K78hiPJmczm7ffmX34cPTGmerUOSZCaMZ6fz8BRBOti6F1YRaAAAAAElFTkSuQmCC) 2x);}
+  /* No working minimise/zoom here, so 10.6 would grey them out. */
+  body.theme-snowleopard .mx-gel.mx-min,body.theme-snowleopard .mx-gel.mx-zoom{background-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAAXNSR0IArs4c6QAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAADqADAAQAAAABAAAADgAAAACeOBvAAAACEUlEQVQoFWVSO8saURCdXdf3WzQqaET9fICoYCEk1dpYiMVXJKSwSZ3GNr8gTSCQVEmadJGkTmUIWKSwlARBJIIBFaOFIuKq+MicC/sRyIXZHWbOuXNm7kj0z1FVNXQ4HJomk+nW6XTeILXdbgcc+2I2m193Op25Dpd0p1qtNi6Xy1uv1+vI5XKUTqdJkiQaDAbU7/dpvV7vZVl+2m63P4FjwKderz+x2Wwf8/m8KRaLUbFYpEKhQOFwmBRFIYPBQH6/X+Hqj5LJ5K/hcPjTUKvVQhaLpVMqlZRIJEI+n0+Y3W6n6/VK+/1eVHa5XARbLBbVeDz+QWHtTa5iiUaj5Ha7ieUQS6blcgkxwsdliFmtVlqtVo7xeNwEsZ5IJEQVlisAAJ3PZ0FEnyDgQsgGdjab3bKvZIPBIDkcDtELSDDIxDEajYIEIiwQCAB3o/BHQpIri150EirpZPggYUj8VPhLCjsTTdNiSCKIAx+GA7Jux+ORdrsd8TB/yx6P5+t8PqfT6STAIHNCKIAKGGK4CH0Dy8vxTVZV9d1kMtE2m82dNF0iKuqV4QMznU6PlUrlvczv+COVSr3s9XpYr//I+iXIAZPNZl+AIxrhZLDVaj3jMT/nzTBhYzBlkNATx2k0GmmhUOhVo9F4wyoWd7vKoHu8Sg+73e5jHtYD7vk+5PEEp7xF38vl8udMJtNl0h/E/wIrRe2r97xTmgAAAABJRU5ErkJggg==);background-image:-webkit-image-set(url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAAXNSR0IArs4c6QAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAADqADAAQAAAABAAAADgAAAACeOBvAAAACEUlEQVQoFWVSO8saURCdXdf3WzQqaET9fICoYCEk1dpYiMVXJKSwSZ3GNr8gTSCQVEmadJGkTmUIWKSwlARBJIIBFaOFIuKq+MicC/sRyIXZHWbOuXNm7kj0z1FVNXQ4HJomk+nW6XTeILXdbgcc+2I2m193Op25Dpd0p1qtNi6Xy1uv1+vI5XKUTqdJkiQaDAbU7/dpvV7vZVl+2m63P4FjwKderz+x2Wwf8/m8KRaLUbFYpEKhQOFwmBRFIYPBQH6/X+Hqj5LJ5K/hcPjTUKvVQhaLpVMqlZRIJEI+n0+Y3W6n6/VK+/1eVHa5XARbLBbVeDz+QWHtTa5iiUaj5Ha7ieUQS6blcgkxwsdliFmtVlqtVo7xeNwEsZ5IJEQVlisAAJ3PZ0FEnyDgQsgGdjab3bKvZIPBIDkcDtELSDDIxDEajYIEIiwQCAB3o/BHQpIri150EirpZPggYUj8VPhLCjsTTdNiSCKIAx+GA7Jux+ORdrsd8TB/yx6P5+t8PqfT6STAIHNCKIAKGGK4CH0Dy8vxTVZV9d1kMtE2m82dNF0iKuqV4QMznU6PlUrlvczv+COVSr3s9XpYr//I+iXIAZPNZl+AIxrhZLDVaj3jMT/nzTBhYzBlkNATx2k0GmmhUOhVo9F4wyoWd7vKoHu8Sg+73e5jHtYD7vk+5PEEp7xF38vl8udMJtNl0h/E/wIrRe2r97xTmgAAAABJRU5ErkJggg==) 1x,url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAYAAAByDd+UAAAAAXNSR0IArs4c6QAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAHKADAAQAAAABAAAAHAAAAABHddaYAAAFR0lEQVRIDY2WO0isVxDHj+v6XnXVqOsLV1ERETUQUEiRjZVW2ULEQrhaWojeKtVFUqZKmttfG0lsroGIBgzZQAIWtzASQfC1Pll11VXX9yvzO9mRL954kwPzzTlzZuY/M+f1JZn/0dra2gJJSUlfpKSkBNxut1/Ii9nd3V3s+vp67vb2du7h4eGH2dnZ0H+5S/qQQiAQ6BOHI+IMEJOVlWUyMzONABuRmZubG3NxcWHOz8+N6Jnk5OSwzH0VCoXePOf3XwE7Ojr8EvVboRbJwrhcLlNdXW3KyspMfn6+8XptgiYej5vd3V2zublptre3zdXVlSGwBPDn09PT4afA7wEK2AuJ/tv7+3svmZSWlpq8vDxTUFBgioqKTGFhoUlPT7d+Li8vzd7entnf3zfRaNRy+hKokSWISaD9U1NTE07QZOegs7MzKErfSYTpPp/PZpWdnW1LCRgZEgBZ5uTk2PKKYwsASEZGhg0ImQRDVD11dXXhpaWlPxTnETAYDPpFcQqwiooK4/f7rQOceDyex+zIlrVETmMtKSXrKbYmLS3NBsQynJ2doRJoaGj4fnFxMcbAzYcmhr+IgbekpMRmRjkhnKSmplqiz5riPGFj1xcQKgFnnmwJmLazs+OV5Xkr3Y8Z2wwluz6JqI9M6uvrbUY4IAuINQOMDUG5cMquZIdCrCUZESCgGig7+ujoCH2f+F2XLOc0wxGUiIq10ZLhBAKELMns5OTEyoiWcpINczpWGcFhK2toFhYW0BsRnTfJXV1dAZkYJiPNjsjIjGgVVDmZasM5jYyZ1/LDGdMAZicLoFfW8le3GAWJsLi42O46wCghMoyk/pYwBkCdkzVzOmbeGZQColNeXm5WV1fZXEG3TDRTTrY9QJCuAwDPgWoAAKOjnL7TjpJzhjc2NsjyM9awhbTZ7poZASgQjtQZjhQIrnPPcd217AswpPnJ0ItzJikjE4lJ6xAQJSwUlD4NMG0amMooJ8GzTGCI3GthGbDQEApwdYwRTcfqnDGOlSN3AiIncN1ACUBk7rjoergtaAqOAcRY+8xr9PRpzCFzyrVPsPQ1aAGPu6WUEbGr4SA7HROZOoSrE+V2Uj7Y0HCqwaGjvuA8XzQ538vu3Nzcd3KYazjQaswkRjjQ/lMglatjqygfgCGV0+e2gctZX3TV1tb+zKTcefZMsY05W+qQTFkL1laJzUXfKadPgBqYAsMPDg4sYFVV1U+ugYGBkChGKGksFrMTGq0zYw1AHcKVVN/JsSVwHmheDQkwMjg4+Bs1izY2No5yT8q7ZZ8aosJAHcIZP0fM01SfPmAkkTjwXJujIo66RCk2NDQ0IWVaPj09Nevr6/ZCxjlNuR184KOgqBAwgPjiN4QKDg8PT4D1964wJtzT0/NKnMf5PyEqDBQMjkO4yhTbOdZ5AAHb2trCT7y3t/el6IexsYDiLNLa2rosT8lryrC2tmZWVlZsedUhHFDI2Z4Ggj22AHK2m5ubvxbfYTCwe7QWh/yDfDI2NhaQtfxS7lUP96vsLMP/DbtVwZQrMNUgq8PDQyOPrN188jDHKysrX/f39/8oeu/E5hL9R0AGAuoTVj8/P++bnJz8Rra6j3eRPwFufIh7kSNB46Uni+PjY/ubqK+/gC/LD9mrpqYmsvpTwKLWQD7/AEQooB8Jqxdyj4+Pd8j/5gsx8HHONEsyhMiKUsM5v8Ij8mc32t3dPS32t0LLomdLKX3b3gNEmihvi3Qps5mZmWmRi+FTyYArsEYce5DL7otLEBG5subkT+/39vb2OeTSuJ/JzJbRShKfvwAKqTVvUw5R/gAAAABJRU5ErkJggg==) 2x);}
+</style>
+</body>
+</html>

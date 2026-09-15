@@ -40,8 +40,6 @@ html[data-theme="light"]{
   --dim:#6a6a6f;
   --hairline:#b4b4b8;
   --rim:#ffffff;
-  --tb-face:#ececf4;
-  --tb-line:#8a8a98;
   --on-accent:#ffffff;
   --shadow:rgba(0,0,0,.42);
   --selected-face:color-mix(in srgb, var(--accent) 18%, var(--face));
@@ -87,8 +85,6 @@ html[data-theme="dark"]{
   --dim:#9aa0aa;
   --hairline:#3a3f48;
   --rim:#14161a;
-  --tb-face:#262a31;
-  --tb-line:#383d46;
   --on-accent:#ffffff;
   --shadow:rgba(0,0,0,.55);
   --selected-face:color-mix(in srgb, var(--accent) 22%, var(--face));
@@ -576,18 +572,16 @@ html[data-theme="dark"] .item .art.album > img{filter:none}
 }
 .win[hidden]{display:none}
 
-/* Title bar — classic Mac pinstripe dither when active, flat when inactive */
+/* Title bar — flat face plate, matching the menu bar */
 .titlebar{
   flex:none;display:flex;align-items:center;height:22px;padding:0 4px;cursor:url('../img/cursors/os9-arrow.png') 1 1,default;cursor:-webkit-image-set(url('../img/cursors/os9-arrow.png') 1x,url('../img/cursors/os9-arrow@2x.png') 2x) 1 1,default;
   border-bottom:1px solid var(--ink);color:var(--ink);
-  background-color:var(--tb-face);
-  background-image:repeating-linear-gradient(180deg, var(--tb-face) 0 2px, var(--tb-line) 2px 3px);
+  background:var(--face);
   box-shadow:inset 0 1px 0 var(--white)
 }
 .win.dragging .titlebar{cursor:url('../img/cursors/os9-grabbing.png') 8 8,grabbing;cursor:-webkit-image-set(url('../img/cursors/os9-grabbing.png') 1x,url('../img/cursors/os9-grabbing@2x.png') 2x) 8 8,grabbing}
 .win.inactive .titlebar{
-  background-color:var(--tb-face);
-  background-image:none;
+  background:var(--face);
   box-shadow:none;
   opacity:.85
 }
@@ -599,54 +593,58 @@ html[data-theme="dark"] .item .art.album > img{filter:none}
   max-width:100%;overflow:hidden;text-overflow:ellipsis;vertical-align:top
 }
 
-/* Close / zoom — flush inset bezel (sits "in" the titlebar); coral hover; X / fit glyphs on hover */
+/* Close / deco / zoom — flat square traffic lights, clustered on the left */
+.tb-boxes{flex:none;display:flex;align-items:center;gap:5px;margin-right:6px}
 .box{
-  flex:none;position:relative;z-index:1;width:14px;height:14px;margin:0 3px;padding:0;
-  background:var(--face);border:1px solid var(--ink);cursor:url('../img/cursors/os9-pointer.png') 5 0,pointer;cursor:-webkit-image-set(url('../img/cursors/os9-pointer.png') 1x,url('../img/cursors/os9-pointer@2x.png') 2x) 5 0,pointer;
-  box-shadow:inset -1px -1px 0 rgba(0,0,0,.32), inset 1px 1px 0 rgba(255,255,255,.55)
+  flex:none;position:relative;z-index:1;width:13px;height:13px;margin:0;padding:0;
+  border-radius:2px;border:2px solid var(--ink);box-shadow:none;
+  cursor:url('../img/cursors/os9-pointer.png') 5 0,pointer;cursor:-webkit-image-set(url('../img/cursors/os9-pointer.png') 1x,url('../img/cursors/os9-pointer@2x.png') 2x) 5 0,pointer;
 }
-/* Close: X always visible; coral highlight on hover */
-.box:not(.zoom)::before,
-.box:not(.zoom)::after{
-  content:"";position:absolute;left:50%;top:50%;width:8px;height:1.5px;background:var(--ink);
+.box[data-act="close"]{background:#ff5f57}
+.box-deco{background:#ffbd2e;cursor:default}
+.box.zoom{background:#28c840}
+/* Close: an X, revealed on hover */
+.box[data-act="close"]::before,
+.box[data-act="close"]::after{
+  content:"";position:absolute;left:50%;top:50%;width:7px;height:1.3px;background:rgba(0,0,0,0);
   transform-origin:center
 }
-.box:not(.zoom)::before{transform:translate(-50%,-50%) rotate(45deg)}
-.box:not(.zoom)::after{transform:translate(-50%,-50%) rotate(-45deg)}
-.box:not(.zoom):hover::before,
-.box:not(.zoom):focus-visible::before,
-.box:not(.zoom):active::before,
-.box:not(.zoom):hover::after,
-.box:not(.zoom):focus-visible::after,
-.box:not(.zoom):active::after{
-  background:var(--on-accent)
+.box[data-act="close"]::before{transform:translate(-50%,-50%) rotate(45deg)}
+.box[data-act="close"]::after{transform:translate(-50%,-50%) rotate(-45deg)}
+.box[data-act="close"]:hover::before,
+.box[data-act="close"]:focus-visible::before,
+.box[data-act="close"]:active::before,
+.box[data-act="close"]:hover::after,
+.box[data-act="close"]:focus-visible::after,
+.box[data-act="close"]:active::after{
+  background:rgba(0,0,0,.55)
 }
-.box:hover,
-.box:focus-visible{
-  background:var(--accent);border-color:var(--ink);outline:none
-}
-.box:active{
-  background:var(--accent);
-  box-shadow:inset 1px 1px 0 rgba(0,0,0,.4), inset -1px -1px 0 rgba(255,255,255,.25)
-}
-/* Zoom / fit — two overlapping squares; coral hover */
-.box.zoom::before{
-  content:"";position:absolute;left:2px;top:2px;width:6px;height:6px;
-  border:1px solid var(--ink);background:var(--face);box-sizing:border-box
-}
+/* Zoom: a plus, revealed on hover */
+.box.zoom::before,
 .box.zoom::after{
-  content:"";position:absolute;right:2px;bottom:2px;width:6px;height:6px;
-  border:1px solid var(--ink);background:var(--face);box-sizing:border-box
+  content:"";position:absolute;left:50%;top:50%;background:rgba(0,0,0,0);
+  transform:translate(-50%,-50%)
 }
+.box.zoom::before{width:7px;height:1.3px}
+.box.zoom::after{width:1.3px;height:7px}
 .box.zoom:hover::before,
 .box.zoom:focus-visible::before,
 .box.zoom:active::before,
 .box.zoom:hover::after,
 .box.zoom:focus-visible::after,
 .box.zoom:active::after{
-  border-color:var(--on-accent);background:var(--accent)
+  background:rgba(0,0,0,.55)
 }
-.win.inactive .box{opacity:.35}
+.box[data-act]:hover,
+.box[data-act]:focus-visible{
+  outline:none;filter:brightness(1.08)
+}
+.box[data-act]:active{
+  filter:brightness(.85)
+}
+.win.inactive .box{background:var(--face) !important}
+.win.inactive .box::before,
+.win.inactive .box::after{background:rgba(0,0,0,0) !important}
 
 .infobar{
   flex:none;display:flex;align-items:center;gap:16px;height:17px;padding:0 8px;
@@ -754,6 +752,17 @@ html[data-theme="dark"] .item .art.album > img{filter:none}
 .win.win-media-player .corner{
   display:none !important;
 }
+
+/* Edge grips — thin strips along the right/left/bottom borders so the
+   window can be resized by dragging its edges, not just the corner */
+.edge{position:absolute;z-index:14;touch-action:none;background:transparent}
+.edge-r{top:0;right:0;bottom:16px;width:6px;cursor:ew-resize}
+.edge-l{top:22px;left:0;bottom:16px;width:6px;cursor:ew-resize}
+.edge-b{left:0;right:16px;bottom:0;height:6px;cursor:ns-resize}
+.win.win-media-player .edge{display:none !important}
+.win.resizing.resizing-e,.win.resizing.resizing-e *,
+.win.resizing.resizing-w,.win.resizing.resizing-w *{cursor:ew-resize !important}
+.win.resizing.resizing-s,.win.resizing.resizing-s *{cursor:ns-resize !important}
 
 /* things inside windows */
 .items{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:28px 10px;align-content:start;

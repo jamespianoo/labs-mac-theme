@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Disk Defragmenter</title>
+<style>
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;}
+  body{font-family:Tahoma,"MS Sans Serif",sans-serif;font-size:11px;background:transparent;
+       overflow:hidden;-webkit-font-smoothing:none;user-select:none;}
+  #win{position:relative;width:584px;background:#c0c0c0;display:flex;flex-direction:column;
+       box-shadow:inset -1px -1px 0 #000,inset 1px 1px 0 #fff,inset -2px -2px 0 #808080,inset 2px 2px 0 #dfdfdf;}
+
+  /* ---- Titelleiste (Win95/98) ---- */
+  .w98-title{display:flex;align-items:center;gap:3px;height:20px;flex:0 0 20px;margin:3px 3px 0;padding:0 2px 0 3px;
+             background:linear-gradient(90deg,#00007b,#1085d2);}
+  .w98-ico{width:16px;height:16px;flex:0 0 auto;image-rendering:pixelated;}
+  .w98-ico:not([src]){display:none;}
+  .w98-cap{flex:1 1 auto;color:#fff;font-weight:700;font-size:11px;white-space:nowrap;overflow:hidden;}
+  .w98-btn{width:16px;height:14px;flex:0 0 auto;background:#c0c0c0;cursor:default;position:relative;
+           box-shadow:inset 1px 1px 0 #fff,inset -1px -1px 0 #000,inset 2px 2px 0 #dfdfdf,inset -2px -2px 0 #808080;}
+  .w98-btn:active{box-shadow:inset 1px 1px 0 #000,inset -1px -1px 0 #fff,inset 2px 2px 0 #808080;}
+  .w98-btn::before{content:"";position:absolute;background:#000;}
+  #dfmin::before{left:3px;bottom:3px;width:7px;height:2px;}
+  #dfmax::before{left:3px;top:3px;width:9px;height:8px;border:1px solid #000;border-top-width:2px;background:transparent;}
+  #dfclose::before,#dfclose::after{left:50%;top:50%;width:9px;height:1.5px;background:#000;}
+  #dfclose::before{transform:translate(-50%,-50%) rotate(45deg);}
+  #dfclose::after{content:"";position:absolute;transform:translate(-50%,-50%) rotate(-45deg);}
+
+  /* ---- Cluster-Anzeige ---- */
+  .grid-wrap{display:flex;margin:3px;padding:2px;background:#c0c0c0;
+             box-shadow:inset 1px 1px 0 #808080,inset -1px -1px 0 #fff,inset 2px 2px 0 #000,inset -2px -2px 0 #dfdfdf;}
+  #grid{display:block;background:#000;flex:0 0 auto;}
+  /* Scrollleiste: im versenkten Rahmen rechts, volle Hoehe der Clusteranzeige (wie im Original) */
+  .vsb{width:16px;flex:0 0 16px;display:flex;flex-direction:column;}
+  .sb-btn{height:16px;flex:0 0 16px;background:#c0c0c0;position:relative;cursor:default;
+          box-shadow:inset 1px 1px 0 #fff,inset -1px -1px 0 #000,inset 2px 2px 0 #dfdfdf,inset -2px -2px 0 #808080;}
+  .sb-btn:active{box-shadow:inset 1px 1px 0 #000,inset -1px -1px 0 #fff,inset 2px 2px 0 #808080;}
+  .sb-btn::before{content:"";position:absolute;left:50%;top:50%;width:0;height:0;
+                  border-left:3px solid transparent;border-right:3px solid transparent;}
+  .sb-up::before{transform:translate(-50%,-60%);border-bottom:4px solid #000;}
+  .sb-dn::before{transform:translate(-50%,-40%);border-top:4px solid #000;}
+  .sb-track{flex:1 1 auto;position:relative;
+            background:linear-gradient(45deg,#c0c0c0 25%,#fff 0,#fff 75%,#c0c0c0 0) 0 0/2px 2px;}
+  .sb-thumb{position:absolute;left:0;right:0;top:0;height:40px;background:#c0c0c0;cursor:default;
+            box-shadow:inset 1px 1px 0 #fff,inset -1px -1px 0 #000,inset 2px 2px 0 #dfdfdf,inset -2px -2px 0 #808080;}
+
+  /* ---- Unterer Bereich ---- */
+  .bottom{display:flex;gap:10px;margin:2px 6px 8px;align-items:flex-start;}
+  .status{flex:1 1 auto;padding-top:2px;}
+  .status .lbl{margin-bottom:5px;color:#000;}
+  .bar{height:15px;background:#c0c0c0;padding:2px;
+       box-shadow:inset 1px 1px 0 #808080,inset -1px -1px 0 #fff,inset 2px 2px 0 #000,inset -2px -2px 0 #dfdfdf;}
+  .bar-fill{height:100%;background:repeating-linear-gradient(90deg,#000080 0 9px,#c0c0c0 9px 11px);width:0;}
+  .pct{margin-top:5px;color:#000;}
+  .btns{display:grid;grid-template-columns:repeat(2,96px);gap:6px;flex:0 0 auto;}
+  .btn{height:23px;background:#c0c0c0;color:#000;font:11px Tahoma,"MS Sans Serif",sans-serif;cursor:default;
+       display:flex;align-items:center;justify-content:center;
+       box-shadow:inset 1px 1px 0 #fff,inset -1px -1px 0 #000,inset 2px 2px 0 #dfdfdf,inset -2px -2px 0 #808080;}
+  .btn:active:not(.dis){box-shadow:inset 1px 1px 0 #000,inset -1px -1px 0 #fff,inset 2px 2px 0 #808080;}
+  .btn:active:not(.dis) span{position:relative;top:1px;left:1px;}
+  .btn.dis{color:#808080;text-shadow:1px 1px 0 #fff;}
+
+  /* ---- Details ausgeblendet ---- */
+  body.compact .grid-wrap{display:none;}
+  body.compact #win{width:400px;}
+  body.compact .btns{grid-template-columns:repeat(2,96px);}
+
+  /* ---- Dialoge (Legende / fertig) ---- */
+  .dlg{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:20;background:#c0c0c0;
+       min-width:230px;display:none;
+       box-shadow:inset -1px -1px 0 #000,inset 1px 1px 0 #fff,inset -2px -2px 0 #808080,inset 2px 2px 0 #dfdfdf,3px 3px 6px rgba(0,0,0,.4);}
+  .dlg.on{display:block;}
+  .dlg-tb{display:flex;align-items:center;height:18px;margin:3px 3px 0;padding:0 2px 0 5px;
+          background:linear-gradient(90deg,#00007b,#1085d2);color:#fff;font-weight:700;font-size:11px;}
+  .dlg-tb .sp{flex:1 1 auto;}
+  .dlg-bd{padding:10px 12px;}
+  .lg-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+  .sw{width:14px;height:14px;flex:0 0 14px;border:1px solid #000;}
+  .dlg-ft{display:flex;justify-content:center;padding:0 12px 10px;}
+  .dlg-ft .btn{width:76px;}
+</style></head>
+<body class="theme-win98">
+  <div id="win">
+    <div class="w98-title" id="dftitle">
+      <img class="w98-ico" id="dfico" alt="">
+      <span class="w98-cap" id="dfcap">Disk Defragmenter</span>
+      <span class="w98-btn" id="dfmin"></span>
+      <span class="w98-btn" id="dfmax"></span>
+      <span class="w98-btn" id="dfclose"></span>
+    </div>
+
+    <div class="grid-wrap" id="gridwrap">
+      <canvas id="grid" width="558" height="243"></canvas>
+      <div class="vsb">
+        <div class="sb-btn sb-up"></div>
+        <div class="sb-track"><div class="sb-thumb"></div></div>
+        <div class="sb-btn sb-dn"></div>
+      </div>
+    </div>
+
+    <div class="bottom">
+      <div class="status">
+        <div class="lbl" id="lbl">Idle</div>
+        <div class="bar"><div class="bar-fill" id="fill"></div></div>
+        <div class="pct" id="pct">0% Complete</div>
+      </div>
+      <div class="btns">
+        <div class="btn" id="bStart"><span>Start</span></div>
+        <div class="btn dis" id="bPause"><span>Pause</span></div>
+        <div class="btn" id="bLegend"><span>Legend</span></div>
+        <div class="btn" id="bDetails"><span>Hide Details</span></div>
+        <div class="btn" id="bSound"><span>Sound On</span></div>
+      </div>
+    </div>
+
+    <!-- Legende -->
+    <div class="dlg" id="legend">
+      <div class="dlg-tb"><span class="sp">Defrag Legend</span></div>
+      <div class="dlg-bd" id="legendBody"></div>
+      <div class="dlg-ft"><div class="btn" id="legendOK"><span>OK</span></div></div>
+    </div>
+
+    <!-- Fertig -->
+    <div class="dlg" id="done">
+      <div class="dlg-tb"><span class="sp">Defragmentation Complete</span></div>
+      <div class="dlg-bd">Defragmentation of drive C is complete.</div>
+      <div class="dlg-ft"><div class="btn" id="doneOK"><span>OK</span></div></div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  var CELL = 9, GAP = 1, COLS = 62, VIEW_ROWS = 27, ROWS = 54;   // Platte ist groesser als das Fenster
+  var cv = document.getElementById('grid'), ctx = cv.getContext('2d');
+  cv.width = COLS*CELL; cv.height = VIEW_ROWS*CELL;
+  var scrollRow = 0;                                             // oberste sichtbare Zeile
+
+  var FREE=0, DATA=1, FIXED=2, WRITE=3, READ=4, OPT=5;
+  var COLORS = {};
+  COLORS[FREE]='#ffffff'; COLORS[DATA]='#00ffff'; COLORS[FIXED]='#808080';
+  COLORS[WRITE]='#ff0000'; COLORS[READ]='#00c000'; COLORS[OPT]='#000080';
+  var LEGEND = [
+    ['#000080','Optimized data'],
+    ['#00ffff','Unoptimized data'],
+    ['#ffffff','Free space'],
+    ['#808080','Data that will not be moved'],
+    ['#ff0000','Cluster being written'],
+    ['#00c000','Cluster being read']
+  ];
+  var N = COLS*ROWS, cells = new Uint8Array(N), flash = new Uint8Array(N);
+
+  function seed(){
+    for (var i=0;i<N;i++){
+      var r = Math.random();
+      cells[i] = r < 0.62 ? DATA : (r < 0.985 ? FREE : FIXED);
+      flash[i] = 0;
+    }
+    draw();
+  }
+  function drawCell(i){
+    var row = (i/COLS)|0, vis = row - scrollRow;
+    if (vis < 0 || vis >= VIEW_ROWS) return;                     // ausserhalb des Sichtfensters
+    ctx.fillStyle = COLORS[flash[i] ? flash[i] : cells[i]];
+    ctx.fillRect((i%COLS)*CELL+GAP, vis*CELL+GAP, CELL-GAP, CELL-GAP);
+  }
+  function draw(){
+    ctx.fillStyle = '#000'; ctx.fillRect(0,0,cv.width,cv.height);
+    var from = scrollRow*COLS, to = Math.min(N, (scrollRow+VIEW_ROWS)*COLS);
+    for (var i=from;i<to;i++) drawCell(i);
+  }
+
+  // ---- Defrag-Lauf ----
+  var timer=null, paused=false, running=false, writeQ=[];
+  function isData(v){ return v===DATA || v===OPT; }
+  // Nur noch unoptimierte Cluster wandern nach vorn; bereits konsolidierte bleiben liegen.
+  function lastData(before){ for (var i=before;i>=0;i--) if (cells[i]===DATA) return i; return -1; }
+  var head = 0;
+
+  // Fortschritt = Anteil der Datencluster, die bereits im gepackten Bereich vor `head` liegen.
+  var dataTotal = 0;
+  function countData(){ var n=0; for (var i=0;i<N;i++) if (isData(cells[i])) n++; return n; }
+  function progress(){
+    if (!dataTotal) return 100;
+    var packed = 0;
+    for (var i=0;i<head && i<N;i++) if (isData(cells[i])) packed++;
+    return Math.min(100, Math.round(packed/dataTotal*100));
+  }
+
+  function step(){
+    if (paused) return;
+    // abgelaufene Schreib-/Lese-Markierungen loeschen
+    for (var k=writeQ.length-1;k>=0;k--){
+      writeQ[k].t--;
+      if (writeQ[k].t<=0){ flash[writeQ[k].i]=0; drawCell(writeQ[k].i); writeQ.splice(k,1); }
+    }
+    var moved=0;
+    while (moved < 1){
+      while (head < N && cells[head] !== FREE) head++;
+      if (head >= N){ finish(); return; }
+      var src = lastData(N-1);
+      if (src < 0 || src <= head){ finish(); return; }
+      cells[src] = FREE; cells[head] = OPT;                       // konsolidiert = dunkelblau
+      flash[src] = READ; flash[head] = WRITE;
+      writeQ.push({i:src,t:2},{i:head,t:3});
+      drawCell(src); drawCell(head);
+      // The head just crossed from `src` to `head`; that distance IS the sound.
+      seekSound(Math.min(1, Math.abs(src - head) / N), progress() / 100);
+      writeSound();
+      moved++;
+    }
+    var p = progress();
+    document.getElementById('fill').style.width = p + '%';
+    document.getElementById('pct').textContent = p + '% Complete';
+  }
+
+  // ---- Drive noise -------------------------------------------------------
+  //
+  // Synthesised, not sampled: the same three ingredients a real drive made, and generated so
+  // they can follow what the display is actually doing rather than loop over it.
+  //
+  //  * the spindle: a low hum that spins up when defragmenting starts and coasts down when it
+  //    stops, with a slight wobble because a platter is never perfectly balanced,
+  //  * the seek: a burst of filtered noise whose length and loudness follow how far the head
+  //    has to travel — which is the distance between the two cells the step just touched, so a
+  //    freshly fragmented disk clatters and a nearly finished one only ticks,
+  //  * the write: a short, higher tick as the cluster lands.
+  var audio = null, spindle = null, spindleGain = null, soundOn = true, noiseBuf = null;
+
+  function audioReady(){
+    if (!soundOn) return false;
+    if (!audio){
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return false;
+      audio = new AC();
+      // One second of white noise, reused for every seek — cheaper than generating each time.
+      noiseBuf = audio.createBuffer(1, audio.sampleRate, audio.sampleRate);
+      var d = noiseBuf.getChannelData(0);
+      for (var i=0;i<d.length;i++) d[i] = Math.random()*2-1;
+    }
+    if (audio.state === 'suspended') audio.resume();
+    return true;
+  }
+
+  function spinUp(){
+    if (!audioReady() || spindle) return;
+    var osc = audio.createOscillator(), sub = audio.createOscillator();
+    var g = audio.createGain(), wobble = audio.createOscillator(), wobbleGain = audio.createGain();
+    osc.type = 'sine'; sub.type = 'sine';
+    osc.frequency.setValueAtTime(42, audio.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(118, audio.currentTime + 1.6);   // spin-up
+    sub.frequency.setValueAtTime(59, audio.currentTime);
+    sub.frequency.exponentialRampToValueAtTime(236, audio.currentTime + 1.6);
+    wobble.frequency.value = 3.1; wobbleGain.gain.value = 1.4;                  // unbalanced platter
+    wobble.connect(wobbleGain); wobbleGain.connect(osc.frequency);
+    g.gain.setValueAtTime(0.0001, audio.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.06, audio.currentTime + 1.2);
+    var subGain = audio.createGain(); subGain.gain.value = 0.35;
+    sub.connect(subGain); subGain.connect(g);
+    osc.connect(g); g.connect(audio.destination);
+    osc.start(); sub.start(); wobble.start();
+    spindle = [osc, sub, wobble]; spindleGain = g;
+  }
+
+  function spinDown(){
+    if (!spindle || !audio) return;
+    var t = audio.currentTime;
+    spindleGain.gain.cancelScheduledValues(t);
+    spindleGain.gain.setValueAtTime(spindleGain.gain.value, t);
+    spindleGain.gain.exponentialRampToValueAtTime(0.0001, t + 1.1);
+    spindle[0].frequency.exponentialRampToValueAtTime(38, t + 1.1);             // coasting down
+    var dying = spindle;
+    setTimeout(function(){ dying.forEach(function(n){ try{ n.stop(); }catch(e){} }); }, 1400);
+    spindle = null; spindleGain = null;
+  }
+
+  // `distance` is 0…1: how far across the disk the head just travelled. `done` is the progress
+  // shown on the bar, 0…1.
+  //
+  // Both matter, and for different reasons. The distance gives each seek its texture — a long
+  // haul stutters, a short hop ticks once. But the gap between the two ends of the disk closes
+  // by two clusters a step out of several thousand, so on its own it would barely change over a
+  // whole session. The progress term is what makes the drive audibly calm down as the bar fills,
+  // which is the thing the person is actually watching.
+  function seekSound(distance, done){
+    if (!audioReady()) return;
+    var t = audio.currentTime;
+    var ticks = 1 + Math.round(distance * 4);
+    var calm = 1 - (done || 0) * 0.55;
+    for (var k=0;k<ticks;k++){
+      var src = audio.createBufferSource(), g = audio.createGain(), bp = audio.createBiquadFilter();
+      src.buffer = noiseBuf;
+      bp.type = 'bandpass';
+      bp.frequency.value = 1400 + Math.random()*900;
+      bp.Q.value = 1.4;
+      var at = t + k * 0.016;
+      var peak = (0.05 + distance * 0.16) * calm;
+      g.gain.setValueAtTime(0.0001, at);
+      g.gain.exponentialRampToValueAtTime(peak, at + 0.002);
+      g.gain.exponentialRampToValueAtTime(0.0001, at + 0.020);
+      src.connect(bp); bp.connect(g); g.connect(audio.destination);
+      src.start(at); src.stop(at + 0.03);
+    }
+  }
+
+  function writeSound(){
+    if (!audioReady()) return;
+    var t = audio.currentTime;
+    var osc = audio.createOscillator(), g = audio.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(2100, t);
+    osc.frequency.exponentialRampToValueAtTime(1500, t + 0.012);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.020, t + 0.002);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.030);
+    osc.connect(g); g.connect(audio.destination);
+    osc.start(t); osc.stop(t + 0.04);
+  }
+
+  // The two-note chime the era used when a long job finished.
+  function doneSound(){
+    if (!audioReady()) return;
+    var t = audio.currentTime;
+    [[880, 0], [1320, 0.13]].forEach(function(n){
+      var osc = audio.createOscillator(), g = audio.createGain();
+      osc.type = 'triangle';
+      osc.frequency.value = n[0];
+      var at = t + n[1];
+      g.gain.setValueAtTime(0.0001, at);
+      g.gain.exponentialRampToValueAtTime(0.05, at + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, at + 0.22);
+      osc.connect(g); g.connect(audio.destination);
+      osc.start(at); osc.stop(at + 0.25);
+    });
+  }
+
+  function setCap(t){ document.getElementById('dfcap').textContent = t; }
+  function btn(id,on){ document.getElementById(id).classList.toggle('dis', !on); }
+
+  function start(){
+    if (running) return;
+    running = true; paused = false; head = 0; dataTotal = countData();
+    setCap('Defragmenting Drive C');
+    document.getElementById('lbl').textContent = 'Defragmenting file system…';
+    btn('bStart',true); btn('bPause',true);
+    document.getElementById('bStart').querySelector('span').textContent = 'Stop';
+    timer = setInterval(step, 95);
+    spinUp();
+  }
+  function stop(){
+    if (!running) return;
+    clearInterval(timer); timer=null; running=false; paused=false;
+    spinDown();
+    for (var i=0;i<N;i++) if (flash[i]) flash[i]=0;
+    writeQ=[]; draw();
+    setCap('Disk Defragmenter');
+    document.getElementById('lbl').textContent = 'Idle';
+    document.getElementById('bStart').querySelector('span').textContent = 'Start';
+    document.getElementById('bPause').querySelector('span').textContent = 'Pause';
+    btn('bStart',true); btn('bPause',false);
+  }
+  function finish(){
+    clearInterval(timer); timer=null; running=false;
+    spinDown(); doneSound();
+    for (var i=0;i<N;i++) if (flash[i]) flash[i]=0;
+    writeQ=[]; draw();
+    document.getElementById('fill').style.width='100%';
+    document.getElementById('pct').textContent='100% Complete';
+    document.getElementById('lbl').textContent='Defragmentation complete';
+    setCap('Disk Defragmenter');
+    document.getElementById('bStart').querySelector('span').textContent='Start';
+    btn('bStart',true); btn('bPause',false);
+    document.getElementById('done').classList.add('on');
+  }
+
+  document.getElementById('bStart').addEventListener('click', function(){
+    if (running) stop(); else { seed(); start(); }
+  });
+  document.getElementById('bPause').addEventListener('click', function(){
+    if (!running || this.classList.contains('dis')) return;
+    paused = !paused;
+    this.querySelector('span').textContent = paused ? 'Resume' : 'Pause';
+    document.getElementById('lbl').textContent = paused ? 'Paused' : 'Defragmenting file system…';
+    // A paused defrag is a drive that has stopped working, not one that has stopped spinning:
+    // the platter keeps turning, the head stops seeking. Which is exactly what you hear.
+    if (paused) {
+      if (spindleGain && audio) {
+        spindleGain.gain.setTargetAtTime(0.025, audio.currentTime, 0.2);
+      }
+    } else if (spindleGain && audio) {
+      spindleGain.gain.setTargetAtTime(0.06, audio.currentTime, 0.2);
+    } else {
+      spinUp();
+    }
+  });
+
+  // Legende
+  var lb = document.getElementById('legendBody');
+  LEGEND.forEach(function(e){
+    var row=document.createElement('div'); row.className='lg-row';
+    var sw=document.createElement('span'); sw.className='sw'; sw.style.background=e[0];
+    var tx=document.createElement('span'); tx.textContent=e[1];
+    row.appendChild(sw); row.appendChild(tx); lb.appendChild(row);
+  });
+  document.getElementById('bSound').addEventListener('click', function(){
+    soundOn = !soundOn;
+    this.querySelector('span').textContent = soundOn ? 'Sound On' : 'Sound Off';
+    if (!soundOn) { spinDown(); }
+    else if (running && !paused) { spinUp(); }
+    try { localStorage.setItem('defragSound', soundOn ? '1' : '0'); } catch(e){}
+  });
+  try {
+    if (localStorage.getItem('defragSound') === '0'){
+      soundOn = false;
+      document.getElementById('bSound').querySelector('span').textContent = 'Sound Off';
+    }
+  } catch(e){}
+
+  document.getElementById('bLegend').addEventListener('click',function(){ document.getElementById('legend').classList.add('on'); });
+  document.getElementById('legendOK').addEventListener('click',function(){ document.getElementById('legend').classList.remove('on'); });
+  document.getElementById('doneOK').addEventListener('click',function(){ document.getElementById('done').classList.remove('on'); });
+
+  // Details ein-/ausblenden (wie im Original)
+  document.getElementById('bDetails').addEventListener('click', function(){
+    var c = document.body.classList.toggle('compact');
+    this.querySelector('span').textContent = c ? 'Show Details' : 'Hide Details';
+    post('resize');
+  });
+
+  // ---- Host-Bruecke ----
+  function post(m){ try{ window.webkit.messageHandlers.defrag.postMessage(m); }catch(e){} }
+  document.getElementById('dfclose').addEventListener('click', function(e){
+    e.stopPropagation();
+    // Silence first: a window that is gone but still humming is the kind of bug people
+    // remember. Closing the AudioContext releases the hardware as well.
+    spinDown();
+    if (audio) { try { audio.close(); } catch(err){} audio = null; }
+    post('close');
+  });
+  window.setWinIcon = function(u){ var e=document.getElementById('dfico'); if(!e)return; if(u){e.src=u;}else{e.removeAttribute('src');} };
+  window.setTheme = function(k){ /* dieses Widget ist bewusst immer Win95/98-Chrome */ };
+  window.setHover = function(h){ document.body.classList.toggle('hovering', !!h); };
+  window.regions = function(){
+    var R=function(id){var e=document.getElementById(id);if(!e)return[0,0,0,0];var b=e.getBoundingClientRect();return[b.x,b.y,b.width,b.height];};
+    return R('dftitle').concat(R('dfclose'));
+  };
+  window.widgetSize = function(){ var w=document.getElementById('win'); return [w.offsetWidth, w.offsetHeight]; };
+
+  // ---- Scrollleiste ----
+  var track = document.querySelector('.sb-track'), thumb = document.querySelector('.sb-thumb');
+  function maxScroll(){ return Math.max(0, ROWS - VIEW_ROWS); }
+  function syncThumb(){
+    var th = track.clientHeight, ratio = VIEW_ROWS / ROWS;
+    var h = Math.max(16, Math.round(th * ratio));
+    thumb.style.height = h + 'px';
+    var ms = maxScroll();
+    thumb.style.top = (ms ? Math.round((th - h) * (scrollRow / ms)) : 0) + 'px';
+  }
+  function setScroll(r){
+    var v = Math.max(0, Math.min(maxScroll(), Math.round(r)));
+    if (v === scrollRow) return;
+    scrollRow = v; draw(); syncThumb();
+  }
+  document.querySelector('.sb-up').addEventListener('mousedown', function(){ setScroll(scrollRow - 1); });
+  document.querySelector('.sb-dn').addEventListener('mousedown', function(){ setScroll(scrollRow + 1); });
+  track.addEventListener('mousedown', function(e){
+    if (e.target === thumb) return;
+    var t = thumb.getBoundingClientRect();
+    setScroll(scrollRow + (e.clientY < t.top ? -VIEW_ROWS : VIEW_ROWS));   // seitenweise
+  });
+  thumb.addEventListener('mousedown', function(e){
+    e.preventDefault();
+    var startY = e.clientY, startTop = thumb.offsetTop, th = track.clientHeight, h = thumb.offsetHeight;
+    function mv(ev){
+      var top = Math.max(0, Math.min(th - h, startTop + (ev.clientY - startY)));
+      setScroll((th - h) ? (top / (th - h)) * maxScroll() : 0);
+    }
+    function up(){ window.removeEventListener('mousemove', mv); window.removeEventListener('mouseup', up); }
+    window.addEventListener('mousemove', mv); window.addEventListener('mouseup', up);
+  });
+  cv.addEventListener('wheel', function(e){ e.preventDefault(); setScroll(scrollRow + (e.deltaY > 0 ? 1 : -1)); }, {passive:false});
+
+  seed(); syncThumb();
+})();
+</script>
+</body></html>

@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  html,body{margin:0;padding:0;background:transparent;overflow:hidden;
+    font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;-webkit-user-select:none;}
+  #win{position:relative;width:200px;}
+
+  /* ---- BeOS yellow tab (default chrome) ---- */
+  .tab{display:flex;align-items:center;gap:8px;height:22px;padding:0 8px;width:fit-content;
+    position:relative;z-index:3;border:1.4px solid #2a2a2a;border-bottom:none;border-radius:5px 5px 0 0;
+    background:linear-gradient(180deg,#fbd85c,#f2bd23);box-shadow:inset 1px 1px 0 rgba(255,255,255,.55);}
+  .tab b{font-size:12px;font-weight:700;color:#2a2306;white-space:nowrap;}
+  .closebox{width:13px;height:13px;border:1.4px solid #6f5a10;cursor:pointer;
+    background:linear-gradient(135deg,#fbe27e,#eab92a);box-shadow:inset 1px 1px 0 rgba(255,255,255,.75);}
+  .body{position:relative;z-index:2;margin-top:-1px;padding:10px;border:1px solid #000;
+    background:#d8d3c0;box-shadow:inset 2px 2px 0 #efeada,inset -2px -2px 0 #b3ad98;}
+  .face{display:block;margin:0 auto;background:transparent;}
+
+  /* ===== Mac OS 9 (Platinum) ===== */
+  .m9-title,.xp-title,.mf-title,.mx-title,.w98-title{display:none;}
+
+  /* ===== Futurama (theme-futurama): sage title bar, 3 traffic lights, centered title ===== */
+  body.theme-futurama .tab{width:auto;box-sizing:border-box;justify-content:center;height:26px;padding:0 12px;
+    border:1px solid #46695c;border-bottom:none;border-radius:9px 9px 0 0;
+    background:linear-gradient(180deg,#b8ceba,#9fbcaa);box-shadow:inset 0 1px 0 rgba(255,255,255,.45);}
+  body.theme-futurama .tab b{color:#16281f;font-size:13px;font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;}
+  body.theme-futurama .closebox{position:absolute;left:11px;top:50%;transform:translateY(-50%);
+    width:12px;height:12px;border-radius:50%;border:1px solid rgba(0,0,0,.35);background:#ef5350;box-shadow:none;}
+  body.theme-futurama .tab::before{content:'';position:absolute;left:29px;top:50%;transform:translateY(-50%);
+    width:12px;height:12px;border-radius:50%;background:#f5bd39;border:1px solid rgba(0,0,0,.3);
+    box-shadow:20px 0 0 0 #5cc85c,20px 0 0 1px rgba(0,0,0,.3);}
+  body.theme-futurama .body{border:1px solid #46695c;background:#f2ecdd;
+    box-shadow:inset 1px 1px 0 #fbf7ee,inset -1px -1px 0 #d8d2c2;}
+
+  body.theme-macos9 .tab{display:none;}
+  body.theme-macos9 #win{border:1px solid #000;background:#d8d8d8;box-shadow:2px 2px 8px rgba(0,0,0,.3);}
+  body.theme-macos9 .body{border:none;background:#d8d8d8;box-shadow:none;margin:0;}
+  /* Mac OS 9 Platinum title bar — faithful to the Mac OS 9 UI Kit (Figma) */
+  body.theme-macos9 .m9-title{display:flex;align-items:center;position:relative;height:20px;
+    border-top:1px solid #f3f3f3;border-bottom:1px solid #9a9a9a;
+    background:repeating-linear-gradient(#e8e8e8 0 1px,#d0d0d0 1px 2px);
+    image-rendering:pixelated;image-rendering:crisp-edges;}
+  .m9-close{position:relative;z-index:2;box-sizing:border-box;width:11px;height:11px;margin-left:7px;
+    background:#c0c0c0;border:1px solid #7e7e8a;box-shadow:inset 0 0 0 1px #dadaff;cursor:pointer;}
+  .m9-plaque{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2;background:#f3f3f3;
+    padding:0 8px;font-size:12px;font-weight:700;color:#000;
+    font-family:"Charcoal","ChicagoFLF","Helvetica Neue",Helvetica,sans-serif;}
+
+  /* ===== Windows XP (Luna) ===== */
+  body.theme-winxp .tab{display:none;}
+
+  /* ===== XP Luna scrollbars + controls (theme-winxp) ===== */
+  body.theme-winxp ::-webkit-scrollbar,
+  body.theme-winxp #pad::-webkit-scrollbar{width:17px;height:17px;}
+  body.theme-winxp ::-webkit-scrollbar-track,
+  body.theme-winxp #pad::-webkit-scrollbar-track{background:#d6e5f5;border-left:1px solid #aac3e0;}
+  body.theme-winxp ::-webkit-scrollbar-thumb,
+  body.theme-winxp #pad::-webkit-scrollbar-thumb{
+    background:linear-gradient(90deg,#7fb1f5,#2f6fdd 50%,#4f8fe8);
+    border:1px solid #1c4aa0;border-radius:3px;}
+  body.theme-winxp ::-webkit-scrollbar-thumb:hover,
+  body.theme-winxp #pad::-webkit-scrollbar-thumb:hover{
+    background:linear-gradient(90deg,#93c0fb,#4f8fe8 50%,#5f9ff2);}
+  body.theme-winxp ::-webkit-scrollbar-button{
+    height:17px;width:17px;background:linear-gradient(180deg,#eaf2fc,#bcd4ef);
+    border:1px solid #6a93c8;border-radius:2px;}
+  body.theme-winxp ::-webkit-scrollbar-corner{background:#d6e5f5;}
+  body.theme-winxp button{
+    font:12px Tahoma,"Segoe UI",sans-serif;padding:2px 12px;border-radius:3px;border:1px solid #003c74;
+    background:linear-gradient(180deg,#fdfeff,#eaf0fb 45%,#d6e2f5);color:#000;}
+  body.theme-winxp button:hover{border-color:#ff9a00;box-shadow:inset 0 0 5px rgba(255,154,0,.55);}
+  body.theme-winxp button:active{background:linear-gradient(180deg,#cdd9ee,#e6eefc);}
+  body.theme-winxp input,body.theme-winxp textarea,body.theme-winxp select{
+    border:1px solid #7f9db9;background:#fff;border-radius:0;padding:2px 4px;font:12px Tahoma,"Segoe UI",sans-serif;}
+  body.theme-winxp input:focus,body.theme-winxp textarea:focus,body.theme-winxp select:focus{
+    outline:none;border-color:#2f6fdd;box-shadow:0 0 3px rgba(47,111,221,.7);}
+
+  body.theme-winxp #win{border-radius:8px 8px 2px 2px;background:#0831D9;overflow:hidden;box-shadow:2px 5px 14px rgba(0,0,0,.45);}
+  body.theme-winxp .body{border:none;background:#ECE9D8;margin:0 4px 4px;}
+  body.theme-winxp .xp-title{display:flex;align-items:center;height:26px;gap:6px;padding:0 4px 0 8px;
+    border-radius:8px 8px 0 0;background:linear-gradient(180deg,#0997FF,#0053EE 45%,#0066FF 52%,#003DD2);}
+  .xp-cap{color:#fff;font:700 12px "Trebuchet MS",Tahoma,sans-serif;text-shadow:1px 1px 1px rgba(0,0,40,.5);}
+  .xp-close{margin-left:auto;width:21px;height:19px;border-radius:3px;position:relative;cursor:pointer;
+    border:1px solid rgba(255,255,255,.55);background:linear-gradient(180deg,#F7B39E,#E35F44 55%,#C4382A);}
+  .xp-close::before,.xp-close::after{content:"";position:absolute;left:50%;top:50%;width:11px;height:2px;background:#fff;}
+  .xp-close::before{transform:translate(-50%,-50%) rotate(45deg);} .xp-close::after{transform:translate(-50%,-50%) rotate(-45deg);}
+
+  /* ===== Maiks Favourite (pixel macOS) ===== */
+  body.theme-maiksfav .tab{display:none;}
+  body.theme-maiksfav #win{background:#ECECEC;border:2px solid #262626;border-radius:10px;overflow:hidden;
+    box-shadow:inset 2px 2px 0 #fff,inset -2px -2px 0 #c4c4c4,6px 6px 0 rgba(0,0,0,.35);}
+  body.theme-maiksfav .body{border:none;background:#ECECEC;margin:0;}
+  body.theme-maiksfav .mf-title{display:flex;align-items:center;position:relative;height:26px;gap:8px;padding:0 10px;
+    background:#E3E3E3;border-bottom:2px solid #262626;font-family:"Pixelify Sans",monospace;}
+  .mf-close{width:12px;height:12px;border-radius:50%;background:#FF5F57;border:1px solid rgba(0,0,0,.3);cursor:pointer;}
+  .mf-cap{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:13px;font-weight:700;color:#3a3a3a;}
+
+  /* ===== Mac OS X (Aqua 10.0–10.4) ===== */
+  body.theme-macosx .tab{display:none;}
+  body.theme-macosx #win{border-radius:6px 6px 3px 3px;overflow:hidden;border:1px solid #7a7a7a;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.5);}
+  body.theme-macosx .body{border:none;margin:0;padding:10px;background:#ededed;box-shadow:none;}
+  body.theme-macosx .mx-title{display:flex;align-items:center;position:relative;height:22px;gap:6px;padding:0 8px;
+    background:linear-gradient(to bottom,#fafafa,#ededed 26%,#dadada 60%,#c6c6c6 92%,#bcbcbc);
+    border-bottom:1px solid #888;box-shadow:inset 0 1px 0 rgba(255,255,255,.7);}
+  body.theme-macosx .mx-title::after{content:"";position:absolute;inset:0;pointer-events:none;
+    background:repeating-linear-gradient(to bottom,rgba(255,255,255,.14) 0 1px,rgba(0,0,0,.028) 1px 2px);}
+  .mx-lights{display:flex;gap:6px;align-items:center;position:relative;z-index:1;}
+  .mx-gel{width:14px;height:14px;border-radius:50%;position:relative;flex:0 0 14px;
+    box-shadow:inset 0 0 1px .5px rgba(0,0,0,.38),inset 0 -2.5px 3px rgba(0,0,0,.32),inset 0 2px 2px rgba(255,255,255,.30),0 1px 1.5px rgba(0,0,0,.42);}
+  .mx-gel::before{content:"";position:absolute;left:2.5px;right:2.5px;top:1.5px;height:6px;border-radius:50%;z-index:1;
+    background:radial-gradient(ellipse at 50% 0%,rgba(255,255,255,.98),rgba(255,255,255,.55) 52%,rgba(255,255,255,0));}
+  .mx-close{background:radial-gradient(circle at 50% 34%,#ffe6df,#ff8f7c 20%,#fb5038 46%,#e22a16 66%,#b51d0d 84%,#861309);cursor:pointer;}
+  /* Clock has only a Close action → minimise/zoom are shown disabled (grey gel, no glyph). */
+  .mx-min,.mx-zoom{background:radial-gradient(circle at 50% 34%,#ffffff,#f2f2f2 20%,#dedede 48%,#c2c2c2 70%,#a6a6a6 86%,#858585);}
+  .mx-min .mx-glyph,.mx-zoom .mx-glyph{display:none;}
+  .mx-cap{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:1;
+    font:700 13px "Lucida Grande","Helvetica Neue",Helvetica,Arial,sans-serif;color:#1a1a1a;text-shadow:0 1px 0 rgba(255,255,255,.6);}
+  .mx-glyph{position:absolute;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;
+    font:700 11px "Lucida Grande",Helvetica,Arial,sans-serif;color:rgba(0,0,0,.6);
+    text-shadow:0 1px 0 rgba(255,255,255,.4);opacity:0;transition:opacity .08s linear;pointer-events:none;}
+  .mx-glyph{display:none;}
+
+  /* ===== Windows 98 — SPEC-Farben/-Bevels, leicht skaliert für Lesbarkeit ===== */
+  .w98-ico{display:none;}
+  body.theme-win98 .w98-ico,body.theme-winxp .w98-ico{display:block;width:16px;height:16px;flex:0 0 auto;margin-right:3px;image-rendering:pixelated;image-rendering:-webkit-optimize-contrast;}
+  body.theme-win98 .w98-ico:not([src]),body.theme-winxp .w98-ico:not([src]){display:none;}
+  .w98-cap{color:#fff;font:700 12px Tahoma,"Microsoft Sans Serif",sans-serif;
+    flex:1 1 auto;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .w98-btn{width:20px;height:18px;background:#c4c4c4;cursor:pointer;flex:0 0 auto;
+    box-shadow:inset -1px -1px 0 #000,inset 1px 1px 0 #dbdbdb,inset -2px -2px 0 #808080,inset 2px 2px 0 #fff;
+    font:700 13px Tahoma,Verdana,sans-serif;color:#000;display:flex;align-items:center;justify-content:center;line-height:1;}
+  .w98-btn:active{box-shadow:inset 1px 1px 0 #000,inset -1px -1px 0 #dbdbdb,inset 2px 2px 0 #808080,inset -2px -2px 0 #fff;}
+  .w98-btn.w98-dis{color:#808080;text-shadow:1px 1px 0 #fff;cursor:default;}
+  .w98-close{margin-left:3px;}
+  /* Marlett-artige Glyphen (gezeichnet) — identisch zum nativen App-Fenster-Chrome */
+  .w98-btn{font-size:0;position:relative;}
+  #w98close::before,#w98close::after{content:"";position:absolute;left:50%;top:50%;width:11px;height:2px;background:#000;}
+  #w98close::before{transform:translate(-50%,-50%) rotate(45deg);}
+  #w98close::after{transform:translate(-50%,-50%) rotate(-45deg);}
+  #w98min::before{content:"";position:absolute;left:4px;bottom:4px;width:8px;height:2px;background:#808080;box-shadow:1px 1px 0 #fff;}
+  #w98max::before{content:"";position:absolute;left:4px;top:3px;width:10px;height:9px;border:1px solid #808080;border-top-width:2px;box-shadow:1px 1px 0 #fff;}
+  body.theme-win98 .tab{display:none;}
+  body.theme-win98 #win{background:#c4c4c4;
+    box-shadow:inset -1px -1px 0 #000,inset 1px 1px 0 #fff,inset -2px -2px 0 #808080,inset 2px 2px 0 #dbdbdb;}
+  body.theme-win98 .body{border:none;background:#c4c4c4;box-shadow:none;margin:0;padding:8px;}
+  body.theme-win98 .w98-title{display:flex;align-items:center;gap:2px;height:22px;margin:3px 3px 0;padding:0 2px 0 6px;
+    background:linear-gradient(90deg,#00007b,#1085d2);}
+  /* ===== Windows 7 (Aero glass) — inherits XP structure via dual class (theme-win7 theme-winxp) ===== */
+  body.theme-win7 #win{border-radius:6px 6px 2px 2px;background:rgba(69,128,196,0.34);
+    box-shadow:0 8px 22px rgba(0,0,0,.45),inset 0 0 0 1px rgba(255,255,255,.7);}
+  body.theme-win7 .xp-title{border-radius:6px 6px 0 0;
+    background:linear-gradient(180deg,rgba(255,255,255,.5),rgba(255,255,255,.14) 46%,rgba(0,0,0,.05) 54%,rgba(255,255,255,.22)),rgba(90,137,198,0.30);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.85);}
+  body.theme-win7 .xp-cap,body.theme-win7 .xp-caption{color:#0b1a2e;font-family:"Segoe UI",Tahoma,sans-serif;
+    text-shadow:0 0 4px #fff,0 0 4px #fff,0 0 4px #fff,0 0 3px #fff;}
+  body.theme-win7 .body{background:#f0f0f0;}
+  body.theme-win7 .np-toolbar,body.theme-win7 .np-status,
+  body.theme-win7 .w98-menubar,body.theme-win7 .w98-drop{background:#f0f0f0;}
+  body.theme-win7 .xp-min,body.theme-win7 .xp-max{
+    background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,.3) 45%,rgba(0,0,0,.08) 55%,rgba(255,255,255,.5));
+    border:1px solid rgba(0,0,0,.3);}
+  body.theme-win7 .xp-min::before{background:#1a1a1a;}
+  body.theme-win7 .xp-max::before{border-color:#1a1a1a;}
+  body.theme-win7 .xp-close{background:linear-gradient(180deg,#e7a99e,#d76b58 45%,#d54f36 55%,#c23b22);
+    border:1px solid rgba(0,0,0,.3);}
+  /* ===== Mac OS 9: proxy icon in the title plaque (authentic Platinum) ===== */
+  body.theme-macos9 .m9-plaque{padding:0 8px 0 26px;background:#dadada url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='13'%20height='13'%20viewBox='0%200%2013%2013'%3E%3Cpath%20d='M2%201h5l4%204v7H2z'%20fill='%23fff'%20stroke='%237a7a7a'/%3E%3Cpath%20d='M7%201v4h4'%20fill='%23dcdcdc'%20stroke='%237a7a7a'/%3E%3Cpath%20d='M4%207h5M4%209h5M4%2011h3'%20stroke='%239a9a9a'/%3E%3C/svg%3E") 5px center/16px no-repeat;}
+        /* ===== Mac OS 9 Platinum title bar — matched to os9.ca original (authoritative) ===== */
+  /* Reverse-engineered 1:1 from os9.ca window.min.css */
+  body.theme-macos9 #win{background:#dadada!important;border:1px solid #000!important;
+    box-shadow:1px 1px #111,inset 1px 1px #fff,inset -1px -1px #999!important;}
+  body.theme-macos9 .m9-title{height:22px;border:none!important;
+    background:repeating-linear-gradient(#fff 0 1px,#737373 1px 2px) left 5px/100% 12px no-repeat,#dadada!important;}
+  body.theme-macos9 .m9-plaque{background-color:#dadada!important;font-family:'Charcoal','ChicagoFLF',sans-serif!important;font-weight:normal!important;}
+  body.theme-macos9 .m9-close,body.theme-macos9 .m9-collapse,body.theme-macos9 .m9-zoom{
+    display:block!important;box-sizing:content-box!important;width:9px!important;height:9px!important;position:relative;flex:0 0 auto;
+    border:1px solid #222!important;
+    background:linear-gradient(to bottom right,#999,#aaa,#bbb,#ccc,#ddd,#eee,#fff,#fff)!important;
+    box-shadow:inset 1px 1px #ccc,inset -1px -1px #888,-1px -1px 0 0 #808080,1px 1px 0 0 #fff!important;cursor:pointer;}
+  body.theme-macos9 .m9-close{margin:4px 0 0 5px!important;}
+  body.theme-macos9 .m9-right{margin-left:auto!important;display:flex!important;align-items:flex-start!important;gap:0!important;margin-right:0!important;padding-right:0!important;}
+  body.theme-macos9 .m9-zoom{order:1;margin:4px 4px 0 0!important;}
+  body.theme-macos9 .m9-collapse{order:2;margin:4px 5px 0 4px!important;}
+  body.theme-macos9 .m9-zoom::before{content:""!important;position:absolute;top:1px!important;left:1px!important;width:5px;height:5px;border-bottom:1px solid #202020!important;border-right:1px solid #202020!important;background:none!important;box-shadow:none!important;}
+  body.theme-macos9 .m9-zoom::after{content:none!important;}
+  body.theme-macos9 .m9-collapse::before{content:""!important;position:absolute;left:1px!important;right:1px!important;top:4px!important;height:1px!important;border-top:1px solid #202020!important;border-bottom:1px solid #202020!important;background:none!important;box-shadow:none!important;}
+  body.theme-macos9 .m9-collapse::after{content:none!important;}
+  body.theme-macos9 .body{margin:0 4px 4px 4px!important;border:1px solid #000!important;box-shadow:-1px -1px #9c9c9c,1px 1px #fff,inset 1px 1px #fff,inset -1px -1px #acacac!important;}
+  /* Inactive window (os9.ca .window.blur): grey shadow/borders, 50% title, flat boxes */
+  body.theme-macos9.rm-blur #win,body.theme-macos9.rm-blur .window,body.theme-macos9.rm-blur .be-win{box-shadow:1px 1px #525252!important;border-color:#525252!important;}
+  body.theme-macos9.rm-blur .m9-close,body.theme-macos9.rm-blur .m9-collapse,body.theme-macos9.rm-blur .m9-zoom{border-color:#525252!important;box-shadow:none!important;}
+  body.theme-macos9.rm-blur .m9-zoom::before,body.theme-macos9.rm-blur .m9-zoom::after,body.theme-macos9.rm-blur .m9-collapse::before{border-color:#525252!important;background:#525252!important;}
+  body.theme-macos9.rm-blur .m9-plaque{opacity:.5;}
+
+  /* ===== NeXTSTEP (theme-nextstep) — black title bar, close on the RIGHT, chiseled grey frame ===== */
+  body.theme-nextstep{background:transparent;}
+  body.theme-nextstep .window{background:#8a8a98;border:none;border-radius:0;overflow:hidden;
+    box-shadow:inset 2px 2px 0 #fff, inset -2px -2px 0 #3d3e45, 0 0 0 1px #000;}
+  body.theme-nextstep .m9-title,body.theme-nextstep .xp-title,body.theme-nextstep .mf-title,
+  body.theme-nextstep .mx-title,body.theme-nextstep .w98-title,body.theme-nextstep .marker{display:none;}
+  body.theme-nextstep .tab{position:relative;display:block;width:100%;box-sizing:border-box;
+    height:22px;background:#000;border:none;border-radius:0;padding:0;margin:0;overflow:hidden;}
+  body.theme-nextstep .tab b{position:absolute;left:24px;right:24px;top:0;line-height:22px;text-align:center;
+    color:#fff;font:700 13px Helvetica,Arial,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  /* miniaturize square, top-left (decorative) */
+  body.theme-nextstep .tab::before{content:"";position:absolute;left:3px;top:3px;width:16px;height:16px;
+    background:#aaaab7;box-shadow:inset 1px 1px 0 #fff, inset -1px -1px 0 #555;}
+  body.theme-nextstep .tab::after{content:"";position:absolute;left:8px;top:8px;width:6px;height:6px;border:1px solid #000;}
+  /* close box, top-right, with an X (keeps the functional #closebox / #bxclose element) */
+  body.theme-nextstep .closebox{position:absolute;right:3px;top:3px;left:auto;width:16px;height:16px;
+    background:#aaaab7;border:none;border-radius:0;box-shadow:inset 1px 1px 0 #fff, inset -1px -1px 0 #555;}
+  body.theme-nextstep .closebox::before,body.theme-nextstep .closebox::after{content:"";position:absolute;
+    left:2px;top:7px;width:12px;height:2px;background:#000;}
+  body.theme-nextstep .closebox::before{transform:rotate(45deg);}
+  body.theme-nextstep .closebox::after{transform:rotate(-45deg);}
+  body.theme-nextstep .body{background:#8a8a98;border:none;box-shadow:none;margin:2px;}
+
+</style>
+<style>
+/* Live title-bar button feedback (native DragOverlayView → window.setBtnState); the overlay
+   intercepts mouse events, so these classes stand in for :hover/:active. */
+.xp-close.is-hover,.mf-close.is-hover,.closebox.is-hover{filter:brightness(1.13);}
+.xp-close.is-press,.mf-close.is-press,.closebox.is-press{filter:brightness(.82);}
+.mx-close.is-press,.mx-zoom.is-press{box-shadow:inset 0 0 3px 1px rgba(0,0,0,.45),inset 0 -4px 5px rgba(0,0,0,.32);}
+.w98-btn.is-hover{filter:brightness(1.06);}
+.w98-btn.is-press{box-shadow:inset 2px 2px 0 #000,inset -2px -2px 0 #dbdbdb,inset 4px 4px 0 #808080,inset -4px -4px 0 #fff;}
+.m9-ctl.is-hover{background:#d0d0dc;}
+.m9-ctl.is-press{background:#9c9cb0;box-shadow:inset 0 0 0 2px #7e7e8a;}
+</style>
+</head>
+<body>
+  <div id="win">
+    <!-- BeOS tab (default) -->
+    <div class="tab" id="tab"><span class="closebox" id="bxclose" title="Close"></span><b>Clock</b></div>
+    <!-- Mac OS 9 -->
+    <div class="m9-title" id="m9title"><span class="m9-close" id="m9close"></span><div class="m9-plaque">Clock</div></div>
+    <!-- Windows XP -->
+    <div class="xp-title" id="xptitle"><span class="xp-cap">Clock</span><span class="xp-close" id="xpclose"></span></div>
+    <!-- Maiks Favourite -->
+    <div class="mf-title" id="mftitle"><span class="mf-close" id="mfclose"></span><span class="mf-cap">Clock</span></div>
+    <!-- Mac OS X Aqua -->
+    <div class="mx-title" id="mxtitle">
+      <span class="mx-lights"><span class="mx-gel mx-close" id="mxclose" title="Close"><span class="mx-glyph">&times;</span></span><span class="mx-gel mx-min"><span class="mx-glyph">&minus;</span></span><span class="mx-gel mx-zoom"><span class="mx-glyph">+</span></span></span>
+      <span class="mx-cap">Clock</span>
+    </div>
+    <!-- Windows 98 -->
+    <div class="w98-title" id="w98title"><img class="w98-ico" id="w98ico" alt=""><span class="w98-cap">Clock</span><span class="w98-btn" id="w98close">×</span></div>
+    <div class="body">
+      <canvas class="face" id="face" width="176" height="176"></canvas>
+    </div>
+  </div>
+<script>
+  const cv = document.getElementById('face'), ctx = cv.getContext('2d');
+  let theme = 'beos';
+  let use24 = false;   // set by the host (Settings → 24-hour clock)
+
+  // Per-theme clock face styling (authentic-ish to each OS).
+  function style(){
+    switch(theme){
+      case 'macos6': return {bg:'#ffffff', ring:'#000000', tick:'#000000', hand:'#000000', sec:'#000000', num:false, face:'#ffffff'};  // 1-bit monochrome
+      case 'macos9': return {bg:'#ffffff', ring:'#000000', tick:'#000000', hand:'#000000', sec:'#cc2a17', num:false, face:'#ffffff'};
+      case 'winxp':  return {bg:'#ffffff', ring:'#0831D9', tick:'#333333', hand:'#1a1a1a', sec:'#E35F44', num:true,  face:'#ffffff'};
+      case 'maiksfav': return {bg:'#ffffff', ring:'#262626', tick:'#262626', hand:'#262626', sec:'#FF5F57', num:false, face:'#ffffff'};
+      case 'macosx': return {bg:'#ffffff', ring:'#2a5db0', tick:'#333333', hand:'#1a1a1a', sec:'#e8483a', num:false, face:'#ffffff'};
+      case 'win98': return {bg:'#ffffff', ring:'#000000', tick:'#000000', hand:'#000000', sec:'#ff0000', num:true, face:'#ffffff'};
+      default:       return {bg:'#1d1d1d', ring:'#f2bd23', tick:'#f2bd23', hand:'#fbe27e', sec:'#ffffff', num:false, face:'#2b2b2b'}; // BeOS dark replicant
+    }
+  }
+  function draw(){
+    const s = style(), W = cv.width, R = W/2, cx = R, cy = R, rad = R-8;
+    ctx.clearRect(0,0,W,W);
+    // face
+    ctx.beginPath(); ctx.arc(cx,cy,rad,0,7); ctx.fillStyle=s.face; ctx.fill();
+    ctx.lineWidth=3; ctx.strokeStyle=s.ring; ctx.stroke();
+    // ticks
+    for(let i=0;i<60;i++){
+      const a=i*Math.PI/30, major=(i%5===0);
+      const r1=rad-(major?12:6), r2=rad-2;
+      ctx.beginPath();
+      ctx.moveTo(cx+Math.sin(a)*r1, cy-Math.cos(a)*r1);
+      ctx.lineTo(cx+Math.sin(a)*r2, cy-Math.cos(a)*r2);
+      ctx.lineWidth=major?2.5:1; ctx.strokeStyle=s.tick; ctx.stroke();
+    }
+    // numbers (XP)
+    if(s.num){ ctx.fillStyle=s.tick; ctx.font='bold 14px Tahoma,sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      for(let n=1;n<=12;n++){ const a=n*Math.PI/6, rr=rad-24; ctx.fillText(n, cx+Math.sin(a)*rr, cy-Math.cos(a)*rr); } }
+    const now=new Date();
+    const hh=now.getHours()%12, mm=now.getMinutes(), ss=now.getSeconds();
+    const hand=(ang,len,w,col)=>{ ctx.beginPath(); ctx.moveTo(cx,cy);
+      ctx.lineTo(cx+Math.sin(ang)*len, cy-Math.cos(ang)*len); ctx.lineWidth=w; ctx.lineCap='round'; ctx.strokeStyle=col; ctx.stroke(); };
+    hand((hh+mm/60)*Math.PI/6, rad*0.52, 4.5, s.hand);
+    hand((mm+ss/60)*Math.PI/30, rad*0.74, 3, s.hand);
+    hand(ss*Math.PI/30, rad*0.80, 1.5, s.sec);
+    ctx.beginPath(); ctx.arc(cx,cy,3.5,0,7); ctx.fillStyle=s.hand; ctx.fill();
+    // Digital readout (lower face) — reflects the 24-hour setting.
+    const p2=n=>String(n).padStart(2,'0');
+    let digital;
+    if(use24){ digital = p2(now.getHours())+':'+p2(mm); }
+    else { const h12=now.getHours()%12||12, ap=now.getHours()<12?'AM':'PM'; digital = h12+':'+p2(mm)+' '+ap; }
+    ctx.font='bold 13px Tahoma,"Segoe UI",sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillStyle=s.tick; ctx.fillText(digital, cx, cy+rad*0.52);
+  }
+  setInterval(draw, 1000); draw();
+
+  window.setTheme=function(k){ theme=k||'beos'; document.body.className='theme-'+theme+(theme==='win7'?' theme-winxp':'')+(theme==='snowleopard'?' theme-macosx':''); draw(); };
+  window.setWinIcon=function(u){ const e=document.getElementById('w98ico'); if(!e) return; if(u){ e.src=u; } else { e.removeAttribute('src'); } };
+  window.set24=function(v){ use24=!!v; draw(); };
+  window.setHover=function(h){ document.body.classList.toggle('hovering', !!h); };
+
+  function postClose(){ if(window.webkit&&webkit.messageHandlers&&webkit.messageHandlers.clock) webkit.messageHandlers.clock.postMessage('close'); }
+  ['bxclose','m9close','xpclose','mfclose','mxclose','w98close'].forEach(id=>{ const e=document.getElementById(id); if(e) e.addEventListener('click',ev=>{ev.stopPropagation();postClose();}); });
+
+  // Title + close rects for the native drag/close overlay.
+  window.regions=function(){
+    const cl=document.body.classList;
+    const R=id=>{const e=document.getElementById(id);if(!e)return[0,0,0,0];const b=e.getBoundingClientRect();return[b.x,b.y,b.width,b.height];};
+    if(cl.contains('theme-win98'))    return [...R('w98title'),...R('w98close')];
+    if(cl.contains('theme-macosx'))   return [...R('mxtitle'),...R('mxclose')];
+    if(cl.contains('theme-maiksfav')) return [...R('mftitle'),...R('mfclose')];
+    if(cl.contains('theme-winxp'))    return [...R('xptitle'),...R('xpclose')];
+    if(cl.contains('theme-macos6'))   return [...R('m9title'),...R('m9close')];
+    if(cl.contains('theme-macos9'))   return [...R('m9title'),...R('m9close')];
+    return [...R('tab'),...R('bxclose')];
+  };
+  window.widgetSize=function(){ const w=document.getElementById('win'); return [w.offsetWidth, w.offsetHeight]; };
+</script>
+<script>
+window.setBtnState = function(slot, state){
+  const cl = document.body.classList;
+  let ids;
+  if (cl.contains('theme-win98'))         ids = {close:'w98close', collapse:'w98min', zoom:'w98max'};
+  else if (cl.contains('theme-macosx'))   ids = {close:'mxclose', collapse:'mxmin', zoom:'mxzoom'};
+  else if (cl.contains('theme-maiksfav')) ids = {close:'mfclose', collapse:'mfmin', zoom:'mfzoom'};
+  else if (cl.contains('theme-winxp'))    ids = {close:'xpclose', collapse:'xpmin', zoom:'xpmax'};
+  else if (cl.contains('theme-macos6'))   ids = {close:'m9close'};
+  else if (cl.contains('theme-macos9'))   ids = {close:'m9close', collapse:'m9collapse', zoom:'m9zoom'};
+  else ids = {close:'closebox'};
+  const el = ids[slot] && document.getElementById(ids[slot]);
+  if (!el) return;
+  el.classList.remove('is-hover','is-press');
+  if (state === 'hover') el.classList.add('is-hover');
+  else if (state === 'press') el.classList.add('is-press');
+};
+</script>
+<style>
+/* Mac System 6 (system.css by Sakun Acharige, MIT) */
+@font-face{font-family:Chicago_12;src:url(ChiKareGo2.woff2) format("woff2");}
+@font-face{font-family:Geneva_9;src:url(FindersKeepers.woff2) format("woff2");}
+body.theme-macos6 .tab,body.theme-macos6 .marker{display:none;}
+body.theme-macos6 #win{border:2px solid #000;background:#fff;box-shadow:2px 2px 0 rgba(0,0,0,.35);box-sizing:border-box;}
+body.theme-macos6 .window,body.theme-macos6 .body{border:none;box-shadow:none;background:#fff;font-family:Geneva_9,Geneva,sans-serif;}
+/* Title bar per system.css: height 1.5rem, stripes scale with height (6.667% × 13.333%). */
+body.theme-macos6 .m9-title{display:flex;align-items:center;position:relative;height:24px;flex:0 0 auto;box-sizing:border-box;
+  border-bottom:2px solid #000;image-rendering:auto;padding:3px 2px;
+  background:linear-gradient(#000 50%,transparent 50%);background-size:6.6667% 13.3333%;background-clip:content-box;}
+body.theme-macos6 .m9-right{display:none;}
+body.theme-macos6 .m9-close{position:relative;width:16px;height:16px;flex:0 0 16px;margin:0 4px;
+  background:#fff;border:2px solid #000;box-shadow:none;box-sizing:border-box;}
+body.theme-macos6 .m9-close::before,body.theme-macos6 .m9-close::after{content:"";position:absolute;inset:0;opacity:0;
+  background:linear-gradient(#000,#000) left center/32% 1.5px no-repeat,linear-gradient(#000,#000) right center/32% 1.5px no-repeat,
+    linear-gradient(#000,#000) center top/1.5px 32% no-repeat,linear-gradient(#000,#000) center bottom/1.5px 32% no-repeat;}
+body.theme-macos6 .m9-close.is-press::before,body.theme-macos6 .m9-close.is-press::after{opacity:1;}
+body.theme-macos6 .m9-close.is-press::after{transform:rotate(45deg) scale(1.1);}
+body.theme-macos6 .m9-plaque{background:#fff;padding:0 8px;color:#000;
+  font-family:Chicago_12,"ChiKareGo2",Chicago,sans-serif;font-weight:700;font-size:18px;line-height:1.1;}
+
+  /* ===== Mac OS X 10.6 Snow Leopard ===== */
+  /* Layered ON TOP of the Cheetah rules above; `setTheme` gives this body BOTH classes
+     (like win7 -> winxp), so anything not restated here is inherited.
+     Caption sampled pixel-by-pixel from a real 10.6 title bar at 1x, mirroring the native
+     chrome in Sources/Desktop/SnowLeopardChrome.swift:
+       #E3E3E3 hairline on top . 20px ramp #CFCFCF -> #A8A8A8 . #525252 separator BELOW
+     The dark line sits at the BOTTOM of a 10.6 caption, not the top.
+     SCALE 1: this widget renders its content scaled, so every length here is
+     counter-scaled to land at the same physical size as the other widgets. */
+  body.theme-snowleopard .mx-title{height:22px;flex:0 0 22px;padding:0 8px;
+    background:linear-gradient(to bottom,#cfcfcf,#a8a8a8);border-bottom:none;
+    box-shadow:inset 0 1px 0 #e3e3e3, inset 0 -1px 0 #525252;}
+  body.theme-snowleopard .mx-title::after{display:none;}      /* 10.6 has no pinstripes */
+  body.theme-snowleopard .mx-lights{gap:7px;}
+  /* The lights ARE the reference artwork, embedded, not CSS gradients approximating it. No
+     gradient can draw this orb: its rim runs all the way round while the top still carries the
+     specular and the bottom the shadow, and every border / inset-shadow / radial attempt
+     flattened one of those. The same PNGs are drawn natively from
+     Resources/Chrome/snowleopard/, so widgets and window chrome are identical by construction.
+     Inlined rather than linked so no stale copy can be served from a cache. */
+  body.theme-snowleopard .mx-gel{width:14px;height:14px;flex:0 0 14px;box-sizing:border-box;
+    border:none;box-shadow:none;background:center/14px 14px no-repeat;}
+  body.theme-snowleopard .mx-gel::before{display:none;}
+  body.theme-snowleopard .mx-gel.mx-close{background-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAAXNSR0IArs4c6QAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAADqADAAQAAAABAAAADgAAAACeOBvAAAACaElEQVQoFU1SPUwUURD+3u7b3dvb4/Y4lj3+j0sukRASTIwFEJHKyoJCo8bGQihooJGYWBorExOl8aewM9HECjuDkaiJlY0aRAxyyQF7J3gXPOBY3F1nzmCc5Hs7OzPfm/neewL/2TWgTQGmCeOEPKdC4AvhBeHubcA7KhdHzg3gshDivpu0Ex0DA7DHxgBFoLrwCpufP6G8s1OPoujKLeApc1ReiHQhLuWTwfYOPW+nkB0ZRvuli3CO9aHZ85DySrBNU1b3984NheG3N8BHlceLCfH6RG9OZg0DrqKglchJRYVVXIe5/BV6yUNck7CSSZSq1TMngccyRpp63Eysx7bh+Icwoghy9TtEpQqQEO1nBbaUMISA0HWUMm2JVW9zWpHA2WxXF1KWhbhpQlNVRAd1BNvbCLa2EZKvShUm5dJWHFxL+sYphL7WjAszDCFoZ3DE9xEGv1k+/UsITYNixmDEYnCamkBVeUkdhEbaFOrEBSBfHB7SPdAFsJHmiMkUVw0dOklhjtRSqeKB72eRTjeSCIgQMZhFC2tjMoE32SMJejpdkFZv78tSpXK1q7OzkRTcmYobRrszke4PCAIaIkS5UoHV3b2gHJ+YeLCxu7v/i/W1tEA4Drg7mpv/fnkSjlGOazZqNX9wcvKh+mh+fuvH2ppaLBROO7kcDCIo8TgEg06agUQCO9Ttw/IynJGRm6dmZ583ZqJRMu/m5qYqKyvX6bj1jOvCIiLNiL16HV65jEKxuJ/M5e6MzszcIynlf2+VyO7m0tLwyuLieb9WGwqDoId10mmv64nE2/zo6LOO/v73RCpx/A91kc2wvC974AAAAABJRU5ErkJggg==);background-image:-webkit-image-set(url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAAXNSR0IArs4c6QAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAADqADAAQAAAABAAAADgAAAACeOBvAAAACaElEQVQoFU1SPUwUURD+3u7b3dvb4/Y4lj3+j0sukRASTIwFEJHKyoJCo8bGQihooJGYWBorExOl8aewM9HECjuDkaiJlY0aRAxyyQF7J3gXPOBY3F1nzmCc5Hs7OzPfm/neewL/2TWgTQGmCeOEPKdC4AvhBeHubcA7KhdHzg3gshDivpu0Ex0DA7DHxgBFoLrwCpufP6G8s1OPoujKLeApc1ReiHQhLuWTwfYOPW+nkB0ZRvuli3CO9aHZ85DySrBNU1b3984NheG3N8BHlceLCfH6RG9OZg0DrqKglchJRYVVXIe5/BV6yUNck7CSSZSq1TMngccyRpp63Eysx7bh+Icwoghy9TtEpQqQEO1nBbaUMISA0HWUMm2JVW9zWpHA2WxXF1KWhbhpQlNVRAd1BNvbCLa2EZKvShUm5dJWHFxL+sYphL7WjAszDCFoZ3DE9xEGv1k+/UsITYNixmDEYnCamkBVeUkdhEbaFOrEBSBfHB7SPdAFsJHmiMkUVw0dOklhjtRSqeKB72eRTjeSCIgQMZhFC2tjMoE32SMJejpdkFZv78tSpXK1q7OzkRTcmYobRrszke4PCAIaIkS5UoHV3b2gHJ+YeLCxu7v/i/W1tEA4Drg7mpv/fnkSjlGOazZqNX9wcvKh+mh+fuvH2ppaLBROO7kcDCIo8TgEg06agUQCO9Ttw/IynJGRm6dmZ583ZqJRMu/m5qYqKyvX6bj1jOvCIiLNiL16HV65jEKxuJ/M5e6MzszcIynlf2+VyO7m0tLwyuLieb9WGwqDoId10mmv64nE2/zo6LOO/v73RCpx/A91kc2wvC974AAAAABJRU5ErkJggg==) 1x,url(data:image/png;base64,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) 2x);}
+  /* No working minimise/zoom here, so 10.6 would grey them out. */
+  body.theme-snowleopard .mx-gel.mx-min,body.theme-snowleopard .mx-gel.mx-zoom{background-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAAXNSR0IArs4c6QAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAADqADAAQAAAABAAAADgAAAACeOBvAAAACEUlEQVQoFWVSO8saURCdXdf3WzQqaET9fICoYCEk1dpYiMVXJKSwSZ3GNr8gTSCQVEmadJGkTmUIWKSwlARBJIIBFaOFIuKq+MicC/sRyIXZHWbOuXNm7kj0z1FVNXQ4HJomk+nW6XTeILXdbgcc+2I2m193Op25Dpd0p1qtNi6Xy1uv1+vI5XKUTqdJkiQaDAbU7/dpvV7vZVl+2m63P4FjwKderz+x2Wwf8/m8KRaLUbFYpEKhQOFwmBRFIYPBQH6/X+Hqj5LJ5K/hcPjTUKvVQhaLpVMqlZRIJEI+n0+Y3W6n6/VK+/1eVHa5XARbLBbVeDz+QWHtTa5iiUaj5Ha7ieUQS6blcgkxwsdliFmtVlqtVo7xeNwEsZ5IJEQVlisAAJ3PZ0FEnyDgQsgGdjab3bKvZIPBIDkcDtELSDDIxDEajYIEIiwQCAB3o/BHQpIri150EirpZPggYUj8VPhLCjsTTdNiSCKIAx+GA7Jux+ORdrsd8TB/yx6P5+t8PqfT6STAIHNCKIAKGGK4CH0Dy8vxTVZV9d1kMtE2m82dNF0iKuqV4QMznU6PlUrlvczv+COVSr3s9XpYr//I+iXIAZPNZl+AIxrhZLDVaj3jMT/nzTBhYzBlkNATx2k0GmmhUOhVo9F4wyoWd7vKoHu8Sg+73e5jHtYD7vk+5PEEp7xF38vl8udMJtNl0h/E/wIrRe2r97xTmgAAAABJRU5ErkJggg==);background-image:-webkit-image-set(url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAAXNSR0IArs4c6QAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAADqADAAQAAAABAAAADgAAAACeOBvAAAACEUlEQVQoFWVSO8saURCdXdf3WzQqaET9fICoYCEk1dpYiMVXJKSwSZ3GNr8gTSCQVEmadJGkTmUIWKSwlARBJIIBFaOFIuKq+MicC/sRyIXZHWbOuXNm7kj0z1FVNXQ4HJomk+nW6XTeILXdbgcc+2I2m193Op25Dpd0p1qtNi6Xy1uv1+vI5XKUTqdJkiQaDAbU7/dpvV7vZVl+2m63P4FjwKderz+x2Wwf8/m8KRaLUbFYpEKhQOFwmBRFIYPBQH6/X+Hqj5LJ5K/hcPjTUKvVQhaLpVMqlZRIJEI+n0+Y3W6n6/VK+/1eVHa5XARbLBbVeDz+QWHtTa5iiUaj5Ha7ieUQS6blcgkxwsdliFmtVlqtVo7xeNwEsZ5IJEQVlisAAJ3PZ0FEnyDgQsgGdjab3bKvZIPBIDkcDtELSDDIxDEajYIEIiwQCAB3o/BHQpIri150EirpZPggYUj8VPhLCjsTTdNiSCKIAx+GA7Jux+ORdrsd8TB/yx6P5+t8PqfT6STAIHNCKIAKGGK4CH0Dy8vxTVZV9d1kMtE2m82dNF0iKuqV4QMznU6PlUrlvczv+COVSr3s9XpYr//I+iXIAZPNZl+AIxrhZLDVaj3jMT/nzTBhYzBlkNATx2k0GmmhUOhVo9F4wyoWd7vKoHu8Sg+73e5jHtYD7vk+5PEEp7xF38vl8udMJtNl0h/E/wIrRe2r97xTmgAAAABJRU5ErkJggg==) 1x,url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAYAAAByDd+UAAAAAXNSR0IArs4c6QAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAHKADAAQAAAABAAAAHAAAAABHddaYAAAFR0lEQVRIDY2WO0isVxDHj+v6XnXVqOsLV1ERETUQUEiRjZVW2ULEQrhaWojeKtVFUqZKmttfG0lsroGIBgzZQAIWtzASQfC1Pll11VXX9yvzO9mRL954kwPzzTlzZuY/M+f1JZn/0dra2gJJSUlfpKSkBNxut1/Ii9nd3V3s+vp67vb2du7h4eGH2dnZ0H+5S/qQQiAQ6BOHI+IMEJOVlWUyMzONABuRmZubG3NxcWHOz8+N6Jnk5OSwzH0VCoXePOf3XwE7Ojr8EvVboRbJwrhcLlNdXW3KyspMfn6+8XptgiYej5vd3V2zublptre3zdXVlSGwBPDn09PT4afA7wEK2AuJ/tv7+3svmZSWlpq8vDxTUFBgioqKTGFhoUlPT7d+Li8vzd7entnf3zfRaNRy+hKokSWISaD9U1NTE07QZOegs7MzKErfSYTpPp/PZpWdnW1LCRgZEgBZ5uTk2PKKYwsASEZGhg0ImQRDVD11dXXhpaWlPxTnETAYDPpFcQqwiooK4/f7rQOceDyex+zIlrVETmMtKSXrKbYmLS3NBsQynJ2doRJoaGj4fnFxMcbAzYcmhr+IgbekpMRmRjkhnKSmplqiz5riPGFj1xcQKgFnnmwJmLazs+OV5Xkr3Y8Z2wwluz6JqI9M6uvrbUY4IAuINQOMDUG5cMquZIdCrCUZESCgGig7+ujoCH2f+F2XLOc0wxGUiIq10ZLhBAKELMns5OTEyoiWcpINczpWGcFhK2toFhYW0BsRnTfJXV1dAZkYJiPNjsjIjGgVVDmZasM5jYyZ1/LDGdMAZicLoFfW8le3GAWJsLi42O46wCghMoyk/pYwBkCdkzVzOmbeGZQColNeXm5WV1fZXEG3TDRTTrY9QJCuAwDPgWoAAKOjnL7TjpJzhjc2NsjyM9awhbTZ7poZASgQjtQZjhQIrnPPcd217AswpPnJ0ItzJikjE4lJ6xAQJSwUlD4NMG0amMooJ8GzTGCI3GthGbDQEApwdYwRTcfqnDGOlSN3AiIncN1ACUBk7rjoergtaAqOAcRY+8xr9PRpzCFzyrVPsPQ1aAGPu6WUEbGr4SA7HROZOoSrE+V2Uj7Y0HCqwaGjvuA8XzQ538vu3Nzcd3KYazjQaswkRjjQ/lMglatjqygfgCGV0+e2gctZX3TV1tb+zKTcefZMsY05W+qQTFkL1laJzUXfKadPgBqYAsMPDg4sYFVV1U+ugYGBkChGKGksFrMTGq0zYw1AHcKVVN/JsSVwHmheDQkwMjg4+Bs1izY2No5yT8q7ZZ8aosJAHcIZP0fM01SfPmAkkTjwXJujIo66RCk2NDQ0IWVaPj09Nevr6/ZCxjlNuR184KOgqBAwgPjiN4QKDg8PT4D1964wJtzT0/NKnMf5PyEqDBQMjkO4yhTbOdZ5AAHb2trCT7y3t/el6IexsYDiLNLa2rosT8lryrC2tmZWVlZsedUhHFDI2Z4Ggj22AHK2m5ubvxbfYTCwe7QWh/yDfDI2NhaQtfxS7lUP96vsLMP/DbtVwZQrMNUgq8PDQyOPrN188jDHKysrX/f39/8oeu/E5hL9R0AGAuoTVj8/P++bnJz8Rra6j3eRPwFufIh7kSNB46Uni+PjY/ubqK+/gC/LD9mrpqYmsvpTwKLWQD7/AEQooB8Jqxdyj4+Pd8j/5gsx8HHONEsyhMiKUsM5v8Ij8mc32t3dPS32t0LLomdLKX3b3gNEmihvi3Qps5mZmWmRi+FTyYArsEYce5DL7otLEBG5subkT+/39vb2OeTSuJ/JzJbRShKfvwAKqTVvUw5R/gAAAABJRU5ErkJggg==) 2x);}
+</style>
+</body>
+</html>

@@ -1,0 +1,174 @@
+{
+  "schemaVersion": 2,
+  "id": "com.retromac.apple.mountain-lion",
+  "family": {
+    "id": "apple",
+    "name": "Apple Macintosh",
+    "order": 1
+  },
+  "release": {
+    "label": "OS X 10.8 Mountain Lion",
+    "year": 2012
+  },
+  "experienceLevel": "partial",
+  "chrome": {
+    "style": "snowleopard"
+  },
+  "name": "Mountain Lion",
+  "splashVideo": "boot.mp4",
+  "splashFullscreen": true,
+  "systemTweaks": [
+    { "domain": "-g", "key": "NSConvolutionOverride1", "type": "float", "value": "6", "refresh": "Finder" },
+    { "domain": "-g", "key": "NSSplitViewItemGlassMinimumCornerRadius", "type": "float", "value": "6", "refresh": "Finder" },
+    { "domain": "com.apple.finder", "key": "ShowPathbar", "type": "bool", "value": "true", "refresh": "Finder" },
+    { "domain": "com.apple.finder", "key": "ShowStatusBar", "type": "bool", "value": "true", "refresh": "Finder" },
+    { "domain": "com.apple.dock", "key": "mineffect", "type": "string", "value": "genie", "refresh": "Dock" }
+  ],
+  "menuBarApple": "aqua-classic",
+  "version": "1.0",
+  "author": "RetroMac",
+  "dock": {
+    "height": 78,
+    "iconSize": 52,
+    "padding": 12,
+    "spacing": 8,
+    "cornerRadius": 16,
+    "backgroundColor": "#EDEDF0B8",
+    "backgroundImage": null,
+    "backgroundImageMode": "tile",
+    "borderColor": "#00000020",
+    "borderWidth": 1,
+    "shadowEnabled": true,
+    "shadowColor": "#00000060",
+    "shadowRadius": 14,
+    "bevelTopColor": null,
+    "bevelBottomColor": null,
+    "bevelWidth": 0
+  },
+  "icon": {
+    "renderStyle": "smooth",
+    "reflectionEnabled": true,
+    "reflectionOpacity": 0.25,
+    "hoverScale": 1.2,
+    "hoverAnimationDuration": 0.15
+  },
+  "indicator": {
+    "style": "dot",
+    "color": "#333333",
+    "size": 5,
+    "offset": 6
+  },
+  "wallpaper": "wallpaper.jpg",
+  "wallpapers": [
+    {
+      "name": "Galaxy",
+      "file": "wallpaper.jpg"
+    },
+    {
+      "name": "Leopard",
+      "file": "wallpaper-leopard.jpg"
+    },
+    {
+      "name": "Lion",
+      "file": "wallpaper-lion.jpg"
+    }
+  ],
+  "fallbackIcon": "generic.png",
+  "defaultPreset": "lcd-lite",
+  "iconMappings": {
+    "com.apple.finder": "finder.png",
+    "com.apple.Safari": "safari.png",
+    "com.apple.mail": "mail.png",
+    "com.apple.Photos": "photos.png",
+    "com.apple.MobileSMS": "messages.png",
+    "com.apple.Notes": "notes.png",
+    "com.apple.iCal": "calendar.png",
+    "com.apple.systempreferences": "systempreferences.png",
+    "com.apple.Terminal": "terminal.png",
+    "com.apple.Music": "music.png",
+    "com.apple.AppStore": "appstore.png",
+    "com.apple.FaceTime": "facetime.png",
+    "com.apple.AddressBook": "contacts.png",
+    "com.apple.reminders": "reminders.png",
+    "com.apple.Preview": "preview_app.png",
+    "com.apple.TextEdit": "textedit.png",
+    "com.apple.calculator": "calculator.png",
+    "com.apple.Dictionary": "dictionary.png",
+    "com.apple.QuickTimePlayerX": "quicktime.png",
+    "com.apple.DiskUtility": "diskutility.png",
+    "com.apple.ActivityMonitor": "activitymonitor.png",
+    "com.apple.Console": "console.png",
+    "com.apple.iWork.Keynote": "keynote.png",
+    "com.apple.iWork.Pages": "pages.png",
+    "com.apple.garageband": "garageband.png",
+    "com.apple.iMovieApp": "imovie.png",
+    "com.apple.dt.Xcode": "xcode.png",
+    "com.apple.Automator": "automator.png",
+    "com.apple.FontBook": "fontbook.png",
+    "com.apple.Chess": "chess.png",
+    "com.apple.Stickies": "stickies.png",
+    "com.apple.PhotoBooth": "photobooth.png",
+    "com.apple.Screenshot": "screenshot.png",
+    "com.apple.dashboard": "dashboard.png",
+    "com.apple.MigrationUtility": "migration.png",
+    "com.apple.backup.launcher": "timemachine.png",
+    "com.apple.launchpad.launcher": "launchpad.png",
+    "com.apple.exposelauncher": "missioncontrol.png",
+    "com.apple.DVDPlayer": "dvdplayer.png",
+    "com.apple.GameCenter": "gamecenter.png",
+    "com.microsoft.Word": "word.png",
+    "com.microsoft.Excel": "excel.png",
+    "com.microsoft.Powerpoint": "powerpoint.png",
+    "com.microsoft.Outlook": "outlook.png",
+    "com.apple.ScreenSharing": "screensharing.png",
+    "com.apple.keychainaccess": "keychain.png",
+    "com.apple.Image_Capture": "imagecapture.png",
+    "com.apple.grapher": "grapher.png",
+    "com.apple.BootCampAssistant": "bootcamp.png",
+    "com.apple.NetworkUtility": "networkutility.png",
+    "com.apple.SoftwareUpdate": "softwareupdate.png",
+    "com.apple.installer": "installer.png",
+    "com.apple.notificationcenterui": "notifications.png",
+    "com.apple.clock": "clock.png",
+    "com.apple.BluetoothFileExchange": "bluetooth.png"
+  },
+  "appearance": "light",
+  "accentColor": "blue",
+  "screensaver": "flurry",
+  "desktopIcons": [
+    {
+      "name": "TV",
+      "icon": "quicktime.png",
+      "type": "tvfolder",
+      "gridX": 0,
+      "gridY": 0
+    },
+    {
+      "name": "Clock",
+      "icon": "clock.png",
+      "type": "clock",
+      "gridX": 0,
+      "gridY": 1
+    },
+    {
+      "name": "CPU",
+      "icon": "activitymonitor.png",
+      "type": "cpumonitor",
+      "gridX": 0,
+      "gridY": 2
+    },
+    {
+      "name": "Screen Saver",
+      "icon": "screensaver.png",
+      "type": "screensaver",
+      "gridX": 0,
+      "gridY": 3
+    },
+    {
+      "name": "Dashboard",
+      "icon": "dashboard.png",
+      "type": "dashboard",
+      "gridX": 0,
+      "gridY": 4
+    }]
+}

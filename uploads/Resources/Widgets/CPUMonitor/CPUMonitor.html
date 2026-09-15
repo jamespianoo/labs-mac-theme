@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CPU Monitor</title>
+<style>
+  :root{
+    /* BeOS battleship greys */
+    --panel:#bdbdbd;
+    --hi:#f2f2f2;        /* top-left bevel highlight */
+    --hi2:#e2e2e2;
+    --sh:#7a7a7a;        /* bottom-right bevel shadow */
+    --sh2:#5e5e5e;
+    --ink:#101010;
+    --tab:#f3d24a;       /* BeOS yellow window tab */
+    --tab-hi:#fbe88c;
+    --tab-sh:#caa31f;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;}
+  body{
+    background:transparent;            /* floating widget — host window is transparent */
+    font-family:Helvetica,Arial,sans-serif;
+    overflow:hidden;
+  }
+
+  #stage{ position:relative; display:inline-block; padding:8px; }
+  #scaler{
+    position:relative;
+    display:inline-block;
+    image-rendering:pixelated;
+  }
+
+  /* ----- ghost windows behind, for the original's layered desktop feel ----- */
+  .ghost{position:absolute;top:34px;border:1px solid #8a8a8a;border-radius:0;}
+  .ghost-tab{
+    position:absolute;height:28px;border:1px solid #8a8a8a;
+    background:#e9e9e9;border-bottom:none;
+  }
+  .ghost-a{left:300px;top:6px;width:170px;}
+  .ghost-b{left:486px;top:6px;width:150px;border-color:#5f8f5f;background:#cfe3cf;}
+
+  /* =========================== WINDOW =========================== */
+  .window{position:relative;width:744px;}
+
+  /* yellow title tab — App Folder Lasche style. Dimensions are scaled up by 1/0.6 so that
+     after the widget's SCALE(0.6) the tab renders at the SAME physical size as the App
+     Folder tab (the body stays compact; only the Lasche is enlarged). */
+  .tab{
+    display:flex;width:fit-content;align-items:center;gap:12px;
+    height:38px;padding:0 13px 0 12px;margin:0;
+    position:relative;z-index:3;
+    background:linear-gradient(180deg,#fbd85c 0%, #f2bd23 100%);
+    border:1.6px solid #2a2a2a;border-bottom:none;border-radius:5px 5px 0 0;
+    box-shadow:inset 1px 1px 0 rgba(255,255,255,.55);
+  }
+  .tab b{font-size:22px;font-weight:700;color:#2a2306;letter-spacing:.2px;white-space:nowrap;}
+  /* BeOS close box — App Folder look (enlarged to match after scaling) */
+  .closebox{
+    width:22px;height:22px;flex:0 0 auto;
+    border:1.6px solid #6f5a10;
+    background:linear-gradient(135deg,#fbe27e,#eab92a);
+    box-shadow:inset 1px 1px 0 rgba(255,255,255,.75), inset -1px -1px 0 rgba(0,0,0,.18);
+    cursor:pointer;
+  }
+  .closebox:active{box-shadow:inset 1px 1px 0 rgba(0,0,0,.25);}
+
+  /* the little red collapse marker that sits above the panel edge */
+  .marker{
+    position:absolute;z-index:4;top:-6px;left:368px;
+    width:0;height:0;
+    border-left:8px solid transparent;border-right:8px solid transparent;
+    border-top:9px solid #cc2a17;
+    filter:drop-shadow(0 1px 0 rgba(0,0,0,.3));
+  }
+
+  /* main grey body, raised bevel */
+  .body{
+    position:relative;z-index:2;
+    margin-top:-1px;
+    padding:16px;
+    background-color:var(--panel);
+    background-image:url(assets/panel.png);
+    background-size:4px 4px;
+    border:1px solid #000;
+    box-shadow:
+      inset 2px 2px 0 var(--hi),
+      inset 3px 3px 0 var(--hi2),
+      inset -2px -2px 0 var(--sh),
+      inset -3px -3px 0 var(--sh2);
+    display:flex;align-items:center;gap:18px;
+  }
+
+  /* =========================== CHIP =========================== */
+  .chip{
+    position:relative;
+    width:152px;height:152px;flex:0 0 auto;
+    background:#a9a9a9;
+    background-image:url(assets/panel.png);
+    background-size:4px 4px;
+    border:1px solid #000;
+    box-shadow:
+      inset 2px 2px 0 var(--hi),
+      inset -2px -2px 0 var(--sh);
+    display:flex;align-items:center;justify-content:center;
+  }
+  /* pin frame */
+  .pins{
+    position:absolute;inset:11px;
+    border:5px solid transparent;
+    background:
+      repeating-linear-gradient(90deg,#5a5a5a 0 2px,#cfcfcf 2px 4px) top/100% 5px no-repeat,
+      repeating-linear-gradient(90deg,#5a5a5a 0 2px,#cfcfcf 2px 4px) bottom/100% 5px no-repeat,
+      repeating-linear-gradient(0deg,#5a5a5a 0 2px,#cfcfcf 2px 4px) left/5px 100% no-repeat,
+      repeating-linear-gradient(0deg,#5a5a5a 0 2px,#cfcfcf 2px 4px) right/5px 100% no-repeat;
+  }
+  /* dark domed die */
+  .die{
+    position:absolute;inset:18px;
+    border-radius:7px;
+    background-color:#3b3b3b;
+    background-image:
+      radial-gradient(120% 110% at 32% 26%, rgba(255,255,255,.22), rgba(255,255,255,0) 42%),
+      radial-gradient(130% 130% at 70% 100%, rgba(0,0,0,.55), rgba(0,0,0,0) 55%),
+      url(assets/chip.png);
+    background-size:auto,auto,4px 4px;
+    border:1px solid #000;
+    box-shadow:inset 1px 1px 0 rgba(255,255,255,.18), inset -1px -1px 0 rgba(0,0,0,.5);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    color:#e9e9e9;
+    text-shadow:0 1px 1px #000;
+    image-rendering:auto;
+  }
+  .die .silicon{font-size:11px;font-weight:600;letter-spacing:1px;color:#cfcfcf;text-transform:none;margin-bottom:2px;}
+  .die .brand{
+    font-weight:700;font-size:46px;letter-spacing:-1px;line-height:1;
+    color:#f4f4f4;
+    text-shadow:0 1px 0 #000, 0 0 8px rgba(255,255,255,.22);
+  }
+  .die .brand i{font-style:normal;color:#9fd3ff;}
+  .die .model{font-size:13px;font-weight:700;letter-spacing:1px;margin-top:11px;color:#d7d7d7;}
+  .die .clock{font-size:12px;font-weight:700;letter-spacing:.5px;margin-top:9px;color:#bdbdbd;}
+
+  /* =========================== METERS =========================== */
+  .meters{display:flex;flex-direction:column;gap:14px;flex:1 1 auto;}
+  .row{display:flex;align-items:center;gap:12px;}
+
+  /* numbered core button */
+  .num{
+    width:28px;height:28px;flex:0 0 auto;
+    background-color:#bcbcbc;
+    background-image:url(assets/panel.png);
+    background-size:4px 4px;
+    border:1px solid #000;
+    box-shadow:inset 1px 1px 0 var(--hi), inset -1px -1px 0 var(--sh);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:700;font-size:15px;color:#1d3a1d;
+    text-shadow:0 1px 0 rgba(255,255,255,.5);
+  }
+
+  /* recessed LED trough */
+  .led-well{
+    flex:1 1 auto;height:34px;
+    background-color:#909090;
+    background-image:url(assets/well.png);
+    background-size:4px 4px;
+    border:1px solid #000;
+    box-shadow:
+      inset 2px 2px 0 var(--sh2),
+      inset -2px -2px 0 #cfcfcf;
+    padding:4px 5px;
+    display:flex;align-items:stretch;gap:3px;
+  }
+  .led{
+    flex:1 1 0;
+    border:1px solid rgba(0,0,0,.55);
+    border-radius:1px;
+  }
+  /* OFF segment */
+  .led.off{
+    background:linear-gradient(#76817a,#5d665f);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.08);
+  }
+  /* USER time (green) */
+  .led.user{
+    background:linear-gradient(#6fde47 0%,#37a81c 55%,#258012 100%);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.5), inset 0 -1px 0 rgba(0,0,0,.25);
+  }
+  /* SYSTEM time (amber) */
+  .led.sys{
+    background:linear-gradient(#ffd75a 0%,#f1a91d 55%,#c9820f 100%);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.55), inset 0 -1px 0 rgba(0,0,0,.25);
+  }
+
+  /* legend under the meters */
+  .legend{
+    display:flex;justify-content:flex-end;align-items:center;gap:16px;
+    margin-top:2px;padding-right:2px;
+    font-size:11px;font-weight:700;color:#2a2a2a;
+    text-shadow:0 1px 0 rgba(255,255,255,.45);letter-spacing:.3px;
+  }
+  .legend span{display:inline-flex;align-items:center;gap:6px;}
+  .legend i{width:12px;height:12px;border:1px solid #000;display:inline-block;}
+  .legend i.u{background:linear-gradient(#6fde47,#37a81c);}
+  .legend i.s{background:linear-gradient(#ffd75a,#f1a91d);}
+
+  .hint{
+    position:absolute;bottom:14px;left:0;right:0;text-align:center;
+    font-size:11px;color:rgba(255,255,255,.55);
+    font-family:Helvetica,Arial,sans-serif;letter-spacing:.4px;
+  }
+
+  /* ===== Mac OS 9 (Platinum) chrome — counter-scaled 1/0.6 like the BeOS tab so it
+     renders at the same physical size after the widget's SCALE(0.6). ===== */
+  .m9-title{display:none;}
+  /* ===== Futurama (counter-scaled for SCALE 0.6): sage title bar, 3 lights, centered ===== */
+  body.theme-futurama .tab{width:auto;box-sizing:border-box;justify-content:center;height:44px;padding:0 20px;gap:0;
+    border:1.6px solid #46695c;border-bottom:none;border-radius:14px 14px 0 0;
+    background:linear-gradient(180deg,#b8ceba,#9fbcaa);box-shadow:inset 0 2px 0 rgba(255,255,255,.45);}
+  body.theme-futurama .tab b{color:#16281f;font-size:22px;}
+  body.theme-futurama .closebox{position:absolute;left:18px;top:50%;transform:translateY(-50%);
+    width:20px;height:20px;border-radius:50%;border:1.6px solid rgba(0,0,0,.35);background:#ef5350;box-shadow:none;}
+  body.theme-futurama .tab::before{content:'';position:absolute;left:48px;top:50%;transform:translateY(-50%);
+    width:20px;height:20px;border-radius:50%;background:#f5bd39;border:1.6px solid rgba(0,0,0,.3);
+    box-shadow:32px 0 0 0 #5cc85c,32px 0 0 1.6px rgba(0,0,0,.3);}
+  body.theme-futurama .body{border:1.6px solid #46695c;background:#f2ecdd;
+    box-shadow:inset 2px 2px 0 #fbf7ee,inset -2px -2px 0 #d8d2c2;}
+  body.theme-macos9 .tab,body.theme-macos9 .marker{display:none;}
+  body.theme-macos9 .window{border:1.6px solid #000;background:#d8d8d8;
+    box-shadow:2px 2px 0 rgba(0,0,0,.30);}
+  body.theme-macos9 .body{border:none;box-shadow:none;margin-top:0;}
+  /* Faithful to the Mac OS 9 UI Kit (Figma); all values counter-scaled 1/0.6 so that
+     after the widget's SCALE(0.6) they render at the same physical size as the Clock. */
+  body.theme-macos9 .m9-title{display:flex;position:relative;align-items:center;height:33px;
+    border-top:2px solid #f3f3f3;border-bottom:2px solid #b3b3da;
+    background:repeating-linear-gradient(#e8e8e8 0 1px,#d0d0d0 1px 2px);
+    image-rendering:pixelated;image-rendering:crisp-edges;}
+  .m9-stripes{display:none;}
+  .m9-title>*{position:relative;z-index:2;}
+  .m9-ctl{position:relative;box-sizing:border-box;width:18px;height:18px;flex:0 0 18px;
+    background:#c0c0c0;border:2px solid #7e7e8a;box-shadow:inset 0 0 0 2px #dadaff;}
+  .m9-close{margin-left:12px;cursor:pointer;}
+  .m9-collapse,.m9-zoom{cursor:pointer;}
+  .m9-plaque{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    background:#f3f3f3;padding:0 13px;height:25px;display:flex;align-items:center;gap:8px;
+    font-size:21px;font-weight:700;color:#000;font-family:"Charcoal","ChicagoFLF","Helvetica Neue",Helvetica,sans-serif;}
+  .m9-right{margin-left:auto;display:flex;gap:8px;padding-right:12px;}
+  .m9-zoom::before{content:"";position:absolute;left:2px;top:2px;width:7px;height:7px;border:2px solid #7e7e8a;background:#c0c0c0;}
+  .m9-collapse::before{content:"";position:absolute;left:3px;right:3px;top:8px;height:0;border-top:2px solid #7e7e8a;}
+
+  /* ===== Mac System 6 (system.css by Sakun Acharige, MIT) — fonts + exact title bar ===== */
+  @font-face{font-family:Chicago_12;src:url(ChiKareGo2.woff2) format("woff2");}
+  @font-face{font-family:Geneva_9;src:url(FindersKeepers.woff2) format("woff2");}
+  body.theme-macos6 .tab,body.theme-macos6 .marker{display:none;}
+  body.theme-macos6 .window{border:2px solid #000;background:#fff;box-shadow:2px 2px 0 rgba(0,0,0,.35);}
+  body.theme-macos6 .body{border:none;box-shadow:none;margin-top:0;background:#fff;
+    font-family:Geneva_9,Geneva,Chicago_12,sans-serif;}
+  body.theme-macos6 .m9-title{display:flex;position:relative;align-items:center;height:38px;box-sizing:border-box;
+    border-bottom:2px solid #000;image-rendering:auto;padding:5px 3px;margin:2px 0;
+    background:linear-gradient(#000 50%,transparent 50%);background-size:100% 4.4px;background-clip:content-box;}
+  body.theme-macos6 .m9-collapse{display:none;}
+  /* close + zoom boxes: white, 3px black border, ~26px (system.css 40px·scale.5, counter-scaled) */
+  body.theme-macos6 .m9-close,body.theme-macos6 .m9-zoom{position:relative;width:26px;height:26px;flex:0 0 26px;
+    background:#fff;border:3px solid #000;box-shadow:none;border-radius:0;box-sizing:border-box;}
+  body.theme-macos6 .m9-close{margin-left:6px;}
+  body.theme-macos6 .m9-zoom{margin-left:auto;margin-right:6px;}
+  body.theme-macos6 .m9-zoom::before{content:"";position:absolute;left:3px;top:3px;width:9px;height:9px;border:2px solid #000;background:#fff;}
+  /* close ✕ — hidden by default, shown on press (system.css shows it on :active) */
+  body.theme-macos6 .m9-close::before,body.theme-macos6 .m9-close::after{content:"";position:absolute;inset:0;opacity:0;
+    background:linear-gradient(#000,#000) left center/32% 3px no-repeat,linear-gradient(#000,#000) right center/32% 3px no-repeat,
+      linear-gradient(#000,#000) center top/3px 32% no-repeat,linear-gradient(#000,#000) center bottom/3px 32% no-repeat;}
+  body.theme-macos6 .m9-close.is-press::before,body.theme-macos6 .m9-close.is-press::after{opacity:1;}
+  body.theme-macos6 .m9-close.is-press::after{transform:rotate(45deg) scale(1.1);}
+  body.theme-macos6 .m9-zoom.is-press{background:#000;}
+  body.theme-macos6 .m9-plaque{background:#fff;padding:0 12px;height:auto;gap:0;color:#000;
+    font-family:Chicago_12,"ChiKareGo2",Chicago,sans-serif;font-weight:400;font-size:26px;line-height:1.1;}
+  /* Monochrome 1-bit LED graph (System 6): black = lit, light = off, no glow, no textured well */
+  body.theme-macos6 .led-well{background:#fff;background-image:none;border:2px solid #000;box-shadow:none;}
+  body.theme-macos6 .led{border-radius:0;box-shadow:none;}
+  body.theme-macos6 .led.off{background:#e6e6e6;box-shadow:inset 0 0 0 1px #cfcfcf;}
+  body.theme-macos6 .led.user,body.theme-macos6 .led.sys{background:#000;box-shadow:none;}
+  body.theme-macos6 .legend i{border:1px solid #000;border-radius:0;}
+  body.theme-macos6 .legend i.u{background:#fff;}
+  body.theme-macos6 .legend i.s{background:#000;}
+  /* Silicon chip → grayscale so nothing colored remains */
+  body.theme-macos6 .chip,body.theme-macos6 .die,body.theme-macos6 .soc{filter:grayscale(1) contrast(1.1);}
+
+  /* ===== Windows XP (Luna Blue) chrome — counter-scaled 1/0.6 like the BeOS tab. ===== */
+  .xp-title{display:none;}
+  body.theme-winxp .tab,body.theme-winxp .marker{display:none;}
+
+  /* ===== XP Luna scrollbars + controls (theme-winxp) ===== */
+  body.theme-winxp ::-webkit-scrollbar,
+  body.theme-winxp #pad::-webkit-scrollbar{width:17px;height:17px;}
+  body.theme-winxp ::-webkit-scrollbar-track,
+  body.theme-winxp #pad::-webkit-scrollbar-track{background:#d6e5f5;border-left:1px solid #aac3e0;}
+  body.theme-winxp ::-webkit-scrollbar-thumb,
+  body.theme-winxp #pad::-webkit-scrollbar-thumb{
+    background:linear-gradient(90deg,#7fb1f5,#2f6fdd 50%,#4f8fe8);
+    border:1px solid #1c4aa0;border-radius:3px;}
+  body.theme-winxp ::-webkit-scrollbar-thumb:hover,
+  body.theme-winxp #pad::-webkit-scrollbar-thumb:hover{
+    background:linear-gradient(90deg,#93c0fb,#4f8fe8 50%,#5f9ff2);}
+  body.theme-winxp ::-webkit-scrollbar-button{
+    height:17px;width:17px;background:linear-gradient(180deg,#eaf2fc,#bcd4ef);
+    border:1px solid #6a93c8;border-radius:2px;}
+  body.theme-winxp ::-webkit-scrollbar-corner{background:#d6e5f5;}
+  body.theme-winxp button{
+    font:12px Tahoma,"Segoe UI",sans-serif;padding:2px 12px;border-radius:3px;border:1px solid #003c74;
+    background:linear-gradient(180deg,#fdfeff,#eaf0fb 45%,#d6e2f5);color:#000;}
+  body.theme-winxp button:hover{border-color:#ff9a00;box-shadow:inset 0 0 5px rgba(255,154,0,.55);}
+  body.theme-winxp button:active{background:linear-gradient(180deg,#cdd9ee,#e6eefc);}
+  body.theme-winxp input,body.theme-winxp textarea,body.theme-winxp select{
+    border:1px solid #7f9db9;background:#fff;border-radius:0;padding:2px 4px;font:12px Tahoma,"Segoe UI",sans-serif;}
+  body.theme-winxp input:focus,body.theme-winxp textarea:focus,body.theme-winxp select:focus{
+    outline:none;border-color:#2f6fdd;box-shadow:0 0 3px rgba(47,111,221,.7);}
+
+  /* No CSS drop-shadow — the borderless NSPanel already casts a real (symmetric) window shadow;
+     an offset CSS shadow only added a translucent "border" on the right + bottom edges. */
+  body.theme-winxp .window{border-radius:9px 9px 3px 3px;background:#0831D9;overflow:hidden;box-shadow:none;}
+  body.theme-winxp .body{border:none;box-shadow:none;margin:0 4px 4px;}
+  body.theme-winxp .xp-title{display:flex;align-items:center;height:50px;gap:10px;padding:0 7px 0 10px;
+    border-radius:13px 13px 0 0;
+    background:linear-gradient(180deg,#0997FF 0%,#0053EE 8%,#0053EE 45%,#0066FF 52%,#0846E0 80%,#003DD2 100%);}
+  .xp-sysicon{width:26px;height:26px;flex:0 0 26px;border-radius:5px;
+    background:radial-gradient(circle at 30% 30%,#fff,#cfe0ff 70%,#7fa8ee);}
+  .xp-caption{color:#fff;white-space:nowrap;font:700 22px "Trebuchet MS","Segoe UI",Tahoma,sans-serif;
+    text-shadow:1px 1px 1px rgba(0,0,40,.5);}
+  .xp-btns{margin-left:auto;display:flex;gap:3px;}
+  .xp-btn{width:35px;height:35px;border-radius:5px;position:relative;cursor:pointer;
+    border:1px solid rgba(30,74,160,.45);box-shadow:inset 0 1px 1px rgba(255,255,255,.4);}
+  /* Minimise omitted: a borderless floating widget has no taskbar entry to minimise into. */
+  body.theme-winxp .xp-min{display:none;}
+  .xp-min,.xp-max{background:linear-gradient(180deg,#5cb0ff,#1D63F0 55%,#0B46CF);}
+  .xp-close{width:38px;flex:0 0 38px;background:linear-gradient(180deg,#F7B39E,#E35F44 55%,#C4382A);}
+  .xp-min::after{content:"";position:absolute;left:8px;right:8px;bottom:7px;height:3px;background:#fff;}
+  .xp-max::after{content:"";position:absolute;inset:8px;border:2px solid #fff;border-top-width:5px;border-radius:2px;}
+  .xp-close::before,.xp-close::after{content:"";position:absolute;left:50%;top:50%;width:20px;height:3px;background:#fff;border-radius:2px;}
+  .xp-close::before{transform:translate(-50%,-50%) rotate(45deg);}
+  .xp-close::after{transform:translate(-50%,-50%) rotate(-45deg);}
+
+  /* ===== Maiks Favourite — pixel-art macOS window (counter-scaled 1/0.6) ===== */
+  .mf-title{display:none;}
+  body.theme-maiksfav .tab,body.theme-maiksfav .marker{display:none;}
+  body.theme-maiksfav .window{background:#ECECEC;border:3px solid #262626;border-radius:16px;overflow:hidden;
+    box-shadow:inset 3px 3px 0 #ffffff, inset -3px -3px 0 #c4c4c4, 8px 8px 0 rgba(0,0,0,.35);}
+  body.theme-maiksfav .body{border:none;box-shadow:none;margin:0 7px 7px;}
+  body.theme-maiksfav .mf-title{display:flex;align-items:center;position:relative;height:46px;gap:13px;padding:0 16px;
+    background:#E3E3E3;border-bottom:3px solid #262626;
+    font-family:"Pixelify Sans","Silkscreen","ChicagoFLF",monospace;}
+  .mf-lights{display:flex;gap:13px;align-items:center;z-index:2;}
+  .mf-btn{width:20px;height:20px;border-radius:50%;border:1px solid rgba(0,0,0,.30);cursor:pointer;
+    box-shadow:inset 0 1px 2px rgba(255,255,255,.5);}
+  .mf-close{background:#FF5F57;} .mf-min{background:#FEBC2E;} .mf-zoom{background:#28C840;}
+  .mf-caption{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    font-size:23px;font-weight:700;color:#3a3a3a;white-space:nowrap;}
+
+  /* ===== Mac OS X — Aqua 10.0–10.4 (counter-scaled like Maiks Favourite) ===== */
+  .mx-title{display:none;}
+  body.theme-macosx .tab,body.theme-macosx .marker{display:none;}
+  /* Cheetah window edge: ~6px top corners (not 11 — that read as a glassy rim), crisp 1px grey frame. */
+  body.theme-macosx .window{background:#ededed;border:1px solid #7a7a7a;border-radius:6px 6px 3px 3px;overflow:hidden;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.5);}
+  body.theme-macosx .body{border:none;box-shadow:none;margin:0 7px 7px;}
+  body.theme-macosx .mx-title{display:flex;align-items:center;position:relative;height:40px;gap:11px;padding:0 14px;
+    background:linear-gradient(to bottom,#fafafa,#ededed 26%,#dadada 60%,#c6c6c6 92%,#bcbcbc);
+    border-bottom:1px solid #888;box-shadow:inset 0 2px 0 rgba(255,255,255,.7);}
+  body.theme-macosx .mx-title::after{content:"";position:absolute;inset:0;pointer-events:none;
+    background:repeating-linear-gradient(to bottom,rgba(255,255,255,.13) 0 2px,rgba(0,0,0,.025) 2px 4px);}
+  .mx-lights{display:flex;gap:11px;align-items:center;z-index:2;position:relative;}
+  .mx-btn{width:22px;height:22px;border-radius:50%;position:relative;cursor:default;
+    box-shadow:inset 0 0 1.5px 1px rgba(0,0,0,.38),inset 0 -4px 5px rgba(0,0,0,.32),inset 0 3px 3px rgba(255,255,255,.30),0 2px 2.5px rgba(0,0,0,.42);}
+  .mx-btn::before{content:"";position:absolute;left:4px;right:4px;top:2.5px;height:9px;border-radius:50%;z-index:1;
+    background:radial-gradient(ellipse at 50% 0%,rgba(255,255,255,.98),rgba(255,255,255,.55) 52%,rgba(255,255,255,0));}
+  .mx-close{background:radial-gradient(circle at 50% 34%,#ffe6df,#ff8f7c 20%,#fb5038 46%,#e22a16 66%,#b51d0d 84%,#861309);cursor:pointer;}
+  /* Collapse (yellow) disabled on Aqua CPU → grey gel, no glyph. */
+  .mx-min{background:radial-gradient(circle at 50% 34%,#ffffff,#f2f2f2 20%,#dedede 48%,#c2c2c2 70%,#a6a6a6 86%,#858585);}
+  .mx-min .mx-glyph{display:none;}
+  .mx-zoom{background:radial-gradient(circle at 50% 34%,#e7fbcb,#aef071 20%,#62d227 46%,#3aa90e 66%,#2b8908 84%,#1c6207);}
+  .mx-caption{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    font:700 21px "Lucida Grande","Helvetica Neue",Helvetica,Arial,sans-serif;color:#1a1a1a;text-shadow:0 1px 0 rgba(255,255,255,.6);white-space:nowrap;}
+  .mx-glyph{position:absolute;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;
+    font:700 17px "Lucida Grande",Helvetica,Arial,sans-serif;color:rgba(0,0,0,.6);
+    text-shadow:0 1px 0 rgba(255,255,255,.4);opacity:0;transition:opacity .08s linear;pointer-events:none;}
+  .mx-glyph{display:none;}
+
+  /* ===== Windows 98 — exakt nach SPEC, counter-scaled (1/0.6) ===== */
+  .w98-title{display:none;}
+  body.theme-win98 .tab,body.theme-win98 .marker{display:none;}
+  body.theme-win98 .window{background:#c4c4c4;border-radius:0;overflow:hidden;border:none;
+    box-shadow:inset -2px -2px 0 #000,inset 2px 2px 0 #fff,inset -4px -4px 0 #808080,inset 4px 4px 0 #dbdbdb;}
+  body.theme-win98 .body{border:none;box-shadow:none;margin:0 8px 8px;}
+  body.theme-win98 .w98-title{display:flex;align-items:center;gap:3px;height:37px;margin:7px 7px 4px;padding:0 3px 0 10px;
+    background:linear-gradient(90deg,#00007b,#1085d2);}
+  .w98-ico{display:none;}
+  body.theme-win98 .w98-ico,body.theme-winxp .w98-ico{display:block;width:26px;height:26px;flex:0 0 auto;margin-right:5px;image-rendering:pixelated;image-rendering:-webkit-optimize-contrast;}
+  body.theme-win98 .w98-ico:not([src]),body.theme-winxp .w98-ico:not([src]){display:none;}
+  .w98-cap{color:#fff;font:700 20px Tahoma,"Microsoft Sans Serif",sans-serif;
+    flex:1 1 auto;text-align:left;white-space:nowrap;}
+  .w98-btn{width:33px;height:30px;background:#c4c4c4;cursor:pointer;flex:0 0 auto;
+    box-shadow:inset -2px -2px 0 #000,inset 2px 2px 0 #dbdbdb,inset -4px -4px 0 #808080,inset 4px 4px 0 #fff;
+    font:700 20px Tahoma,Verdana,sans-serif;color:#000;
+    display:flex;align-items:center;justify-content:center;line-height:1;}
+  .w98-btn:active{box-shadow:inset 2px 2px 0 #000,inset -2px -2px 0 #dbdbdb,inset 4px 4px 0 #808080,inset -4px -4px 0 #fff;}
+  .w98-btn.w98-dis{color:#808080;text-shadow:2px 2px 0 #fff;cursor:default;}
+  .w98-btn:last-child{margin-left:5px;}
+  .w98-btn{font-size:0;position:relative;}
+  #w98close::before,#w98close::after{content:"";position:absolute;left:50%;top:50%;width:18px;height:3px;background:#000;}
+  #w98close::before{transform:translate(-50%,-50%) rotate(45deg);}
+  #w98close::after{transform:translate(-50%,-50%) rotate(-45deg);}
+  #w98min::before{content:"";position:absolute;left:7px;bottom:7px;width:13px;height:3px;background:#808080;box-shadow:2px 2px 0 #fff;}
+  #w98max::before{content:"";position:absolute;left:7px;top:5px;width:16px;height:15px;border:2px solid #808080;border-top-width:4px;box-shadow:2px 2px 0 #fff;}
+
+  /* ===== Live title-bar button feedback (native DragOverlayView → window.setBtnState) ===== */
+  /* The overlay intercepts mouse events, so these classes stand in for :hover/:active. */
+  .xp-close.is-hover,.mf-close.is-hover,.closebox.is-hover{filter:brightness(1.13);}
+  .xp-close.is-press,.mf-close.is-press,.closebox.is-press{filter:brightness(.82);}
+  /* Aqua traffic lights: no per-button brightness filter (caused hover flicker under scale(0.6));
+     the glyphs already reveal on title-bar hover. Press = a static inset shade, no filter. */
+  .mx-close.is-press,.mx-zoom.is-press{box-shadow:inset 0 0 3px 1px rgba(0,0,0,.45),inset 0 0 1.5px 1px rgba(0,0,0,.38),inset 0 -4px 5px rgba(0,0,0,.32);}
+  .w98-btn.is-hover{filter:brightness(1.06);}
+  .w98-btn.is-press{box-shadow:inset 2px 2px 0 #000,inset -2px -2px 0 #dbdbdb,inset 4px 4px 0 #808080,inset -4px -4px 0 #fff;}
+  .m9-ctl.is-hover{background:#d0d0dc;}
+  .m9-ctl.is-press{background:#9c9cb0;box-shadow:inset 0 0 0 2px #7e7e8a;}
+  /* ===== Windows 7 (Aero glass) — inherits XP structure via dual class (theme-win7 theme-winxp) ===== */
+  body.theme-win7 #win{border-radius:6px 6px 2px 2px;background:rgba(69,128,196,0.34);
+    box-shadow:0 8px 22px rgba(0,0,0,.45),inset 0 0 0 1px rgba(255,255,255,.7);}
+  body.theme-win7 .xp-title{border-radius:6px 6px 0 0;
+    background:linear-gradient(180deg,rgba(255,255,255,.5),rgba(255,255,255,.14) 46%,rgba(0,0,0,.05) 54%,rgba(255,255,255,.22)),rgba(90,137,198,0.30);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.85);}
+  body.theme-win7 .xp-cap,body.theme-win7 .xp-caption{color:#0b1a2e;font-family:"Segoe UI",Tahoma,sans-serif;
+    text-shadow:0 0 4px #fff,0 0 4px #fff,0 0 4px #fff,0 0 3px #fff;}
+  body.theme-win7 .body{background:#f0f0f0;}
+  body.theme-win7 .np-toolbar,body.theme-win7 .np-status,
+  body.theme-win7 .w98-menubar,body.theme-win7 .w98-drop{background:#f0f0f0;}
+  body.theme-win7 .xp-min,body.theme-win7 .xp-max{
+    background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,.3) 45%,rgba(0,0,0,.08) 55%,rgba(255,255,255,.5));
+    border:1px solid rgba(0,0,0,.3);}
+  body.theme-win7 .xp-min::before{background:#1a1a1a;}
+  body.theme-win7 .xp-max::before{border-color:#1a1a1a;}
+  body.theme-win7 .xp-close{background:linear-gradient(180deg,#e7a99e,#d76b58 45%,#d54f36 55%,#c23b22);
+    border:1px solid rgba(0,0,0,.3);}
+  /* ===== Mac OS 9: proxy icon in the title plaque (authentic Platinum) ===== */
+  body.theme-macos9 .m9-plaque{padding:0 8px 0 43px;background:#dadada url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='13'%20height='13'%20viewBox='0%200%2013%2013'%3E%3Cpath%20d='M2%201h5l4%204v7H2z'%20fill='%23fff'%20stroke='%237a7a7a'/%3E%3Cpath%20d='M7%201v4h4'%20fill='%23dcdcdc'%20stroke='%237a7a7a'/%3E%3Cpath%20d='M4%207h5M4%209h5M4%2011h3'%20stroke='%239a9a9a'/%3E%3C/svg%3E") 8px center/27px no-repeat;}
+        /* ===== Mac OS 9 Platinum title bar — matched to os9.ca original (authoritative, CPU 1/0.6) ===== */
+  /* Reverse-engineered 1:1 from os9.ca window.min.css */
+  body.theme-macos9 #win, body.theme-macos9 .window{background:#dadada!important;border:1.67px solid #000!important;
+    box-shadow:1.67px 1.67px #111,inset 1.67px 1.67px #fff,inset -1.67px -1.67px #999!important;}
+  body.theme-macos9 .m9-title{height:36.67px;border:none!important;
+    background:repeating-linear-gradient(#fff 0 1.67px,#737373 1.67px 3.33px) left 8.33px/100% 20.0px no-repeat,#dadada!important;}
+  body.theme-macos9 .m9-plaque{background-color:#dadada!important;font-family:'Charcoal','ChicagoFLF',sans-serif!important;font-weight:normal!important;}
+  body.theme-macos9 .m9-close,body.theme-macos9 .m9-collapse,body.theme-macos9 .m9-zoom{
+    display:block!important;box-sizing:content-box!important;width:15.0px!important;height:15.0px!important;position:relative;flex:0 0 auto;
+    border:1.67px solid #222!important;
+    background:linear-gradient(to bottom right,#999,#aaa,#bbb,#ccc,#ddd,#eee,#fff,#fff)!important;
+    box-shadow:inset 1.67px 1.67px #ccc,inset -1.67px -1.67px #888,-1.67px -1.67px 0 0 #808080,1.67px 1.67px 0 0 #fff!important;cursor:pointer;}
+  body.theme-macos9 .m9-close{margin:6.67px 0 0 8.33px!important;}
+  body.theme-macos9 .m9-right{margin-left:auto!important;display:flex!important;align-items:flex-start!important;gap:0!important;margin-right:0!important;padding-right:0!important;}
+  body.theme-macos9 .m9-zoom{order:1;margin:6.67px 6.67px 0 0!important;}
+  body.theme-macos9 .m9-collapse{order:2;margin:6.67px 8.33px 0 6.67px!important;}
+  body.theme-macos9 .m9-zoom::before{content:""!important;position:absolute;top:1.67px!important;left:1.67px!important;width:8.33px;height:8.33px;border-bottom:1.67px solid #202020!important;border-right:1.67px solid #202020!important;background:none!important;box-shadow:none!important;}
+  body.theme-macos9 .m9-zoom::after{content:none!important;}
+  body.theme-macos9 .m9-collapse::before{content:""!important;position:absolute;left:1.67px!important;right:1.67px!important;top:6.67px!important;height:1.67px!important;border-top:1.67px solid #202020!important;border-bottom:1.67px solid #202020!important;background:none!important;box-shadow:none!important;}
+  body.theme-macos9 .m9-collapse::after{content:none!important;}
+  body.theme-macos9 .body{margin:0 6.67px 6.67px 6.67px!important;border:1.67px solid #000!important;box-shadow:-1.67px -1.67px #9c9c9c,1.67px 1.67px #fff,inset 1.67px 1.67px #fff,inset -1.67px -1.67px #acacac!important;}
+  /* Inactive window (os9.ca .window.blur): grey shadow/borders, 50% title, flat boxes */
+  body.theme-macos9.rm-blur #win,body.theme-macos9.rm-blur .window,body.theme-macos9.rm-blur .be-win{box-shadow:1px 1px #525252!important;border-color:#525252!important;}
+  body.theme-macos9.rm-blur .m9-close,body.theme-macos9.rm-blur .m9-collapse,body.theme-macos9.rm-blur .m9-zoom{border-color:#525252!important;box-shadow:none!important;}
+  body.theme-macos9.rm-blur .m9-zoom::before,body.theme-macos9.rm-blur .m9-zoom::after,body.theme-macos9.rm-blur .m9-collapse::before{border-color:#525252!important;background:#525252!important;}
+  body.theme-macos9.rm-blur .m9-plaque{opacity:.5;}
+
+  /* ===== NeXTSTEP (theme-nextstep) — black title bar, close on the RIGHT, chiseled grey frame ===== */
+  body.theme-nextstep{background:transparent;}
+  body.theme-nextstep .window{background:#8a8a98;border:none;border-radius:0;overflow:hidden;
+    box-shadow:inset 2px 2px 0 #fff, inset -2px -2px 0 #3d3e45, 0 0 0 1px #000;}
+  body.theme-nextstep .m9-title,body.theme-nextstep .xp-title,body.theme-nextstep .mf-title,
+  body.theme-nextstep .mx-title,body.theme-nextstep .w98-title,body.theme-nextstep .marker{display:none;}
+  body.theme-nextstep .tab{position:relative;display:block;width:100%;box-sizing:border-box;
+    height:22px;background:#000;border:none;border-radius:0;padding:0;margin:0;overflow:hidden;}
+  body.theme-nextstep .tab b{position:absolute;left:24px;right:24px;top:0;line-height:22px;text-align:center;
+    color:#fff;font:700 13px Helvetica,Arial,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  /* miniaturize square, top-left (decorative) */
+  body.theme-nextstep .tab::before{content:"";position:absolute;left:3px;top:3px;width:16px;height:16px;
+    background:#aaaab7;box-shadow:inset 1px 1px 0 #fff, inset -1px -1px 0 #555;}
+  body.theme-nextstep .tab::after{content:"";position:absolute;left:8px;top:8px;width:6px;height:6px;border:1px solid #000;}
+  /* close box, top-right, with an X (keeps the functional #closebox / #bxclose element) */
+  body.theme-nextstep .closebox{position:absolute;right:3px;top:3px;left:auto;width:16px;height:16px;
+    background:#aaaab7;border:none;border-radius:0;box-shadow:inset 1px 1px 0 #fff, inset -1px -1px 0 #555;}
+  body.theme-nextstep .closebox::before,body.theme-nextstep .closebox::after{content:"";position:absolute;
+    left:2px;top:7px;width:12px;height:2px;background:#000;}
+  body.theme-nextstep .closebox::before{transform:rotate(45deg);}
+  body.theme-nextstep .closebox::after{transform:rotate(-45deg);}
+  body.theme-nextstep .body{background:#8a8a98;border:none;box-shadow:none;margin:2px;}
+
+
+  /* CPU renders its content at SCALE 0.6 — counter-scale the NeXT title so it matches Clock/Notes (22px on screen). */
+  body.theme-nextstep .tab{height:37px;}
+  body.theme-nextstep .tab b{left:40px;right:40px;line-height:37px;font-size:22px;}
+  body.theme-nextstep .tab::before{width:27px;height:27px;left:5px;top:5px;}
+  body.theme-nextstep .tab::after{left:13px;top:13px;width:10px;height:10px;}
+  body.theme-nextstep .closebox{width:27px;height:27px;right:5px;top:5px;}
+  body.theme-nextstep .closebox::before,body.theme-nextstep .closebox::after{left:3px;top:12px;width:20px;height:3px;}
+  body.theme-nextstep .window{box-shadow:inset 3px 3px 0 #fff, inset -3px -3px 0 #3d3e45, 0 0 0 2px #000;}
+
+
+  /* ===== Mac OS X 10.6 Snow Leopard ===== */
+  /* Layered ON TOP of the Cheetah rules above; `setTheme` gives this body BOTH classes
+     (like win7 -> winxp), so anything not restated here is inherited.
+     Caption sampled pixel-by-pixel from a real 10.6 title bar at 1x, mirroring the native
+     chrome in Sources/Desktop/SnowLeopardChrome.swift:
+       #E3E3E3 hairline on top . 20px ramp #CFCFCF -> #A8A8A8 . #525252 separator BELOW
+     The dark line sits at the BOTTOM of a 10.6 caption, not the top.
+     SCALE 0.6: this widget renders its content scaled, so every length here is
+     counter-scaled to land at the same physical size as the other widgets. */
+  body.theme-snowleopard .mx-title{height:36.67px;flex:0 0 36.67px;padding:0 13.33px;
+    background:linear-gradient(to bottom,#cfcfcf,#a8a8a8);border-bottom:none;
+    box-shadow:inset 0 1.67px 0 #e3e3e3, inset 0 -1.67px 0 #525252;}
+  body.theme-snowleopard .mx-title::after{display:none;}      /* 10.6 has no pinstripes */
+  body.theme-snowleopard .mx-lights{gap:11.67px;}
+  /* The lights ARE the reference artwork, embedded, not CSS gradients approximating it. No
+     gradient can draw this orb: its rim runs all the way round while the top still carries the
+     specular and the bottom the shadow, and every border / inset-shadow / radial attempt
+     flattened one of those. The same PNGs are drawn natively from
+     Resources/Chrome/snowleopard/, so widgets and window chrome are identical by construction.
+     Inlined rather than linked so no stale copy can be served from a cache. */
+  body.theme-snowleopard .mx-btn{width:23.33px;height:23.33px;flex:0 0 23.33px;box-sizing:border-box;
+    border:none;box-shadow:none;background:center/23.33px 23.33px no-repeat;}
+  body.theme-snowleopard .mx-btn::before{display:none;}
+  body.theme-snowleopard .mx-btn.mx-close{background-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAAXNSR0IArs4c6QAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAADqADAAQAAAABAAAADgAAAACeOBvAAAACaElEQVQoFU1SPUwUURD+3u7b3dvb4/Y4lj3+j0sukRASTIwFEJHKyoJCo8bGQihooJGYWBorExOl8aewM9HECjuDkaiJlY0aRAxyyQF7J3gXPOBY3F1nzmCc5Hs7OzPfm/neewL/2TWgTQGmCeOEPKdC4AvhBeHubcA7KhdHzg3gshDivpu0Ex0DA7DHxgBFoLrwCpufP6G8s1OPoujKLeApc1ReiHQhLuWTwfYOPW+nkB0ZRvuli3CO9aHZ85DySrBNU1b3984NheG3N8BHlceLCfH6RG9OZg0DrqKglchJRYVVXIe5/BV6yUNck7CSSZSq1TMngccyRpp63Eysx7bh+Icwoghy9TtEpQqQEO1nBbaUMISA0HWUMm2JVW9zWpHA2WxXF1KWhbhpQlNVRAd1BNvbCLa2EZKvShUm5dJWHFxL+sYphL7WjAszDCFoZ3DE9xEGv1k+/UsITYNixmDEYnCamkBVeUkdhEbaFOrEBSBfHB7SPdAFsJHmiMkUVw0dOklhjtRSqeKB72eRTjeSCIgQMZhFC2tjMoE32SMJejpdkFZv78tSpXK1q7OzkRTcmYobRrszke4PCAIaIkS5UoHV3b2gHJ+YeLCxu7v/i/W1tEA4Drg7mpv/fnkSjlGOazZqNX9wcvKh+mh+fuvH2ppaLBROO7kcDCIo8TgEg06agUQCO9Ttw/IynJGRm6dmZ583ZqJRMu/m5qYqKyvX6bj1jOvCIiLNiL16HV65jEKxuJ/M5e6MzszcIynlf2+VyO7m0tLwyuLieb9WGwqDoId10mmv64nE2/zo6LOO/v73RCpx/A91kc2wvC974AAAAABJRU5ErkJggg==);background-image:-webkit-image-set(url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAAXNSR0IArs4c6QAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAADqADAAQAAAABAAAADgAAAACeOBvAAAACaElEQVQoFU1SPUwUURD+3u7b3dvb4/Y4lj3+j0sukRASTIwFEJHKyoJCo8bGQihooJGYWBorExOl8aewM9HECjuDkaiJlY0aRAxyyQF7J3gXPOBY3F1nzmCc5Hs7OzPfm/neewL/2TWgTQGmCeOEPKdC4AvhBeHubcA7KhdHzg3gshDivpu0Ex0DA7DHxgBFoLrwCpufP6G8s1OPoujKLeApc1ReiHQhLuWTwfYOPW+nkB0ZRvuli3CO9aHZ85DySrBNU1b3984NheG3N8BHlceLCfH6RG9OZg0DrqKglchJRYVVXIe5/BV6yUNck7CSSZSq1TMngccyRpp63Eysx7bh+Icwoghy9TtEpQqQEO1nBbaUMISA0HWUMm2JVW9zWpHA2WxXF1KWhbhpQlNVRAd1BNvbCLa2EZKvShUm5dJWHFxL+sYphL7WjAszDCFoZ3DE9xEGv1k+/UsITYNixmDEYnCamkBVeUkdhEbaFOrEBSBfHB7SPdAFsJHmiMkUVw0dOklhjtRSqeKB72eRTjeSCIgQMZhFC2tjMoE32SMJejpdkFZv78tSpXK1q7OzkRTcmYobRrszke4PCAIaIkS5UoHV3b2gHJ+YeLCxu7v/i/W1tEA4Drg7mpv/fnkSjlGOazZqNX9wcvKh+mh+fuvH2ppaLBROO7kcDCIo8TgEg06agUQCO9Ttw/IynJGRm6dmZ583ZqJRMu/m5qYqKyvX6bj1jOvCIiLNiL16HV65jEKxuJ/M5e6MzszcIynlf2+VyO7m0tLwyuLieb9WGwqDoId10mmv64nE2/zo6LOO/v73RCpx/A91kc2wvC974AAAAABJRU5ErkJggg==) 1x,url(data:image/png;base64,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) 2x);}
+  body.theme-snowleopard .mx-btn.mx-min{background-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAAXNSR0IArs4c6QAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAADqADAAQAAAABAAAADgAAAACeOBvAAAACjklEQVQoFU2STWgTQRTH/zM7s5vsbtomab5W2tqkNZVY20JrUahW8Qv00IMi6kGPxYteKgWPXgqCoCD4cfCkRcGbB6EIQi32IFj0YNEWWtM0SbU1aWwTY7LjbErFN8zOg/d+7//ezBL8ZyM7EaYUV+HCEHGjzQnZRcyKEl7Cxp1bC8hsp5Nt53ocF5lC7lu7wmaktwdm+xEQQrE+O4H0+xmk5zIlW4jLY5/xzGEU5zPahXOGR3vaeyKhxrvCaOruR2T3KfgjLfB5fiJQX0CD5WWr2dyZPm91bmoFn5SRPoRdGn3Tf7KHxVo9sBqZBDyoq+MwlRWY1XkY1TXohgY94EMmmTm+LyIeK4ejuBFLtAzu7W5G2Mdg6hSqsgFaSYIW58FK36ERAU3j4G4dG+WKml/LVSh343RsTyv8fgOGxwXGOEipClIoAM6WvqJwqehCo8yJJaJgbgwxrpGO0I4IdJPJhDJEpQyIKlARIBAAlYUoA5Owm6kIWCpUjbQxzhWiqhLS6mXSbxAmQVsC/0z68nZBVTCuwqUVwDklTHMbS6VfuRaEvCDcK5McHSqPmp7EJSikurBByiVsFtag6eYiNfyhiWwqiapsUVD5OrwBxBUAXCF5BkG0AIhaX4tVqmVkl5IwvKHXtPPo8IPFb8vF/HpBdij/B6kkh5Nmb6nVfFKL5fPrWEymy53Hhh8qj8Zf/cgszChL8x8PBSNNUHWP5JzlmKgtW86cz+cwPfUOvujBmwMXxl7U4kKI0OSTa1fyqQ+j0fYO1bIs+TRmbbaNzU2kU8uY/zpbNIOJ24OX7t2V869sFXZqCxFMfpk8MDc9fvZPcXW/XSk3Oz0ThadU3f823n/+uRUfmJZQ1unlLzGw3DrScpcWAAAAAElFTkSuQmCC);background-image:-webkit-image-set(url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAAXNSR0IArs4c6QAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAADqADAAQAAAABAAAADgAAAACeOBvAAAACjklEQVQoFU2STWgTQRTH/zM7s5vsbtomab5W2tqkNZVY20JrUahW8Qv00IMi6kGPxYteKgWPXgqCoCD4cfCkRcGbB6EIQi32IFj0YNEWWtM0SbU1aWwTY7LjbErFN8zOg/d+7//ezBL8ZyM7EaYUV+HCEHGjzQnZRcyKEl7Cxp1bC8hsp5Nt53ocF5lC7lu7wmaktwdm+xEQQrE+O4H0+xmk5zIlW4jLY5/xzGEU5zPahXOGR3vaeyKhxrvCaOruR2T3KfgjLfB5fiJQX0CD5WWr2dyZPm91bmoFn5SRPoRdGn3Tf7KHxVo9sBqZBDyoq+MwlRWY1XkY1TXohgY94EMmmTm+LyIeK4ejuBFLtAzu7W5G2Mdg6hSqsgFaSYIW58FK36ERAU3j4G4dG+WKml/LVSh343RsTyv8fgOGxwXGOEipClIoAM6WvqJwqehCo8yJJaJgbgwxrpGO0I4IdJPJhDJEpQyIKlARIBAAlYUoA5Owm6kIWCpUjbQxzhWiqhLS6mXSbxAmQVsC/0z68nZBVTCuwqUVwDklTHMbS6VfuRaEvCDcK5McHSqPmp7EJSikurBByiVsFtag6eYiNfyhiWwqiapsUVD5OrwBxBUAXCF5BkG0AIhaX4tVqmVkl5IwvKHXtPPo8IPFb8vF/HpBdij/B6kkh5Nmb6nVfFKL5fPrWEymy53Hhh8qj8Zf/cgszChL8x8PBSNNUHWP5JzlmKgtW86cz+cwPfUOvujBmwMXxl7U4kKI0OSTa1fyqQ+j0fYO1bIs+TRmbbaNzU2kU8uY/zpbNIOJ24OX7t2V869sFXZqCxFMfpk8MDc9fvZPcXW/XSk3Oz0ThadU3f823n/+uRUfmJZQ1unlLzGw3DrScpcWAAAAAElFTkSuQmCC) 1x,url(data:image/png;base64,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) 2x);}
+  body.theme-snowleopard .mx-btn.mx-zoom{background-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAAXNSR0IArs4c6QAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAADqADAAQAAAABAAAADgAAAACeOBvAAAAClklEQVQoFU1SXUhTURz/nXvO7tfuVHS2LXUTpzMhFYrElFAieggDDaWHeughIkKox6DHnguqhz5e6iGCgnqyXiwIijAKKn1RlGrZdJtTc5vbvbt393Q2MTrcc++fc/4/fh/3T/D/GkZQVXFZVzDqU9HOxV3OwnzRxJQp4RZeIbnbTnYLdQRnGCH3IiG/0R/rQX/4KAiR8CE+jZmFWcST66bL+bniFJ5WMLTyqj2F07omP+nrjcrRDj8G9/dhsHMMzaE2uHoaJWUTDXUG29jKj7OO8pI1jznaOIEgk8nbQwe6WEOLDqNRQjCkw1tDUWQrWOML2HA34dFk1PvqkM5kjutd/CGtO4hrrZHm4bbOEDQ/haJLcGgBW24cSWsRmVIGNuFgCoOm6iiXXDm3nXWYKmMkFg2j3u8FV0pwuC0CcWDzPCDSsWwHEmMwDA+ILCPWHkEqtTzKVAX7mkIBIY3AkRgsx4JddgSgkilAJA806oFCZcEqgwZUiE87YyJKVaMwVA0O8UClCsqcQzw7QJG7RAg8gpVBhquZoiaEeVXtt2llI37mg8Z0IUcC4WKLX1GRyoU/jrKgduE4JRTMP/Bp3jgL1oam19KJ8y3hAFTmFZJqIXh3gIKTcxc2TJTKWeTtItLpBBp8jW+ksYEL95OJZNHKFyFXpTJ4qAQmCXmVLWpV+JSFfzNfQGolWRofvPiAvng0nVlc/kqXfs0ONQciMDSfAFHQqjcxIcIfEWJz2S18/vQRPU1D1ydP3HheHTnOeeDOy8lLP9a+XI22xeRgaK+I36gGVChsI7m6iqXvC8VwfffNKyfv3iaEpP/NqgDvmfv5buD1t8cTOXP9sF02w6IBVJITNar//bHes8+6W4/MiLNUJe6/surrCYKSshQAAAAASUVORK5CYII=);background-image:-webkit-image-set(url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAAXNSR0IArs4c6QAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAADqADAAQAAAABAAAADgAAAACeOBvAAAAClklEQVQoFU1SXUhTURz/nXvO7tfuVHS2LXUTpzMhFYrElFAieggDDaWHeughIkKox6DHnguqhz5e6iGCgnqyXiwIijAKKn1RlGrZdJtTc5vbvbt393Q2MTrcc++fc/4/fh/3T/D/GkZQVXFZVzDqU9HOxV3OwnzRxJQp4RZeIbnbTnYLdQRnGCH3IiG/0R/rQX/4KAiR8CE+jZmFWcST66bL+bniFJ5WMLTyqj2F07omP+nrjcrRDj8G9/dhsHMMzaE2uHoaJWUTDXUG29jKj7OO8pI1jznaOIEgk8nbQwe6WEOLDqNRQjCkw1tDUWQrWOML2HA34dFk1PvqkM5kjutd/CGtO4hrrZHm4bbOEDQ/haJLcGgBW24cSWsRmVIGNuFgCoOm6iiXXDm3nXWYKmMkFg2j3u8FV0pwuC0CcWDzPCDSsWwHEmMwDA+ILCPWHkEqtTzKVAX7mkIBIY3AkRgsx4JddgSgkilAJA806oFCZcEqgwZUiE87YyJKVaMwVA0O8UClCsqcQzw7QJG7RAg8gpVBhquZoiaEeVXtt2llI37mg8Z0IUcC4WKLX1GRyoU/jrKgduE4JRTMP/Bp3jgL1oam19KJ8y3hAFTmFZJqIXh3gIKTcxc2TJTKWeTtItLpBBp8jW+ksYEL95OJZNHKFyFXpTJ4qAQmCXmVLWpV+JSFfzNfQGolWRofvPiAvng0nVlc/kqXfs0ONQciMDSfAFHQqjcxIcIfEWJz2S18/vQRPU1D1ydP3HheHTnOeeDOy8lLP9a+XI22xeRgaK+I36gGVChsI7m6iqXvC8VwfffNKyfv3iaEpP/NqgDvmfv5buD1t8cTOXP9sF02w6IBVJITNar//bHes8+6W4/MiLNUJe6/surrCYKSshQAAAAASUVORK5CYII=) 1x,url(data:image/png;base64,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) 2x);}
+</style>
+</head>
+<body>
+  <div id="stage">
+    <div id="scaler">
+      <div class="window">
+        <!-- Mac OS 9 Platinum title bar (theme-macos9 only) -->
+        <div class="m9-title" id="m9title">
+          <div class="m9-stripes"></div>
+          <span class="m9-ctl m9-close" id="m9close" title="Schließen"></span>
+          <div class="m9-plaque"><span>CPU Monitor</span></div>
+          <div class="m9-right"><span class="m9-ctl m9-zoom" id="m9zoom"></span><span class="m9-ctl m9-collapse" id="m9collapse"></span></div>
+        </div>
+        <!-- Windows XP Luna title bar (theme-winxp only) -->
+        <div class="xp-title" id="xptitle">
+          <span class="xp-sysicon"></span>
+          <span class="xp-caption">CPU Monitor</span>
+          <span class="xp-btns">
+            <span class="xp-btn xp-min" id="xpmin"></span>
+            <span class="xp-btn xp-max" id="xpmax"></span>
+            <span class="xp-btn xp-close" id="xpclose" title="Schließen"></span>
+          </span>
+        </div>
+        <!-- Maiks Favourite pixel-macOS title bar (theme-maiksfav only) -->
+        <div class="mf-title" id="mftitle">
+          <span class="mf-lights">
+            <span class="mf-btn mf-close" id="mfclose" title="Schließen"></span>
+            <span class="mf-btn mf-min" id="mfmin"></span>
+            <span class="mf-btn mf-zoom" id="mfzoom"></span>
+          </span>
+          <span class="mf-caption">CPU Monitor</span>
+        </div>
+        <!-- Mac OS X Aqua title bar (theme-macosx only) -->
+        <div class="mx-title" id="mxtitle">
+          <span class="mx-lights">
+            <span class="mx-btn mx-close" id="mxclose" title="Schließen"><span class="mx-glyph">&times;</span></span>
+            <span class="mx-btn mx-min" id="mxmin"><span class="mx-glyph">&minus;</span></span>
+            <span class="mx-btn mx-zoom" id="mxzoom"><span class="mx-glyph">+</span></span>
+          </span>
+          <span class="mx-caption">CPU Monitor</span>
+        </div>
+        <!-- Windows 98 classic title bar (theme-win98 only) -->
+        <div class="w98-title" id="w98title">
+          <img class="w98-ico" id="w98ico" alt="">
+          <span class="w98-cap">CPU Monitor</span>
+          <span class="w98-btn w98-dis" id="w98min">_</span>
+          <span class="w98-btn" id="w98max">□</span>
+          <span class="w98-btn" id="w98close">×</span>
+        </div>
+        <div class="tab"><span class="closebox" id="closebox" title="Schließen"></span><b>CPU Monitor</b></div>
+        <div class="body">
+
+          <!-- CPU chip -->
+          <div class="chip">
+            <div class="pins"></div>
+            <div class="die">
+              <div class="silicon">Apple silicon</div>
+              <div class="brand">M4</div>
+              <div class="clock">10&#8209;Core CPU</div>
+            </div>
+          </div>
+
+          <!-- LED meters -->
+          <div class="meters">
+            <div class="row">
+              <div class="num">1</div>
+              <div class="led-well" id="led1"></div>
+            </div>
+            <div class="row">
+              <div class="num">2</div>
+              <div class="led-well" id="led2"></div>
+            </div>
+            <div class="legend">
+              <span><i class="s"></i>1 &middot; System</span>
+              <span><i class="u"></i>2 &middot; User</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // ---------- build LED segments ----------
+  const SEGMENTS = 24;
+  function buildWell(el){
+    el._leds = [];
+    for(let i=0;i<SEGMENTS;i++){
+      const d = document.createElement('div');
+      d.className = 'led off';
+      el.appendChild(d);
+      el._leds.push(d);
+    }
+  }
+  const MAX = SEGMENTS; // 24 segments == 100%
+  function paintBar(el, lit, cls){
+    el._leds.forEach((d,i)=> d.className = 'led ' + (i < lit ? cls : 'off'));
+  }
+
+  const w1 = document.getElementById('led1');
+  const w2 = document.getElementById('led2');
+  buildWell(w1); buildWell(w2);
+
+  // ---------- meters: 1 = System (amber), 2 = User (green) ----------
+  const meters = [
+    { el:w1, cls:'sys',  val:0, tgt:0 },   // 1 = System %
+    { el:w2, cls:'user', val:0, tgt:0 },   // 2 = User %
+  ];
+  function approach(c,t){ return c < t ? c+1 : c > t ? c-1 : c; }
+  function frame(){
+    meters.forEach(m=>{ m.val = approach(m.val, m.tgt); paintBar(m.el, m.val, m.cls); });
+  }
+  meters.forEach(m=>paintBar(m.el, m.val, m.cls));
+  setInterval(frame, 70);   // smooth 1-segment glide; native pushes new targets ~1×/s
+
+  // ---------- live data from the native host ----------
+  const segs = p => Math.round(Math.max(0, Math.min(100, p)) / 100 * SEGMENTS);
+  // 1 = System (amber), 2 = User (green)
+  window.setLoad = function(systemPct, userPct){
+    meters[0].tgt = segs(systemPct);
+    meters[1].tgt = segs(userPct);
+  };
+  window.setCPUInfo = function(silicon, brand, clock){
+    const q = s => document.querySelector(s);
+    if (silicon != null) q('.die .silicon').textContent = silicon;
+    if (brand   != null) q('.die .brand').textContent   = brand;
+    if (clock   != null) q('.die .clock').textContent   = clock;
+  };
+
+  // ---------- close box → tell the native host to close the widget ----------
+  document.getElementById('closebox').addEventListener('click', (e)=>{
+    e.stopPropagation();
+    if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.cpu) {
+      window.webkit.messageHandlers.cpu.postMessage('close');
+    }
+  });
+
+  // ---------- scale the widget down to BeOS-replicant proportions ----------
+  // The prototype draws at ~744px; the real CPU Monitor replicant is a compact panel,
+  // so scale it to sit nicely next to the deskbar/menu.
+  const SCALE = 0.6;
+  const stageEl = document.getElementById('stage');
+  stageEl.style.transformOrigin = 'top left';
+  let zoomed = false, collapsed = false;
+  function applyScale(){ stageEl.style.transform = 'scale(' + (zoomed ? 0.85 : SCALE) + ')'; }
+  applyScale();
+  // Scaled outer size (for the native host to size its window).
+  window.widgetSize = function(){
+    const s = zoomed ? 0.85 : SCALE;
+    return [Math.ceil(stageEl.offsetWidth * s), Math.ceil(stageEl.offsetHeight * s)];
+  };
+
+  // Host sets the chrome theme: 'beos' (yellow tab, default) · 'macos9' (Platinum window).
+  window.setTheme = function(k){ var t=k||'beos'; document.body.className = 'theme-'+t+(t==='win7'?' theme-winxp':'')+(t==='snowleopard'?' theme-macosx':''); };
+  window.setWinIcon = function(u){ var e=document.getElementById('w98ico'); if(!e) return; if(u){ e.src=u; } else { e.removeAttribute('src'); } };
+  window.setHover = function(h){ document.body.classList.toggle('hovering', !!h); };
+
+  // Mac OS 9 title controls — return new widget size so the host can resize its window.
+  window.toggleCollapse = function(){
+    collapsed = !collapsed;
+    document.querySelector('.body').style.display = collapsed ? 'none' : '';
+    return window.widgetSize();
+  };
+  window.toggleZoom = function(){ zoomed = !zoomed; applyScale(); return window.widgetSize(); };
+
+  function postClose(){
+    if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.cpu)
+      window.webkit.messageHandlers.cpu.postMessage('close');
+  }
+  document.getElementById('m9close').addEventListener('click', (e)=>{ e.stopPropagation(); postClose(); });
+  document.getElementById('xpclose').addEventListener('click', (e)=>{ e.stopPropagation(); postClose(); });
+  document.getElementById('mfclose').addEventListener('click', (e)=>{ e.stopPropagation(); postClose(); });
+  document.getElementById('mxclose').addEventListener('click', (e)=>{ e.stopPropagation(); postClose(); });
+  document.getElementById('w98close').addEventListener('click', (e)=>{ e.stopPropagation(); postClose(); });
+
+  // Title rects (already reflect the transform → scaled viewport px).
+  // Native DragOverlayView reports hover/press per title-bar button here (slot ∈ close/
+  // collapse/zoom, mirroring regions()). We toggle a class so the button lights up like the
+  // native chrome. The overlay swallows mouse events, so CSS :hover/:active can't fire itself.
+  window.setBtnState = function(slot, state){
+    const cl = document.body.classList;
+    let ids;
+    if (cl.contains('theme-win98'))       ids = {close:'w98close', collapse:'w98min', zoom:'w98max'};
+    else if (cl.contains('theme-macosx')) ids = {close:'mxclose', collapse:'mxmin', zoom:'mxzoom'};
+    else if (cl.contains('theme-maiksfav')) ids = {close:'mfclose', collapse:'mfmin', zoom:'mfzoom'};
+    else if (cl.contains('theme-winxp'))  ids = {close:'xpclose', collapse:'xpmin', zoom:'xpmax'};
+    else if (cl.contains('theme-macos6')) ids = {close:'m9close', zoom:'m9zoom'};   // System 6: close + zoom
+    else if (cl.contains('theme-macos9')) ids = {close:'m9close', collapse:'m9collapse', zoom:'m9zoom'};
+    else ids = {close:'closebox'};
+    const el = ids[slot] && document.getElementById(ids[slot]);
+    if (!el) return;
+    el.classList.remove('is-hover','is-press');
+    if (state === 'hover') el.classList.add('is-hover');
+    else if (state === 'press') el.classList.add('is-press');
+  };
+
+  window.regions = function(){
+    const cl = document.body.classList;
+    const R = id => { const e = document.getElementById(id) || document.querySelector(id); const b = e.getBoundingClientRect(); return [b.x, b.y, b.width, b.height]; };
+    if (cl.contains('theme-win98')) {
+      // [title, close, collapse(disabled→zeros), zoom]
+      return [...R('w98title'), ...R('w98close'), 0,0,0,0, ...R('w98max')];
+    }
+    if (cl.contains('theme-macosx')) {
+      // Aqua CPU: Close + Zoom only — collapse (yellow) is disabled, so its rect is zeroed.
+      return [...R('mxtitle'), ...R('mxclose'), 0,0,0,0, ...R('mxzoom')];
+    }
+    if (cl.contains('theme-maiksfav')) {
+      return [...R('mftitle'), ...R('mfclose'), ...R('mfmin'), ...R('mfzoom')];
+    }
+    if (cl.contains('theme-winxp')) {
+      return [...R('xptitle'), ...R('xpclose'), ...R('xpmin'), ...R('xpmax')];
+    }
+    if (cl.contains('theme-macos6')) {
+      return [...R('m9title'), ...R('m9close'), 0,0,0,0, ...R('m9zoom')];   // System 6: close + zoom (no collapse)
+    }
+    if (cl.contains('theme-macos9')) {
+      return [...R('m9title'), ...R('m9close'), ...R('m9collapse'), ...R('m9zoom')];
+    }
+    return [...R('.tab'), ...R('closebox')];
+  };
+</script>
+</body>
+</html>

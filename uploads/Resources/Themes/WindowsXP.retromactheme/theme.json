@@ -1,0 +1,246 @@
+{
+  "schemaVersion": 2,
+  "id": "com.retromac.microsoft.windowsxp",
+  "family": {
+    "id": "microsoft",
+    "name": "Microsoft Windows",
+    "order": 2
+  },
+  "release": {
+    "label": "Windows XP",
+    "year": 2001
+  },
+  "experienceLevel": "full",
+  "chrome": {
+    "style": "winxp"
+  },
+  "name": "Windows XP",
+  "hideMenuBarDefault": true,
+  "version": "1.0",
+  "author": "RetroMac",
+  "splashScreen": "splash.png",
+  "splashFullscreen": true,
+  "wallpaper": "wallpaper.jpg",
+  "wallpapers": [
+    {
+      "name": "Bliss",
+      "file": "wallpaper.jpg"
+    },
+    {
+      "name": "Azul",
+      "file": "wallpaper2.jpg"
+    },
+    {
+      "name": "XP Professional",
+      "file": "xp-professional-wallpaper.jpg"
+    }
+  ],
+  "dock": {
+    "height": 44,
+    "iconSize": 32,
+    "padding": 6,
+    "spacing": 4,
+    "cornerRadius": 0,
+    "backgroundColor": "#1856CDFF",
+    "backgroundGradientTop": "#3168D5",
+    "backgroundGradientBottom": "#1042A8",
+    "backgroundImage": null,
+    "backgroundImageMode": "tile",
+    "borderColor": "#0C3B94FF",
+    "borderWidth": 1,
+    "shadowEnabled": false,
+    "shadowColor": "#00000000",
+    "shadowRadius": 0,
+    "bevelTopColor": "#3C7DFFFF",
+    "bevelBottomColor": "#0A246AFF",
+    "bevelWidth": 1,
+    "orientation": "horizontal",
+    "position": "bottom",
+    "fullWidth": true,
+    "startButton": true,
+    "startButtonLabel": "start",
+    "startButtonIcon": "startxpblue.png",
+    "startButtonColor": "#3F9E27",
+    "startButtonGradientTop": "#62C341",
+    "startButtonGradientBottom": "#2C7E16",
+    "showClock": true,
+    "magnification": false,
+    "showTrash": false,
+    "startMenuStyle": "xp",
+    "gradientTop": "#3F86E8FF",
+    "gradientBottom": "#16429EFF",
+    "startButtonImage": "startxpgreen.png"
+  },
+  "icon": {
+    "renderStyle": "smooth",
+    "reflectionEnabled": false,
+    "reflectionOpacity": 0,
+    "hoverScale": 1.0,
+    "hoverAnimationDuration": 0.08
+  },
+  "indicator": {
+    "style": "none",
+    "color": "#5B9BD5",
+    "size": 3,
+    "offset": 2
+  },
+  "desktopIconsSide": "left",
+  "desktopIcons": [
+    {
+      "name": "My Computer",
+      "icon": "xp_mycomputer.png",
+      "type": "folder",
+      "path": "/",
+      "gridX": 0,
+      "gridY": 0
+    },
+    {
+      "name": "All Programs",
+      "icon": "xp_documents.png",
+      "type": "appfolder",
+      "gridX": 0,
+      "gridY": 1
+    },
+    {
+      "name": "Recycle Bin",
+      "icon": "recycle_empty.png",
+      "iconFull": "recycle_full.png",
+      "type": "trash",
+      "gridX": 0,
+      "gridY": 2
+    },
+    {
+      "name": "CPU",
+      "icon": "proz_xp.png",
+      "type": "cpumonitor",
+      "gridX": 0,
+      "gridY": 3
+    },
+    {
+      "name": "Internet Explorer",
+      "icon": "safari.png",
+      "type": "webapp",
+      "url": "https://bored-win98.pisaucer.com/programs/explorer/index.html?address=https%3A%2F%2Fwww.amazon.com",
+      "args": [
+        "1020",
+        "740"
+      ],
+      "gridX": 0,
+      "gridY": 4
+    },
+    {
+      "name": "Notepad",
+      "icon": "notepadclassic.png",
+      "type": "notepad",
+      "gridX": 0,
+      "gridY": 5
+    },
+    {
+      "name": "Paint",
+      "icon": "paint98.png",
+      "type": "webapp",
+      "url": "https://bored-win98.pisaucer.com/programs/jspaint/index.html",
+      "args": [
+        "920",
+        "640"
+      ],
+      "gridX": 0,
+      "gridY": 6
+    },
+    {
+      "name": "Minesweeper",
+      "icon": "mines.png",
+      "type": "webapp",
+      "url": "https://bored-win98.pisaucer.com/programs/minesweeper/index.html",
+      "args": [
+        "360",
+        "460"
+      ],
+      "gridX": 1,
+      "gridY": 0
+    },
+    {
+      "name": "Solitaire",
+      "icon": "solitaire.png",
+      "type": "webapp",
+      "url": "https://bored-win98.pisaucer.com/programs/js-solitaire/index.html",
+      "args": [
+        "800",
+        "600"
+      ],
+      "gridX": 1,
+      "gridY": 1
+    },
+    {
+      "name": "3D Pinball",
+      "icon": "pinball.png",
+      "type": "webapp",
+      "url": "https://bored-win98.pisaucer.com/programs/pinball/space-cadet.html",
+      "args": [
+        "640",
+        "620"
+      ],
+      "gridX": 1,
+      "gridY": 2
+    },
+    {
+      "name": "sheep.exe",
+      "icon": "sheep.png",
+      "type": "sheep",
+      "gridX": 1,
+      "gridY": 3
+    },
+    {
+      "name": "Screen Saver",
+      "icon": "screensaver.png",
+      "type": "screensaver",
+      "gridX": 1,
+      "gridY": 4
+    },
+    {
+      "name": "Calculator",
+      "icon": "calculator.png",
+      "type": "calculator",
+      "gridX": 1,
+      "gridY": 5
+    },
+    {
+      "name": "TV",
+      "icon": "xp_tv.png",
+      "type": "tvfolder",
+      "gridX": 0,
+      "gridY": 7
+    },
+    {
+      "name": "Clock",
+      "icon": "xp_clock.png",
+      "type": "clock",
+      "gridX": 0,
+      "gridY": 8
+    },
+    { "name": "ZIP 100 (D:)", "icon": "", "type": "zipdrive", "gridX": 1, "gridY": 6 }
+  ],
+  "fallbackIcon": "generic.png",
+  "defaultPreset": "lcd-retro-lite",
+  "iconMappings": {
+    "com.apple.finder": "finder.png",
+    "com.apple.Safari": "safari.png",
+    "com.apple.mail": "mail.png",
+    "com.apple.Photos": "photos.png",
+    "com.apple.MobileSMS": "messages.png",
+    "com.apple.Notes": "notes.png",
+    "com.apple.iCal": "calendar.png",
+    "com.apple.systempreferences": "settings.png",
+    "com.apple.Music": "music.png",
+    "com.apple.Terminal": "terminal.png",
+    "com.microsoft.Word": "word.png",
+    "com.microsoft.Excel": "excel.png",
+    "com.microsoft.Powerpoint": "powerpoint.png",
+    "com.microsoft.Outlook": "outlook.png"
+  },
+  "desktopIconSize": 48,
+  "splashVideo": "boot.mp4",
+  "screensaver": "pipes",
+  "appearance": "light",
+  "accentColor": "blue"
+}

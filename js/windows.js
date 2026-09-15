@@ -163,9 +163,12 @@
     var frame = D.el(
       '<section class="win" role="dialog" aria-label="' + title + '" tabindex="-1">' +
         '<div class="titlebar">' +
-          '<button class="box" data-act="close" aria-label="Close ' + title + '"></button>' +
+          '<div class="tb-boxes">' +
+            '<button class="box" data-act="close" aria-label="Close ' + title + '"></button>' +
+            '<span class="box box-deco" aria-hidden="true"></span>' +
+            '<button class="box zoom" data-act="zoom" aria-label="Zoom to fit"></button>' +
+          '</div>' +
           '<div class="tb-title"><span></span></div>' +
-          '<button class="box zoom" data-act="zoom" aria-label="Zoom to fit"></button>' +
         '</div>' +
         (info.length ? '<div class="infobar">' +
           info.map(function (s, i) {
@@ -176,6 +179,9 @@
           '<div class="vbar" aria-hidden="true"><i></i><u><b></b></u><i></i></div>' +
         '</div>' +
         '<div class="hbar" aria-hidden="true"><i></i><u><b></b></u><i></i></div>' +
+        '<span class="edge edge-r" aria-hidden="true"></span>' +
+        '<span class="edge edge-l" aria-hidden="true"></span>' +
+        '<span class="edge edge-b" aria-hidden="true"></span>' +
         '<span class="corner" aria-hidden="true"></span>' +
       '</section>'
     );
@@ -650,32 +656,50 @@
   }
 
   function resize(frame, name) {
-    var handle = frame.querySelector('.corner'), on = false, sx, sy, ow, oh;
-    if (!handle) return;
-    handle.addEventListener('pointerdown', function (e) {
-      if (D.small() || e.button > 0) return;
-      on = true; sx = e.clientX; sy = e.clientY;
-      ow = frame.offsetWidth; oh = frame.offsetHeight;
-      handle.setPointerCapture(e.pointerId);
-      focus(name);
-      if (D.open[name]) D.open[name].prev = null;
-      frame.classList.add('resizing');
-      e.preventDefault();
-      e.stopPropagation();
-    });
-    handle.addEventListener('pointermove', function (e) {
-      if (!on) return;
-      var maxW = Math.max(260, D.desktop.clientWidth - frame.offsetLeft);
-      var maxH = Math.max(160, D.desktop.clientHeight - frame.offsetTop);
-      frame.style.width = Math.max(260, Math.min(ow + (e.clientX - sx), maxW)) + 'px';
-      frame.style.height = Math.max(160, Math.min(oh + (e.clientY - sy), maxH)) + 'px';
-      updateScrollbars(frame);
-    });
-    ['pointerup', 'pointercancel'].forEach(function (t) {
-      handle.addEventListener(t, function (e) {
-        on = false; frame.classList.remove('resizing');
-        try { handle.releasePointerCapture(e.pointerId); } catch (err) {}
+    var rigs = [
+      { el: frame.querySelector('.corner'), dir: 'se' },
+      { el: frame.querySelector('.edge-r'), dir: 'e' },
+      { el: frame.querySelector('.edge-l'), dir: 'w' },
+      { el: frame.querySelector('.edge-b'), dir: 's' }
+    ];
+    rigs.forEach(function (rig) {
+      var handle = rig.el, dir = rig.dir, on = false, sx, sy, ow, oh, ol;
+      if (!handle) return;
+      handle.addEventListener('pointerdown', function (e) {
+        if (D.small() || e.button > 0) return;
+        on = true; sx = e.clientX; sy = e.clientY;
+        ow = frame.offsetWidth; oh = frame.offsetHeight; ol = frame.offsetLeft;
+        handle.setPointerCapture(e.pointerId);
+        focus(name);
+        if (D.open[name]) D.open[name].prev = null;
+        frame.classList.add('resizing', 'resizing-' + dir);
+        e.preventDefault();
+        e.stopPropagation();
+      });
+      handle.addEventListener('pointermove', function (e) {
+        if (!on) return;
+        var dx = e.clientX - sx, dy = e.clientY - sy;
+        var maxW = Math.max(260, D.desktop.clientWidth - frame.offsetLeft);
+        var maxH = Math.max(160, D.desktop.clientHeight - frame.offsetTop);
+        if (dir === 'e' || dir === 'se') {
+          frame.style.width = Math.max(260, Math.min(ow + dx, maxW)) + 'px';
+        }
+        if (dir === 's' || dir === 'se') {
+          frame.style.height = Math.max(160, Math.min(oh + dy, maxH)) + 'px';
+        }
+        if (dir === 'w') {
+          var newW = Math.max(260, Math.min(ow - dx, ol + ow));
+          frame.style.width = newW + 'px';
+          frame.style.left = (ol + ow - newW) + 'px';
+        }
         updateScrollbars(frame);
+      });
+      ['pointerup', 'pointercancel'].forEach(function (t) {
+        handle.addEventListener(t, function (e) {
+          on = false; frame.classList.remove('resizing', 'resizing-' + dir);
+          try { handle.releasePointerCapture(e.pointerId); } catch (err) {}
+          updateScrollbars(frame);
+        });
       });
     });
   }

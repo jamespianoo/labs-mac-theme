@@ -50,6 +50,41 @@
     D.ctxTarget = null;
   }
 
+  /* Move to Folder — flat list (no hover submenu) so it works the same on
+     tap and click; this is the mobile-friendly stand-in for dragging an
+     icon onto a folder. */
+  var MOVE_TARGETS = [
+    { name: 'projects', label: 'Projects' },
+    { name: 'music', label: 'Music' },
+    { name: 'videos', label: 'Videos' }
+  ];
+  function resolveMoveIcon(target) {
+    if (!target) return null;
+    if (target.classList.contains('item') && target.dataset.unshelf) {
+      return (D.shelved && (D.shelved.querySelector('.icon[data-id="' + target.dataset.unshelf + '"]') || D.shelved.querySelector('.icon[data-open="' + target.dataset.unshelf + '"]'))) || null;
+    }
+    if (target.classList.contains('icon')) return target;
+    return null;
+  }
+  function moveMenuHtml(target) {
+    var icon = resolveMoveIcon(target);
+    if (!icon || icon.classList.contains('trash') || icon.getAttribute('data-trash') != null) return '';
+    var openName = icon.dataset.open || icon.dataset.id || '';
+    if (D.DESK_PINNED_IDS && D.DESK_PINNED_IDS[openName]) return '';
+    var shelf = icon.dataset.shelf || '';
+    var opts = MOVE_TARGETS.filter(function (t) {
+      if (t.name === shelf || t.name === openName) return false;
+      if (openName && typeof D.isFolderAncestor === 'function') {
+        if (D.isFolderAncestor(openName, t.name) || D.isFolderAncestor(t.name, openName)) return false;
+      }
+      return true;
+    });
+    if (!opts.length) return '';
+    return opts.map(function (t) {
+      return '<button type="button" data-ctx="move" data-folder="' + t.name + '">Move to ' + t.label + '</button>';
+    }).join('');
+  }
+
   function showCtx(x, y, target) {
     hideMenus();
     D.ctxTarget = target || null;
@@ -68,10 +103,12 @@
           '<button type="button" data-ctx="info">Get Info</button>';
       } else {
         var itemMulti = typeof D.selectedNodes === 'function' && D.selectedNodes().length > 1 && target.classList.contains('selected');
+        var itemMoveHtml = itemMulti ? '' : moveMenuHtml(target);
         html =
           '<button type="button" data-ctx="open">' + (itemMulti ? 'Open ' + D.selectedNodes().length + ' Items' : 'Open') + '</button>' +
           '<button type="button" data-ctx="info">Get Info</button>' +
           '<hr>' +
+          (itemMoveHtml ? itemMoveHtml + '<hr>' : '') +
           '<button type="button" data-ctx="trash">' + (itemMulti ? 'Move ' + D.selectedNodes().length + ' Items to Trash' : 'Move to Trash') + '</button>';
       }
     } else if (target && target.classList.contains('icon')) {
@@ -83,6 +120,7 @@
           '<button type="button" data-ctx="empty"' + (n ? '' : ' class="disabled"') + '>Empty Trash</button>';
       } else {
         var iconMulti = typeof D.selectedNodes === 'function' && D.selectedNodes().length > 1 && target.classList.contains('selected');
+        var iconMoveHtml = iconMulti ? '' : moveMenuHtml(target);
         html =
           '<button type="button" data-ctx="open">' + (iconMulti ? 'Open ' + D.selectedNodes().length + ' Items' : 'Open') + '</button>' +
           '<button type="button" data-ctx="info">Get Info</button>' +
@@ -91,6 +129,7 @@
             '<button type="button" data-ctx="duplicate">Duplicate</button>' +
             '<button type="button" data-ctx="rename">Rename</button>' +
             '<hr>') +
+          (iconMoveHtml ? iconMoveHtml + '<hr>' : '') +
           '<button type="button" data-ctx="trash">' + (iconMulti ? 'Move ' + D.selectedNodes().length + ' Items to Trash' : 'Move to Trash') + '</button>';
       }
     } else {
@@ -200,6 +239,10 @@
           } else {
             D.moveToTrash(target);
           }
+        }
+        else if (act === 'move' && target) {
+          var moveIcon = resolveMoveIcon(target);
+          if (moveIcon && typeof D.moveToFolder === 'function') D.moveToFolder(moveIcon, b.dataset.folder);
         }
         else if (act === 'empty') D.emptyTrash();
         else if (act === 'reset') D.resetDesktop();
@@ -338,7 +381,6 @@
     document.addEventListener('click', function (e) {
       var node = e.target.closest('.icon,.item');
       if (node) {
-        if (node.dataset.justActivated) { delete node.dataset.justActivated; e.preventDefault(); return; }
         if (node.dataset.dragged) { delete node.dataset.dragged; e.preventDefault(); return; }
         if (node.closest && node.closest('.renaming')) return;
         if (e.shiftKey || e.metaKey || e.ctrlKey) {
@@ -351,8 +393,10 @@
           e.preventDefault();
           return;
         }
-        D.clearSel();
-        node.classList.add('selected');
+        if (!node.classList.contains('selected')) {
+          D.clearSel();
+          node.classList.add('selected');
+        }
         D.activate(node);
         return;
       }
@@ -372,8 +416,10 @@
           D.activateSelected(node);
           return;
         }
-        D.clearSel();
-        node.classList.add('selected');
+        if (!node.classList.contains('selected')) {
+          D.clearSel();
+          node.classList.add('selected');
+        }
         D.activate(node);
       }
     });

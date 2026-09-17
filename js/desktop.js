@@ -30,13 +30,21 @@
   D.trashSeq = 0;
   D.marqueeActive = false;
   D.marqueeJustFinished = false;
-  D.POS_KEY = 'jb-desk-pos-v2';
+  /* v7: about/contact nudged further right */
+  D.POS_KEY = 'jb-desk-pos-v7';
   D.GONE_KEY = 'jb-desk-gone-v2';
   D.SEED_KEY = 'jb-trash-seeds-cleared-v2';
   D.SHELF_KEY = 'jb-desk-shelf-v6';
+  /* v3: folder windows start on a tidy grid again */
+  D.WIN_POS_KEY = 'jb-win-pos-v3';
   D.FOLDER_IDS = { projects: 1, labs: 1, maps: 1, music: 1, stream: 1, videos: 1, piano: 1, football: 1 };
-  /* Only Trash is pinned / cannot be shelved into folders */
-  D.PINNED_IDS = { trash: 1 };
+  /* Core icons that can never be trashed */
+  D.NO_TRASH_IDS = { trash: 1, projects: 1, music: 1, videos: 1, about: 1, contact: 1, promo: 1 };
+  /* Non-folder desk files stay on the desktop (folders may nest inside each other) */
+  D.DESK_PINNED_IDS = { about: 1, contact: 1, promo: 1 };
+  D.PINNED_IDS = D.NO_TRASH_IDS;
+  /* Shelved items/folders hidden from folder windows until ready */
+  D.HIDDEN_IDS = { maps: 1 };
   D.clock12 = true;
   D.stickyAlert = document.getElementById('sticky-alert');
   D.stickyPending = null;
@@ -52,7 +60,8 @@
     console.warn('Could not parse jb-taxonomy', err);
   }
 
-  D.MQ_SMALL = '(max-width:820px)';
+  /* Phone + tablet: stacked layout (wide desktop starts above this) */
+  D.MQ_SMALL = '(max-width:1100px)';
   D.MQ_COARSE = '(pointer: coarse)';
 
   D.small = function () {

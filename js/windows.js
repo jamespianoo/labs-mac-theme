@@ -34,6 +34,7 @@
 
   /* ------------------------------------------------------------- windows */
   var FOLDER_SLUGS = {
+    projects: 'projects',
     music: 'music',
     football: 'football',
     labs: 'labs',
@@ -47,6 +48,7 @@
   };
 
   var SLUG_MAP = {
+    projects: 'projects',
     music: 'music',
     football: 'football',
     labs: 'labs',
@@ -109,6 +111,18 @@
     return out;
   }
 
+  /* Back/forward toolbar buttons ride the same pushState history the app
+     already keeps for deep links — depth tracks how many of our own states
+     are behind the current one, so "back" never walks off the site. */
+  var navDepth = 0, navMaxDepth = 0;
+
+  function updateNavButtons() {
+    var canBack = navDepth > 0, canForward = navDepth < navMaxDepth;
+    document.querySelectorAll('.tb-nav-back').forEach(function (b) { b.disabled = !canBack; });
+    document.querySelectorAll('.tb-nav-fwd').forEach(function (b) { b.disabled = !canForward; });
+  }
+  D.updateNavButtons = updateNavButtons;
+
   function updateRoute(name, opts) {
     opts = opts || {};
     var slug = (name && FOLDER_SLUGS[name]) || '';
@@ -130,13 +144,16 @@
 
     if (opts.replace) {
       try {
-        window.history.replaceState({ window: name || null, slug: slug }, '', targetUrl);
+        window.history.replaceState({ window: name || null, slug: slug, depth: navDepth }, '', targetUrl);
       } catch (err) {}
     } else {
       try {
-        window.history.pushState({ window: name || null, slug: slug }, '', targetUrl);
+        navDepth += 1;
+        navMaxDepth = navDepth;
+        window.history.pushState({ window: name || null, slug: slug, depth: navDepth }, '', targetUrl);
       } catch (err) {}
     }
+    updateNavButtons();
   }
 
   function openWindow(name, opts) {
@@ -167,6 +184,10 @@
             '<button class="box" data-act="close" aria-label="Close ' + title + '"></button>' +
             '<span class="box box-deco" aria-hidden="true"></span>' +
             '<button class="box zoom" data-act="zoom" aria-label="Zoom to fit"></button>' +
+          '</div>' +
+          '<div class="tb-nav">' +
+            '<button type="button" class="tb-nav-back" aria-label="Back" title="Back"></button>' +
+            '<button type="button" class="tb-nav-fwd" aria-label="Forward" title="Forward"></button>' +
           '</div>' +
           '<div class="tb-title"><span></span></div>' +
         '</div>' +
@@ -224,6 +245,10 @@
       frame.style.left = '-9999px';
       frame.style.top = '0';
       D.desktop.appendChild(frame);
+      /* Grid-place folder items before sizing so the window hugs real content */
+      if (D.FOLDER_IDS && D.FOLDER_IDS[name] && typeof D.layoutFolderWindow === 'function') {
+        D.layoutFolderWindow(frame, name);
+      }
       /* Fit folders and document windows to their content on open */
       var labsGate = name === 'labs' ? frame.querySelector('[data-labs-gate]') : null;
       var labsLocked = !!(labsGate && !labsGate.hidden);
@@ -237,6 +262,9 @@
         }
         frame.style.width = w + 'px';
         frame.style.height = h + 'px';
+        if (D.FOLDER_IDS && D.FOLDER_IDS[name] && typeof D.layoutFolderWindow === 'function') {
+          D.layoutFolderWindow(frame, name);
+        }
       }
       var spot = findWindowSpot(w, h);
       frame.style.left = spot.left + 'px';
@@ -248,11 +276,14 @@
 
     frame.querySelector('[data-act=close]').addEventListener('click', function (e) { e.stopPropagation(); closeWindow(name); });
     frame.querySelector('[data-act=zoom]').addEventListener('click', function (e) { e.stopPropagation(); zoom(name); });
+    frame.querySelector('.tb-nav-back').addEventListener('click', function (e) { e.stopPropagation(); window.history.back(); });
+    frame.querySelector('.tb-nav-fwd').addEventListener('click', function (e) { e.stopPropagation(); window.history.forward(); });
     frame.addEventListener('pointerdown', function () { focus(name); });
     bindScrollbars(frame);
     drag(frame, name);
     resize(frame, name);
     focus(name, assignOpts(opts, { fromOpen: true }));
+    updateNavButtons();
     D.beep();
     frame.focus({ preventScroll: true });
     return frame;
@@ -409,6 +440,16 @@
       if (!n) {
         w = 360;
         h = 220;
+      } else if (items.classList.contains('items-free') && typeof D.folderHostExtent === 'function') {
+        var padX = 40;
+        var padY = 56;
+        var ext = D.folderHostExtent(items);
+        w = ext.w + padX + chromeW;
+        h = ext.h + padY + chromeH;
+        frame.style.width = Math.min(w, maxW) + 'px';
+        frame.style.height = Math.min(h, maxH) + 'px';
+        w = Math.max(w, body.scrollWidth + chromeW + 2);
+        h = Math.max(h, body.scrollHeight + chromeH + 4);
       } else {
         var cols = n <= 1 ? 1 : n <= 2 ? 2 : n <= 4 ? 2 : n <= 6 ? 3 : n <= 9 ? 3 : 4;
         var rows = Math.ceil(n / cols);
@@ -1090,7 +1131,9 @@
     }
   }
 
-  window.addEventListener('popstate', function () {
+  window.addEventListener('popstate', function (e) {
+    navDepth = (e.state && typeof e.state.depth === 'number') ? e.state.depth : 0;
+    updateNavButtons();
     var slug = getSlugFromPath();
     var winName = slug ? SLUG_MAP[slug] : null;
     if (winName) {

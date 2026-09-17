@@ -202,8 +202,7 @@
      frame rather than thousands of fillStyle switches. */
   var INKS = [
     'dustA', 'dustB', 'dustC', 'dustD', 'dustE',
-    'dim', 'mid', 'lit', 'hover', 'crest', 'text',
-    'jupA', 'jupB', 'jupC', 'jupD', 'satA', 'satB', 'satC', 'ring'
+    'dim', 'mid', 'lit', 'hover', 'crest', 'text'
   ];
   var DUST_INKS = ['dustA', 'dustB', 'dustC', 'dustD', 'dustE'];
   var buckets = {};
@@ -852,122 +851,139 @@
   }
 
   /* -------------------------------------------------------------- planets
-     Rare pixel Jupiter / Saturn near the corners. Sparse, slow fade. */
-  var PLANET_SPRITES = {
-    jupiter: {
-      w: 11, h: 11,
-      /* . empty · A cream · B ochre · C dark belt · D highlight */
-      rows: [
-        '...........',
-        '...AAAAA...',
-        '..AABBBAA..',
-        '.AABBDBBAA.',
-        '.ABCCCCCBA.',
-        '.AABBBBAA..',
-        '.AADBBBDDA.',
-        '.ABCCCCCBA.',
-        '..AABBBAA..',
-        '...AAAAA...',
-        '...........'
-      ],
-      map: { A: 'jupA', B: 'jupB', C: 'jupC', D: 'jupD' }
-    },
-    saturn: {
-      w: 15, h: 11,
-      rows: [
-        '...............',
-        '....RRRRRRR....',
-        '...R..AAA..R...',
-        '..R..ABBBA..R..',
-        '.R..ABBBBBA..R.',
-        'RR..ABBCBBA..RR',
-        '.R..ABBBBBA..R.',
-        '..R..ABBBA..R..',
-        '...R..AAA..R...',
-        '....RRRRRRR....',
-        '...............'
-      ],
-      map: { A: 'satA', B: 'satB', C: 'satC', R: 'ring' }
-    }
+     Saturn — rare corner sighting on desktop. */
+  var PLANET_ASSETS = {
+    saturn: { src: 'img/field/saturn.svg', w: 60, h: 33, cells: 28 }
   };
+  var planetImgs = {};
+  Object.keys(PLANET_ASSETS).forEach(function (kind) {
+    var img = new Image();
+    img.decoding = 'async';
+    img.src = PLANET_ASSETS[kind].src;
+    planetImgs[kind] = img;
+  });
 
   var planets = [];
-  var planetNextAt = (typeof performance !== 'undefined' ? performance.now() : 0) + 14000 + Math.random() * 28000;
-  var PLANET_MIN_GAP = 45000;   /* ms between spawn attempts */
-  var PLANET_CHANCE = 0.22;     /* chance when an attempt fires */
-  var PLANET_LIFE = 18000;      /* visible duration */
-  var PLANET_FADE = 2200;
+  var planetNextAt = (typeof performance !== 'undefined' ? performance.now() : 0) + 8000 + Math.random() * 14000;
+  var PLANET_MIN_GAP = 28000;   /* ms between spawn attempts */
+  var PLANET_CHANCE = 0.42;     /* chance when an attempt fires */
+  var PLANET_LIFE = 20000;      /* visible duration */
+  var PLANET_FADE = 1800;
 
-  function planetCornerOrigin(corner, spr) {
-    var pad = 4;
-    var maxC = Math.floor((W - ox) / cw) - spr.w - pad;
-    var maxR = Math.floor((H - oy) / cw) - spr.h - pad;
+  function planetSize(kind) {
+    var a = PLANET_ASSETS[kind];
+    var w = a.cells;
+    var h = Math.max(1, Math.round(w * (a.h / a.w)));
+    return { w: w, h: h };
+  }
+
+  function planetDeskOk() {
+    return !(window.JBDesk && typeof window.JBDesk.small === 'function' && window.JBDesk.small());
+  }
+
+  /* Bounding box of JAMES BECKWITH + strapline, with a cell margin */
+  function planetTextZone() {
+    var margin = 7;
+    var left = -margin;
+    var top = -margin;
+    var right = word.width + margin;
+    var bottom = word.height + margin;
+    if (strapBox) {
+      left = Math.min(left, strapBox.c0 - margin);
+      right = Math.max(right, strapBox.c1 + margin);
+      bottom = Math.max(bottom, strapBox.r1 + margin);
+    }
+    return { left: left, top: top, right: right, bottom: bottom };
+  }
+
+  function planetHitsText(c0, r0, size) {
+    var z = planetTextZone();
+    return !(c0 + size.w <= z.left || c0 >= z.right || r0 + size.h <= z.top || r0 >= z.bottom);
+  }
+
+  function planetCornerOrigin(corner, size) {
+    var pad = 3;
+    var maxC = Math.floor((W - ox) / cw) - size.w - pad;
+    var maxR = Math.floor((H - oy) / cw) - size.h - pad;
     var c0 = pad, r0 = pad;
     if (corner === 1 || corner === 3) c0 = Math.max(pad, maxC);
     if (corner === 2 || corner === 3) r0 = Math.max(pad, maxR);
-    /* Nudge a little so repeats don't land on the exact same cell */
     c0 += Math.floor((Math.random() * 5) - 2);
     r0 += Math.floor((Math.random() * 5) - 2);
     return {
-      c0: Math.max(2, Math.min(maxC, c0)),
-      r0: Math.max(2, Math.min(maxR, r0))
+      c0: Math.max(2, Math.min(Math.max(pad, maxC), c0)),
+      r0: Math.max(2, Math.min(Math.max(pad, maxR), r0))
     };
   }
 
   function stepPlanets(time) {
-    if (reduced) { planets.length = 0; return; }
+    if (reduced || !planetDeskOk()) { planets.length = 0; return; }
     if (time >= planetNextAt) {
       planetNextAt = time + PLANET_MIN_GAP * (0.7 + Math.random() * 0.8);
-      if (planets.length < 2 && Math.random() < PLANET_CHANCE) {
-        var kinds = ['jupiter', 'saturn'];
+      if (!planets.length && Math.random() < PLANET_CHANCE) {
+        var kind = 'saturn';
         var used = {};
-        planets.forEach(function (p) { used[p.kind] = 1; used[p.corner] = 1; });
-        var kind = kinds[Math.floor(Math.random() * kinds.length)];
-        if (used[kind] && kinds.length > 1) kind = kind === 'jupiter' ? 'saturn' : 'jupiter';
-        var corner, tries = 0;
-        do {
-          corner = Math.floor(Math.random() * 4);
-          tries++;
-        } while (used[corner] && tries < 8);
-        var spr = PLANET_SPRITES[kind];
-        var origin = planetCornerOrigin(corner, spr);
+        planets.forEach(function (p) { used[p.corner] = 1; });
+        if (!planetImgs[kind] || !planetImgs[kind].complete || !planetImgs[kind].naturalWidth) {
+          return;
+        }
+        var size = planetSize(kind);
+        var candidates = [];
+        var corner;
+        for (corner = 0; corner < 4; corner++) {
+          /* Corner 3 = bottom-right — reserved for the Trash icon */
+          if (used[corner] || corner === 3) continue;
+          var origin = planetCornerOrigin(corner, size);
+          if (!planetHitsText(origin.c0, origin.r0, size)) {
+            candidates.push({ corner: corner, c0: origin.c0, r0: origin.r0 });
+          }
+        }
+        if (!candidates.length) return;
+        var pick = candidates[Math.floor(Math.random() * candidates.length)];
         planets.push({
           kind: kind,
-          corner: corner,
-          c0: origin.c0,
-          r0: origin.r0,
+          corner: pick.corner,
+          c0: pick.c0,
+          r0: pick.r0,
           born: time,
           life: PLANET_LIFE * (0.85 + Math.random() * 0.4)
         });
       }
     }
+    /* Drop any that drift over the name after a resize/layout, or sit on Trash */
     planets = planets.filter(function (p) {
-      return time - p.born < p.life + PLANET_FADE;
+      if (p.kind !== 'saturn') return false;
+      if (time - p.born >= p.life + PLANET_FADE) return false;
+      if (p.corner === 3) return false;
+      return !planetHitsText(p.c0, p.r0, planetSize(p.kind));
     });
   }
 
   function drawPlanets(time) {
-    var i, p, spr, r, c, ch, ink, age, fade, thresh;
+    if (!planets.length || !planetDeskOk()) return;
+    var i, p, img, size, age, fade, x, y, dw, dh;
+    var prevSmooth = ctx.imageSmoothingEnabled;
+    ctx.imageSmoothingEnabled = false;
     for (i = 0; i < planets.length; i++) {
       p = planets[i];
-      spr = PLANET_SPRITES[p.kind];
+      img = planetImgs[p.kind];
+      if (!img || !img.complete || !img.naturalWidth) continue;
       age = time - p.born;
       if (age < PLANET_FADE) fade = age / PLANET_FADE;
       else if (age > p.life) fade = 1 - (age - p.life) / PLANET_FADE;
       else fade = 1;
       fade = Math.max(0, Math.min(1, fade));
-      for (r = 0; r < spr.h; r++) {
-        for (c = 0; c < spr.w; c++) {
-          ch = spr.rows[r].charAt(c);
-          ink = spr.map[ch];
-          if (!ink) continue;
-          /* Dissolve in/out with a per-cell threshold so it feels pixelly */
-          thresh = jitter[((p.r0 + r) * 41 + (p.c0 + c) * 13 + p.corner * 7) & 4095];
-          if (fade < 0.999 && fade < 0.15 + thresh * 0.85) continue;
-          cellRect(ink, p.c0 + c, p.r0 + r);
-        }
-      }
+      if (fade <= 0.01) continue;
+      size = planetSize(p.kind);
+      dw = size.w * cw;
+      dh = size.h * cw;
+      x = Math.round(ox + p.c0 * cw);
+      y = Math.round(oy + p.r0 * cw);
+      ctx.globalAlpha = fade;
+      ctx.drawImage(img, x, y, Math.round(dw), Math.round(dh));
     }
+    ctx.globalAlpha = 1;
+    ctx.imageSmoothingEnabled = prevSmooth;
   }
 
   /* Like cellRect, but at the name's own (10% smaller) scale */
@@ -1152,8 +1168,8 @@
     }
     if (showEq) drawEq();
     stepPlanets(time);
-    drawPlanets(time);
     flush();
+    drawPlanets(time);
 
     /* The name at rest, or the entrance making it */
     if (entrance) {

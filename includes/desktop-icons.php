@@ -57,7 +57,7 @@
         </span>
         <span class="label">Labs</span>
       </button>
-      <button class="icon" data-id="maps" data-open="maps" data-shelf="projects">
+      <button class="icon" data-id="maps" data-open="maps" data-shelf="projects" hidden>
         <span class="art ra-folder folder smooth">
           <img class="ra-shell" src="img/icons/sys9-folder.png" width="128" height="128" alt="">
           <img class="ra-glyph" src="img/icons/glyph-map.webp" width="48" height="48" alt="">

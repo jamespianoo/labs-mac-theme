@@ -1,5 +1,5 @@
 <div class="menubar">
-    <button type="button" class="mark" data-open="about" aria-label="About James Beckwith">
+    <button type="button" class="mark" data-open="about" aria-label="About">
       <img src="img/icons/jb-white.webp" width="20" height="20" alt="">
     </button>
 
@@ -25,9 +25,8 @@
   </div>
 
   <div class="menu" id="m-file" hidden>
-    <button data-open="about">About James Beckwith</button>
-    <button data-open="contact">Contact&hellip;</button>
-    <button type="button" data-eq-toggle>EQ Visualiser</button>
+    <button data-open="about">About</button>
+    <button data-open="contact">Contact</button>
     <hr>
     <button type="button" data-cleanup>Clean Up</button>
     <button type="button" data-arrange-name>Arrange by Name</button>
@@ -49,13 +48,10 @@
 
   <div class="menu" id="m-go" hidden>
     <button data-open="labs">Labs</button>
-    <button data-open="maps">Maps</button>
+    <button data-open="maps" hidden>Maps</button>
     <button data-open="videos">Videos</button>
     <button data-open="football">Football</button>
     <button data-open="piano">Piano Repair</button>
-    <hr>
-    <button data-open="contact">contact.me</button>
-    <button data-open="promo">promo.png</button>
   </div>
 
   <div class="menu" id="m-socials" hidden>

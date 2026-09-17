@@ -13,9 +13,20 @@
   }
 
   function isPinned(icon) {
-    if (!icon || !D.PINNED_IDS) return false;
+    return isTrashProtected(icon);
+  }
+
+  function isTrashProtected(icon) {
+    if (!icon || isTrashCan(icon)) return true;
     var id = icon.dataset.id || icon.dataset.open;
-    return !!(id && D.PINNED_IDS[id]);
+    return !!(id && D.NO_TRASH_IDS && D.NO_TRASH_IDS[id]);
+  }
+
+  function isDeskPinned(icon) {
+    if (!icon || isTrashCan(icon)) return true;
+    var id = icon.dataset.id || icon.dataset.open;
+    if (id && D.DESK_PINNED_IDS && D.DESK_PINNED_IDS[id]) return true;
+    return false;
   }
 
   function ensureTrashOnDesktop() {
@@ -73,7 +84,7 @@
   }
 
   function moveToTrash(icon) {
-    if (!icon || isTrashCan(icon) || isPinned(icon) || !D.trashed) return;
+    if (!icon || isTrashProtected(icon) || !D.trashed) return;
     if (icon.classList.contains('renaming')) return;
     var winName = icon.dataset.open;
     var prevShelf = icon.dataset.shelf;
@@ -618,6 +629,7 @@
   }
 
   var liveWordmarkZone = null;
+  var composeOnceOnWordmark = false;
 
   function wordmarkZone(W, H) {
     if (liveWordmarkZone) {
@@ -819,60 +831,78 @@
     if (moved) savePositions();
   }
 
-  function scatterIcons(force) {
-    if (D.small() || !D.iconsHost) return;
-    if (!force) {
-      var saved = readPositions();
-      if (saved) {
-        var result = applySavedPositions(saved);
-        if (result.applied > 0) {
-          if (result.missing.length) {
-            var stickies = stickyRects();
-            var placed = collectPlaced();
-            /* Place missing largest-first (promo before small icons) */
-            result.missing.sort(function (a, b) {
-              var sa = iconSize(a), sb = iconSize(b);
-              return (sb.w * sb.h) - (sa.w * sa.h);
-            });
-            result.missing.forEach(function (icon) {
-              var size = iconSize(icon);
-              var spot = findClearSpot(size.w, size.h, placed, stickies, true, icon.dataset.id !== 'promo');
-              icon.style.left = spot.x + 'px';
-              icon.style.top = spot.y + 'px';
-              clampIconToDesk(icon);
-              placed.push({
-                x: parseInt(icon.style.left, 10) || spot.x,
-                y: parseInt(icon.style.top, 10) || spot.y,
-                w: size.w,
-                h: size.h
-              });
-            });
-            savePositions();
-          }
-          if (D.trashIcon && !D.trashIcon.dataset.moved) placeTrashCorner();
-          resolveStickyOverlaps();
-          resolveIconOverlaps();
-          return;
-        }
-      }
+  /* Core desk composition — same format as phone/tablet:
+     folders across the top, wordmark in the middle, promo + files below.
+     Absolute coords so drag / marquee / Clean Up keep working. */
+  var STACK_CORE = { projects: 1, music: 1, videos: 1, promo: 1, about: 1, contact: 1 };
+
+  function composeStackedLayout() {
+    if (D.small() || !D.iconsHost || !D.desktop) return;
+    if (!liveWordmarkZone) composeOnceOnWordmark = true;
+    var W = D.desktop.clientWidth;
+    var H = D.desktop.clientHeight;
+    var zone = wordmarkZone(W, H);
+    var pad = Math.max(20, Math.round(W * 0.05));
+    var contentW = Math.min(W - pad * 2, Math.max(520, Math.round(W * 0.68)));
+    var contentLeft = Math.round((W - contentW) / 2);
+    var colW = contentW / 3;
+    var gap = Math.max(14, Math.round(H * 0.018));
+
+    function byId(id) {
+      return D.iconsHost.querySelector('.icon[data-id="' + id + '"]');
     }
-    var list = Array.prototype.slice.call(D.iconsHost.querySelectorAll('.icon[data-scatter]'));
-    if (!list.length) return;
-    /* Largest first so promo gets a clear seat; then shuffle the rest lightly */
+    function place(icon, x, y) {
+      if (!icon || isTrashCan(icon)) return;
+      icon.style.left = Math.round(x) + 'px';
+      icon.style.top = Math.round(y) + 'px';
+      clampIconToDesk(icon);
+    }
+    function centerInCol(icon, col, y) {
+      if (!icon) return;
+      var size = iconSize(icon);
+      var x = contentLeft + col * colW + (colW - size.w) / 2;
+      place(icon, x, y);
+    }
+
+    var folders = [byId('projects'), byId('music'), byId('videos')].filter(Boolean);
+    var folderH = folders.length ? iconSize(folders[0]).h : 148;
+    var topY = clamp(Math.round(zone.y0 - folderH - gap), pad, Math.max(pad, H - folderH - pad));
+    folders.forEach(function (icon, i) { centerInCol(icon, i, topY); });
+
+    var promo = byId('promo');
+    var about = byId('about');
+    var contact = byId('contact');
+    var promoSize = promo ? iconSize(promo) : { w: 300, h: 330 };
+    var aboutSize = about ? iconSize(about) : { w: 128, h: 148 };
+    var contactSize = contact ? iconSize(contact) : { w: 128, h: 148 };
+    var fileGapX = Math.max(44, Math.round(colW * 0.30));
+    var bottomBlockH = Math.max(promoSize.h, aboutSize.h, contactSize.h);
+    var bottomY = clamp(Math.round(zone.y1 + gap), pad, Math.max(pad, H - bottomBlockH - pad));
+
+    /* Promo nudged left; about + contact share one row to its right */
+    var promoX = contentLeft - Math.round(colW * 0.18);
+    promoX = clamp(promoX, pad, Math.max(pad, W - promoSize.w - pad));
+    if (promo) place(promo, promoX, bottomY);
+
+    var filesY = bottomY + Math.max(0, Math.round((promoSize.h - aboutSize.h) / 2));
+    var filesX = (promo ? promoX + promoSize.w : contentLeft) + Math.max(108, Math.round(colW * 0.82));
+    if (about) place(about, filesX, filesY);
+    if (contact) place(contact, filesX + aboutSize.w + fileGapX, filesY);
+
+    if (D.trashIcon && !D.trashIcon.dataset.moved) placeTrashCorner();
+  }
+
+  function placeExtraIcons(list) {
+    if (!list || !list.length) return;
+    var stickies = stickyRects();
+    var placed = collectPlaced();
     list.sort(function (a, b) {
       var sa = iconSize(a), sb = iconSize(b);
       return (sb.w * sb.h) - (sa.w * sa.h);
     });
-    var stickies = stickyRects();
-    var placed = [];
-    var edgeSlots = Math.min(2, Math.max(1, Math.floor(list.length / 6)));
-    var smallIdx = 0;
     list.forEach(function (icon) {
       var size = iconSize(icon);
-      var isPromo = icon.dataset.id === 'promo' || icon.dataset.open === 'promo';
-      var preferMid = isPromo ? false : (smallIdx >= edgeSlots);
-      if (!isPromo) smallIdx++;
-      var spot = findClearSpot(size.w, size.h, placed, stickies, true, preferMid);
+      var spot = findClearSpot(size.w, size.h, placed, stickies, true, icon.dataset.id !== 'promo');
       icon.style.left = spot.x + 'px';
       icon.style.top = spot.y + 'px';
       clampIconToDesk(icon);
@@ -883,6 +913,31 @@
         h: size.h
       });
     });
+  }
+
+  function scatterIcons(force) {
+    if (D.small() || !D.iconsHost) return;
+    if (!force) {
+      var saved = readPositions();
+      if (saved) {
+        var result = applySavedPositions(saved);
+        if (result.applied > 0) {
+          if (result.missing.length) {
+            placeExtraIcons(result.missing);
+            savePositions();
+          }
+          if (D.trashIcon && !D.trashIcon.dataset.moved) placeTrashCorner();
+          resolveStickyOverlaps();
+          resolveIconOverlaps();
+          return;
+        }
+      }
+    }
+    composeStackedLayout();
+    var extras = Array.prototype.slice.call(D.iconsHost.querySelectorAll('.icon[data-scatter]')).filter(function (icon) {
+      return !STACK_CORE[icon.dataset.id];
+    });
+    placeExtraIcons(extras);
     placeTrashCorner();
     resolveIconOverlaps();
     savePositions();
@@ -921,14 +976,6 @@
 
   function arrangeIcons(mode) {
     var list = Array.prototype.slice.call(D.iconsHost.querySelectorAll('.icon:not(.trash)'));
-    if (mode === 'name') {
-      list.sort(function (a, b) { return iconLabel(a).localeCompare(iconLabel(b)); });
-    } else {
-      list.sort(function (a, b) {
-        var sa = iconSize(a), sb = iconSize(b);
-        return (sb.w * sb.h) - (sa.w * sa.h);
-      });
-    }
     var stickies = stickyRects();
     var placed = [];
     var W = D.desktop.clientWidth, H = D.desktop.clientHeight;
@@ -938,6 +985,7 @@
 
     /* Arrange by Name: one centred row just above the JAMES BECKWITH wordmark */
     if (mode === 'name') {
+      list.sort(function (a, b) { return iconLabel(a).localeCompare(iconLabel(b)); });
       var n = list.length;
       var cellW = 134;
       var maxSpan = Math.max(defaultW, W - pad * 2);
@@ -976,55 +1024,13 @@
       return;
     }
 
-    /* Clean Up: central cluster around the wordmark, still clear of the name */
-    var dx = 134, dy = 148;
-    var slots = [];
-    function addRow(y, xStart, xEnd) {
-      for (var x = xStart; x <= xEnd - defaultW; x += dx) slots.push({ x: x, y: y });
-    }
-    for (var y = Math.round(H * 0.10); y < H * 0.78; y += dy) {
-      addRow(y, Math.round(W * 0.08), Math.round(zone.x0 - 8));
-    }
-    for (y = Math.round(H * 0.10); y < H * 0.78; y += dy) {
-      addRow(y, Math.round(zone.x1 + 8), Math.round(W * 0.92));
-    }
-    addRow(Math.round(H * 0.08), Math.round(W * 0.22), Math.round(W * 0.78));
-    addRow(Math.round(zone.y1 + 12), Math.round(W * 0.22), Math.round(W * 0.78));
-    var si = 0;
-    list.forEach(function (icon) {
-      var size = iconSize(icon);
-      var x, y, tries = 0, spot;
-      do {
-        if (si < slots.length && size.w <= defaultW * 1.2) {
-          x = slots[si].x;
-          y = slots[si].y;
-          si++;
-        } else {
-          spot = findClearSpot(size.w, size.h, placed, stickies, true, icon.dataset.id !== 'promo');
-          x = spot.x; y = spot.y;
-        }
-        tries++;
-      } while (tries < 60 && (overlapsAnySticky(x, y, size.w, size.h, stickies) ||
-        overlapsPlaced(x, y, size.w, size.h, placed) ||
-        (x + size.w > zone.x0 && x < zone.x1 && y + size.h > zone.y0 && y < zone.y1)));
-      if (overlapsAnySticky(x, y, size.w, size.h, stickies) ||
-          overlapsPlaced(x, y, size.w, size.h, placed) ||
-          (x + size.w > zone.x0 && x < zone.x1 && y + size.h > zone.y0 && y < zone.y1)) {
-        spot = findClearSpot(size.w, size.h, placed, stickies, true, icon.dataset.id !== 'promo');
-        x = spot.x; y = spot.y;
-      }
-      icon.style.left = x + 'px';
-      icon.style.top = y + 'px';
-      clampIconToDesk(icon);
-      placed.push({
-        x: parseInt(icon.style.left, 10) || x,
-        y: parseInt(icon.style.top, 10) || y,
-        w: size.w,
-        h: size.h
-      });
-    });
+    /* Clean Up: restore stacked phone/tablet composition; park extras around it */
+    composeStackedLayout();
+    var extras = list.filter(function (icon) { return !STACK_CORE[icon.dataset.id]; });
+    placeExtraIcons(extras);
     placeTrashCorner();
     if (D.trashIcon) delete D.trashIcon.dataset.moved;
+    resolveIconOverlaps();
     savePositions();
   }
 
@@ -1053,7 +1059,139 @@
   function isFolderDropTarget(el) {
     if (!el || isTrashCan(el)) return false;
     var name = el.dataset.open || (el.dataset.unshelf && D.FOLDER_IDS && D.FOLDER_IDS[el.dataset.unshelf] ? el.dataset.unshelf : null);
-    return !!(name && D.FOLDER_IDS && D.FOLDER_IDS[name]);
+    return !!(name && canDropIntoFolder(name));
+  }
+
+  function canDropIntoFolder(folderName) {
+    if (!folderName || !D.FOLDER_IDS || !D.FOLDER_IDS[folderName]) return false;
+    if (D.HIDDEN_IDS && D.HIDDEN_IDS[folderName]) return false;
+    /* Labs stays curated on the wide desktop — no drag-in from desk or other folders */
+    if (!D.small() && folderName === 'labs') return false;
+    return true;
+  }
+
+  var DRAG_Z = 10000;
+
+  function dragLiftZ(el) {
+    if (el) el.style.zIndex = String(DRAG_Z);
+  }
+
+  function dragRestoreZ(el) {
+    if (el) el.style.zIndex = '';
+  }
+
+  function deskIconCoords(icon) {
+    if (!icon || !D.desktop) return { ox: 0, oy: 0 };
+    var desk = D.desktop.getBoundingClientRect();
+    var rect = icon.getBoundingClientRect();
+    return {
+      ox: rect.left - desk.left,
+      oy: rect.top - desk.top
+    };
+  }
+
+  function liftDeskIconForDrag(icon) {
+    if (!icon || !D.desktop) return deskIconCoords(icon);
+    var coords = deskIconCoords(icon);
+    if (icon.parentNode !== D.desktop) D.desktop.appendChild(icon);
+    icon.style.left = coords.ox + 'px';
+    icon.style.top = coords.oy + 'px';
+    dragLiftZ(icon);
+    return coords;
+  }
+
+  function restoreDeskIconHost(icon) {
+    if (!icon || !D.iconsHost) return;
+    if (D.trashed && D.trashed.contains(icon)) return;
+    if (D.shelved && D.shelved.contains(icon)) return;
+    var left = parseInt(icon.style.left, 10) || 0;
+    var top = parseInt(icon.style.top, 10) || 0;
+    if (icon.parentNode !== D.iconsHost) D.iconsHost.appendChild(icon);
+    icon.style.left = left + 'px';
+    icon.style.top = top + 'px';
+    dragRestoreZ(icon);
+  }
+
+  function dragProbeEls(dragging) {
+    var els = [];
+    if (dragging) els.push(dragging);
+    document.querySelectorAll('#icons .icon.dragging, #desktop > .icon.dragging, .win .item.dragging').forEach(function (n) {
+      if (els.indexOf(n) === -1) els.push(n);
+    });
+    return els;
+  }
+
+  function isDragParticipant(el, dragEls) {
+    if (!el || !dragEls.length) return false;
+    for (var i = 0; i < dragEls.length; i++) {
+      if (el === dragEls[i] || dragEls[i].contains(el) || el.contains(dragEls[i])) return true;
+    }
+    return false;
+  }
+
+  function dragContextName(el) {
+    if (!el || !el.dataset) return '';
+    if (el.classList.contains('item') && el.dataset.unshelf) {
+      var shelved = findShelvedIcon(el.dataset.unshelf);
+      if (shelved && shelved.dataset.open) return shelved.dataset.open;
+    }
+    if (el.dataset.open) return el.dataset.open;
+    if (el.dataset.id && D.FOLDER_IDS && D.FOLDER_IDS[el.dataset.id]) return el.dataset.id;
+    if (el.dataset.unshelf) return el.dataset.unshelf;
+    return el.dataset.id || '';
+  }
+
+  function folderNameFromDeskIcon(icon) {
+    if (!icon) return null;
+    var name = icon.dataset.open || icon.dataset.id;
+    return (name && canDropIntoFolder(name)) ? name : null;
+  }
+
+  function isTrashDragSource(el) {
+    if (!el) return false;
+    if (isTrashCan(el)) return true;
+    if (el.classList && el.classList.contains('item') && el.dataset.restore) return true;
+    if (el.dataset && el.dataset.unshelf) {
+      var ic = findShelvedIcon(el.dataset.unshelf);
+      if (ic && D.trashed && D.trashed.contains(ic)) return true;
+    }
+    return false;
+  }
+
+  function isTrashDrag(dragEls) {
+    for (var i = 0; i < dragEls.length; i++) {
+      if (isTrashDragSource(dragEls[i])) return true;
+    }
+    return false;
+  }
+
+  function createShelfGhost(sourceEl) {
+    var ghost = sourceEl.cloneNode(true);
+    ghost.classList.add('shelf-drag');
+    var rect = sourceEl.getBoundingClientRect();
+    var cs = window.getComputedStyle(sourceEl);
+    var iconSize = cs.getPropertyValue('--icon-size').trim() || '80px';
+    ghost.style.cssText = [
+      'position:fixed',
+      'left:0',
+      'top:0',
+      'z-index:' + DRAG_Z,
+      'pointer-events:none',
+      'margin:0',
+      'box-sizing:border-box',
+      'width:' + Math.round(rect.width) + 'px',
+      'height:' + Math.round(rect.height) + 'px',
+      '--icon-size:' + iconSize
+    ].join(';');
+    document.body.appendChild(ghost);
+    return ghost;
+  }
+
+  function positionShelfGhost(ghost, sourceEl, clientX, clientY) {
+    var rect = sourceEl.getBoundingClientRect();
+    ghost.style.transform = 'translate(' +
+      (clientX - rect.width / 2) + 'px,' +
+      (clientY - rect.height / 2) + 'px)';
   }
 
   function clearDropTargets() {
@@ -1063,31 +1201,40 @@
   }
 
   function dropTargetAt(x, y, dragging) {
-    var prev = dragging ? dragging.style.pointerEvents : '';
-    if (dragging) dragging.style.pointerEvents = 'none';
+    var dragEls = dragProbeEls(dragging);
+    var hidden = dragEls.map(function (el) {
+      return { el: el, prev: el.style.pointerEvents };
+    });
+    document.querySelectorAll('.shelf-drag').forEach(function (g) {
+      hidden.push({ el: g, prev: g.style.pointerEvents || 'none' });
+    });
+    hidden.forEach(function (h) { h.el.style.pointerEvents = 'none'; });
     var el = document.elementFromPoint(x, y);
-    if (dragging) dragging.style.pointerEvents = prev;
+    hidden.forEach(function (h) { h.el.style.pointerEvents = h.prev; });
     if (!el) return null;
 
-    var draggingName = dragging ? (dragging.dataset.open || dragging.dataset.unshelf || '') : '';
+    var draggingName = dragging ? dragContextName(dragging) : '';
+    var trashDrag = isTrashDrag(dragEls);
 
     /* 1. Desktop icon */
-    var deskIcon = el.closest('#icons .icon');
-    if (deskIcon && deskIcon !== dragging) {
+    var deskIcon = el.closest('#icons .icon') || el.closest('#desktop > .icon');
+    if (deskIcon && !isDragParticipant(deskIcon, dragEls)) {
       if (isTrashCan(deskIcon)) return { type: 'trash', el: deskIcon };
-      var fName = deskIcon.dataset.open;
-      if (fName && D.FOLDER_IDS && D.FOLDER_IDS[fName]) {
+      var fName = folderNameFromDeskIcon(deskIcon);
+      if (fName && !trashDrag) {
         if (draggingName && isFolderAncestor(draggingName, fName)) return null;
+        if (draggingName && isFolderAncestor(fName, draggingName)) return null;
         return { type: 'folder', name: fName, el: deskIcon };
       }
     }
 
     /* 2. Folder item inside open window */
     var winItem = el.closest('.win .item');
-    if (winItem && winItem !== dragging) {
+    if (winItem && !isDragParticipant(winItem, dragEls)) {
       var itemFolder = winItem.dataset.open || (winItem.dataset.unshelf && D.FOLDER_IDS && D.FOLDER_IDS[winItem.dataset.unshelf] ? winItem.dataset.unshelf : null);
-      if (itemFolder && D.FOLDER_IDS && D.FOLDER_IDS[itemFolder]) {
+      if (itemFolder && canDropIntoFolder(itemFolder) && !trashDrag) {
         if (draggingName && isFolderAncestor(draggingName, itemFolder)) return null;
+        if (draggingName && isFolderAncestor(itemFolder, draggingName)) return null;
         return { type: 'folder', name: itemFolder, el: winItem };
       }
     }
@@ -1100,8 +1247,9 @@
         if (D.open[k] && D.open[k].el === win) name = k;
       });
       if (name === 'trash') return { type: 'trash', el: win };
-      if (name && D.FOLDER_IDS && D.FOLDER_IDS[name]) {
+      if (name && canDropIntoFolder(name) && !trashDrag) {
         if (draggingName && isFolderAncestor(draggingName, name)) return null;
+        if (draggingName && isFolderAncestor(name, draggingName)) return null;
         return { type: 'folder', name: name, el: win };
       }
     }
@@ -1160,7 +1308,7 @@
     Object.keys(map).forEach(function (folder) {
       if (!D.FOLDER_IDS[folder]) return;
       (map[folder] || []).forEach(function (id) {
-        if (D.PINNED_IDS && D.PINNED_IDS[id]) return;
+        if (D.DESK_PINNED_IDS && D.DESK_PINNED_IDS[id]) return;
         targetShelfForId[id] = folder;
       });
     });
@@ -1205,6 +1353,7 @@
     if (bar && bar.firstElementChild) {
       bar.firstElementChild.textContent = n + ' item' + (n === 1 ? '' : 's');
     }
+    if (!D.small()) layoutFolderWindow(D.open[name].el, name);
     if (typeof D.updateScrollbars === 'function') {
       D.updateScrollbars(D.open[name].el);
     }
@@ -1326,13 +1475,214 @@
       frame.style.left = Math.max(8, Math.min(frame.offsetLeft, maxX)) + 'px';
       frame.style.top = Math.max(8, Math.min(frame.offsetTop, maxY)) + 'px';
     }
+    if (!D.small()) layoutFolderWindow(frame, 'labs');
     if (typeof D.updateScrollbars === 'function') D.updateScrollbars(frame);
+  }
+
+  function readWinPositions() {
+    try {
+      var raw = localStorage.getItem(D.WIN_POS_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (err) { return {}; }
+  }
+
+  function writeWinPositions(map) {
+    try { localStorage.setItem(D.WIN_POS_KEY, JSON.stringify(map)); } catch (err) {}
+  }
+
+  function winItemSize(item) {
+    if (!item) return { w: 128, h: 148 };
+    var w = item.offsetWidth;
+    var h = item.offsetHeight;
+    if (w >= 8 && h >= 8) return { w: w, h: h };
+    if (item.classList.contains('video-item')) return { w: 190, h: 175 };
+    return { w: 128, h: 148 };
+  }
+
+  function clampItemToHost(item, host) {
+    if (!item || !host || D.small()) return;
+    var size = winItemSize(item);
+    var pad = 8;
+    var maxX = Math.max(pad, host.clientWidth - size.w - pad);
+    var maxY = Math.max(pad, host.scrollHeight - size.h - pad);
+    var x = parseInt(item.style.left, 10);
+    var y = parseInt(item.style.top, 10);
+    if (!isFinite(x)) x = pad;
+    if (!isFinite(y)) y = pad;
+    item.style.left = clamp(x, pad, maxX) + 'px';
+    item.style.top = clamp(y, pad, maxY) + 'px';
+  }
+
+  function syncHostMinHeight(host) {
+    if (!host || !host.classList.contains('items-free')) return;
+    var maxBottom = 160;
+    host.querySelectorAll('.item').forEach(function (item) {
+      var y = parseInt(item.style.top, 10) || 0;
+      var h = item.offsetHeight || 148;
+      maxBottom = Math.max(maxBottom, y + h + 16);
+    });
+    host.style.minHeight = maxBottom + 'px';
+  }
+
+  function saveWinPositions(folderName, host) {
+    if (D.small() || !folderName || !host) return;
+    var map = readWinPositions();
+    if (!map[folderName]) map[folderName] = {};
+    host.querySelectorAll('.item').forEach(function (item) {
+      var id = item.dataset.unshelf;
+      if (!id) return;
+      map[folderName][id] = {
+        left: parseInt(item.style.left, 10) || 0,
+        top: parseInt(item.style.top, 10) || 0
+      };
+    });
+    writeWinPositions(map);
+  }
+
+  function clearWinPosition(folderName, id) {
+    if (!folderName || !id) return;
+    var map = readWinPositions();
+    if (map[folderName] && map[folderName][id]) {
+      delete map[folderName][id];
+      writeWinPositions(map);
+    }
+  }
+
+  function folderWindowBodyAt(x, y, folderName) {
+    if (!D.open || !folderName || !D.open[folderName]) return null;
+    var body = D.open[folderName].el.querySelector('.win-body');
+    if (!body) return null;
+    var rect = body.getBoundingClientRect();
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) return null;
+    return body;
+  }
+
+  function folderHostExtent(host) {
+    if (!host) return { w: 360, h: 200 };
+    syncHostMinHeight(host);
+    return {
+      w: Math.max(360, host.scrollWidth + 24),
+      h: Math.max(200, host.scrollHeight + 16)
+    };
+  }
+
+  function winPosValid(pos) {
+    return !!(pos && typeof pos.left === 'number' && typeof pos.top === 'number' &&
+      (pos.left !== 0 || pos.top !== 0));
+  }
+
+  function hostLayoutWidth(host) {
+    var w = host.clientWidth;
+    if (w > 100) return w;
+    var body = host.closest('.win-body');
+    if (body && body.clientWidth > 100) {
+      var cs = window.getComputedStyle(body);
+      var pad = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+      return body.clientWidth - pad;
+    }
+    var win = host.closest('.win');
+    if (win && win.clientWidth > 100) return win.clientWidth - 56;
+    return 520;
+  }
+
+  function scatterFolderItems(host) {
+    if (!host || D.small()) return;
+    var pad = 4;
+    var gapX = 8;
+    var gapY = 20;
+    var isVideo = !!host.querySelector('.video-item');
+    var itemW = isVideo ? 190 : 128;
+    var itemH = isVideo ? 175 : 148;
+    var colW = itemW + gapX;
+    var rowH = itemH + gapY;
+    var hostW = hostLayoutWidth(host);
+    var cols = Math.max(1, Math.floor((hostW - pad * 2 + gapX) / colW));
+    var i = 0;
+    host.querySelectorAll('.item').forEach(function (item) {
+      var col = i % cols;
+      var row = Math.floor(i / cols);
+      item.style.left = (pad + col * colW) + 'px';
+      item.style.top = (pad + row * rowH) + 'px';
+      i++;
+    });
+    syncHostMinHeight(host);
+  }
+
+  function resolveItemOverlapsInHost(host, folderName) {
+    if (D.small() || !host) return;
+    var placed = [];
+    var moved = false;
+    var list = Array.prototype.slice.call(host.querySelectorAll('.item'));
+    list.sort(function (a, b) {
+      var sa = winItemSize(a), sb = winItemSize(b);
+      return (sb.w * sb.h) - (sa.w * sa.h);
+    });
+    list.forEach(function (item) {
+      clampItemToHost(item, host);
+      var size = winItemSize(item);
+      var x = parseInt(item.style.left, 10) || 0;
+      var y = parseInt(item.style.top, 10) || 0;
+      if (overlapsPlaced(x, y, size.w, size.h, placed, 8)) {
+        var pad = 12;
+        syncHostMinHeight(host);
+        var hostW = hostLayoutWidth(host);
+        var hostH = Math.max(host.scrollHeight, 240);
+        var found = false;
+        var tryX, tryY, t;
+        for (t = 0; t < 80; t++) {
+          tryX = pad + Math.floor(Math.random() * Math.max(1, hostW - size.w - pad * 2));
+          tryY = pad + Math.floor(Math.random() * Math.max(1, hostH - size.h - pad * 2));
+          if (!overlapsPlaced(tryX, tryY, size.w, size.h, placed, 8)) {
+            x = tryX; y = tryY; found = true; moved = true; break;
+          }
+        }
+        if (!found) {
+          for (tryY = pad; tryY <= hostH - size.h - pad && !found; tryY += 48) {
+            for (tryX = pad; tryX <= hostW - size.w - pad; tryX += 48) {
+              if (!overlapsPlaced(tryX, tryY, size.w, size.h, placed, 8)) {
+                x = tryX; y = tryY; found = true; moved = true; break;
+              }
+            }
+          }
+        }
+        item.style.left = x + 'px';
+        item.style.top = y + 'px';
+        clampItemToHost(item, host);
+        x = parseInt(item.style.left, 10) || x;
+        y = parseInt(item.style.top, 10) || y;
+      }
+      placed.push({ x: x, y: y, w: size.w, h: size.h });
+    });
+    if (moved) saveWinPositions(folderName, host);
+    syncHostMinHeight(host);
+  }
+
+  function applyWinPositions(host, folderName) {
+    if (D.small() || !host || !folderName) return;
+    scatterFolderItems(host);
+    syncHostMinHeight(host);
+  }
+
+  function layoutFolderWindow(frame, folderName) {
+    if (D.small() || !frame || !folderName) return;
+    var host = frame.querySelector('#video-items') || frame.querySelector('.items');
+    if (!host || host.hidden || !host.classList.contains('items-free')) return;
+    if (!host.querySelector('.item')) return;
+    applyWinPositions(host, folderName);
   }
 
   function fillFolderShelf(host, folderName) {
     if (!host || !D.shelved || !folderName) return;
-    if (folderName === 'videos' || host.id === 'video-items') {
-      host.style.gridTemplateColumns = 'repeat(auto-fill,minmax(190px,1fr))';
+    if (D.small()) {
+      host.classList.remove('items-free');
+      if (folderName === 'videos' || host.id === 'video-items') {
+        host.style.gridTemplateColumns = 'repeat(auto-fit,minmax(190px,190px))';
+        host.style.justifyContent = 'center';
+      }
+    } else {
+      host.classList.add('items-free');
+      host.style.gridTemplateColumns = '';
+      host.style.justifyContent = '';
     }
     var labsLevel = folderName === 'labs' ? getLabsAccess() : '';
     if (folderName === 'labs' && !labsLevel) return;
@@ -1340,6 +1690,7 @@
       if (icon.dataset.shelf !== folderName) return;
       if (folderName === 'labs' && !labsIconAllowed(icon, labsLevel)) return;
       var id = iconKey(icon);
+      if (D.HIDDEN_IDS && D.HIDDEN_IDS[id]) return;
       var art = icon.querySelector('.art');
       var b = D.el('<button class="item" type="button"><span class="label"></span></button>');
       b.dataset.unshelf = id;
@@ -1374,18 +1725,21 @@
       }
       b.querySelector('.label').textContent = labelText;
       host.appendChild(b);
-      bindShelfItemDrag(b, icon);
+      bindShelfItemDrag(b, icon, host, folderName);
     });
   }
 
   function moveToFolder(icon, folderName) {
-    if (!icon || !folderName || !D.shelved || !D.FOLDER_IDS[folderName]) return;
-    if (isTrashCan(icon) || isPinned(icon)) return;
+    if (!icon || !folderName || !D.shelved || !canDropIntoFolder(folderName)) return;
+    if (isTrashCan(icon) || isDeskPinned(icon)) return;
+    if (D.trashed && D.trashed.contains(icon)) return;
     if (icon.dataset.open === folderName) return;
     if (icon.dataset.open && isFolderAncestor(icon.dataset.open, folderName)) return;
+    if (icon.dataset.open && isFolderAncestor(folderName, icon.dataset.open)) return;
 
     var prevFolder = icon.dataset.shelf;
     if (prevFolder === folderName) return;
+    if (prevFolder) clearWinPosition(prevFolder, iconKey(icon));
 
     var winName = icon.dataset.open;
     if (winName && D.open[winName]) D.closeWindow(winName);
@@ -1476,6 +1830,7 @@
     if (node.dataset.restore) {
       if (D.small() || D.coarse()) {
         D.restoreFromTrash(node.dataset.restore);
+        clearSel();
       }
       return;
     }
@@ -1483,9 +1838,21 @@
       var shelved = findShelvedIcon(node.dataset.unshelf);
       if (shelved) return activate(shelved);
     }
-    if (node.dataset.video) return D.openVideo(node.dataset.video);
-    if (node.dataset.href) return window.open(node.dataset.href, '_blank', 'noopener');
-    if (node.dataset.open) return D.openWindow(node.dataset.open);
+    if (node.dataset.video) {
+      D.openVideo(node.dataset.video);
+      clearSel();
+      return;
+    }
+    if (node.dataset.href) {
+      window.open(node.dataset.href, '_blank', 'noopener');
+      clearSel();
+      return;
+    }
+    if (node.dataset.open) {
+      D.openWindow(node.dataset.open);
+      /* Don't leave the icon stuck in the selected (dimmed + label chip) look */
+      clearSel();
+    }
   }
 
   function activateSelected(preferred) {
@@ -1498,13 +1865,14 @@
       }
       activate(node);
     });
+    clearSel();
   }
 
   function trashSelected(preferred) {
     var icons = selectedIcons().filter(function (icon) {
-      return !isTrashCan(icon) && !isPinned(icon);
+      return !isTrashCan(icon) && !isTrashProtected(icon);
     });
-    if (!icons.length && preferred && preferred.classList.contains('icon') && !isTrashCan(preferred) && !isPinned(preferred)) {
+    if (!icons.length && preferred && preferred.classList.contains('icon') && !isTrashCan(preferred) && !isTrashProtected(preferred)) {
       icons = [preferred];
     }
     /* Also trash folder-window items that map back to shelved icons */
@@ -1512,7 +1880,7 @@
       if (item.dataset.restore) return;
       var id = item.dataset.unshelf;
       var icon = id ? findShelvedIcon(id) : null;
-      if (icon && icons.indexOf(icon) === -1 && !isTrashCan(icon) && !isPinned(icon)) icons.push(icon);
+      if (icon && icons.indexOf(icon) === -1 && !isTrashCan(icon) && !isTrashProtected(icon)) icons.push(icon);
     });
     icons.forEach(function (icon) { moveToTrash(icon); });
     return icons.length;
@@ -1646,6 +2014,7 @@
   function dragIcon(icon) {
     var on = false, moved = false, sx, sy, group = null;
     icon.addEventListener('pointerdown', function (e) {
+      /* Stacked phone/tablet layout — icons stay put */
       if (D.small() || e.button > 0 || icon.classList.contains('renaming')) return;
       if (typeof D.hideMenus === 'function') D.hideMenus();
 
@@ -1664,17 +2033,12 @@
       on = true; moved = false;
       sx = e.clientX; sy = e.clientY;
       group = selectedIcons().map(function (el) {
-        return { el: el, ox: el.offsetLeft, oy: el.offsetTop };
+        return { el: el, ox: el.offsetLeft, oy: el.offsetTop, lifted: false };
       });
       if (!group.some(function (g) { return g.el === icon; })) {
-        group = [{ el: icon, ox: icon.offsetLeft, oy: icon.offsetTop }];
+        group = [{ el: icon, ox: icon.offsetLeft, oy: icon.offsetTop, lifted: false }];
       }
       icon.setPointerCapture(e.pointerId);
-      group.forEach(function (g) {
-        g.el.classList.add('dragging');
-        g.el.style.zIndex = ++D.z;
-      });
-      D.iconZ = D.z;
       e.preventDefault();
     });
     icon.addEventListener('pointermove', function (e) {
@@ -1682,8 +2046,18 @@
       var dx = e.clientX - sx, dy = e.clientY - sy;
       var thresh = D.coarse() ? 100 : 25;
       if (!moved && dx * dx + dy * dy < thresh) return;
-      moved = true;
-      if (D.touchDesk()) icon.style.touchAction = 'none';
+      if (!moved) {
+        moved = true;
+        if (D.touchDesk()) icon.style.touchAction = 'none';
+        group.forEach(function (g) {
+          var coords = liftDeskIconForDrag(g.el);
+          g.ox = coords.ox;
+          g.oy = coords.oy;
+          g.lifted = true;
+          g.el.classList.add('dragging');
+        });
+        D.iconZ = DRAG_Z;
+      }
       group.forEach(function (g) {
         var maxX = Math.max(0, D.desktop.clientWidth - g.el.offsetWidth);
         var maxY = Math.max(0, D.desktop.clientHeight - g.el.offsetHeight);
@@ -1696,41 +2070,42 @@
       if (!on) return;
       on = false;
       if (D.touchDesk()) icon.style.touchAction = '';
-      var list = group || [{ el: icon }];
+      var list = group || [{ el: icon, ox: 0, oy: 0, lifted: false }];
       group = null;
       list.forEach(function (g) { g.el.classList.remove('dragging'); });
       try { icon.releasePointerCapture(e.pointerId); } catch (err) {}
       var target = moved ? dropTargetAt(e.clientX, e.clientY, icon) : null;
       clearDropTargets();
-      if (moved) {
-        list.forEach(function (g) { g.el.dataset.dragged = '1'; });
-        if (isTrashCan(icon)) icon.dataset.moved = '1';
-        if (target && target.type === 'trash') {
-          list.forEach(function (g) {
-            if (!isTrashCan(g.el) && !isPinned(g.el)) moveToTrash(g.el);
-          });
-        } else if (target && target.type === 'folder' && target.name) {
-          list.forEach(function (g) {
-            if (!isTrashCan(g.el) && !isPinned(g.el)) moveToFolder(g.el, target.name);
-          });
-        } else {
-          list.forEach(function (g) {
-            clampIconToDesk(g.el);
-          });
-          resolveIconOverlaps();
-          savePositions();
-        }
+      if (!moved) return;
+
+      list.forEach(function (g) { g.el.dataset.dragged = '1'; });
+      if (isTrashCan(icon)) icon.dataset.moved = '1';
+      if (target && target.type === 'trash') {
+        list.forEach(function (g) {
+          if (!isTrashProtected(g.el)) moveToTrash(g.el);
+        });
+      } else if (target && target.type === 'folder' && target.name && !isTrashCan(icon)) {
+        list.forEach(function (g) {
+          if (!isTrashCan(g.el) && !isDeskPinned(g.el)) moveToFolder(g.el, target.name);
+        });
+      } else {
+        list.forEach(function (g) {
+          clampIconToDesk(g.el);
+        });
+        resolveIconOverlaps();
+        savePositions();
+        list.forEach(function (g) { restoreDeskIconHost(g.el); });
       }
     }
     ['pointerup', 'pointercancel'].forEach(function (t) { icon.addEventListener(t, end); });
   }
 
-  function bindShelfItemDrag(itemBtn, icon) {
+  function bindShelfItemDragTouch(itemBtn, icon) {
     if (!itemBtn || !icon || itemBtn.dataset.shelfDragBound) return;
     itemBtn.dataset.shelfDragBound = '1';
     var on = false, moved = false, sx, sy, ghost = null;
     itemBtn.addEventListener('pointerdown', function (e) {
-      if (D.small() || e.button > 0) return;
+      if (e.button > 0) return;
       if (typeof D.hideMenus === 'function') D.hideMenus();
       if (e.shiftKey || e.metaKey || e.ctrlKey) {
         itemBtn.classList.toggle('selected');
@@ -1755,14 +2130,10 @@
       if (!moved && dx * dx + dy * dy < thresh) return;
       if (!moved) {
         moved = true;
-        ghost = itemBtn.cloneNode(true);
-        ghost.classList.add('shelf-drag');
-        var gw = itemBtn.offsetWidth || 100;
-        ghost.style.cssText = 'position:fixed;left:0;top:0;z-index:9999;pointer-events:none;margin:0;width:' + gw + 'px';
-        document.body.appendChild(ghost);
+        ghost = createShelfGhost(itemBtn);
         itemBtn.style.opacity = '0.35';
       }
-      ghost.style.transform = 'translate(' + (e.clientX - (itemBtn.offsetWidth || 100) / 2) + 'px,' + (e.clientY - 40) + 'px)';
+      positionShelfGhost(ghost, itemBtn, e.clientX, e.clientY);
       highlightDropTarget(dropTargetAt(e.clientX, e.clientY, ghost));
     });
     function end(e) {
@@ -1775,18 +2146,10 @@
       if (ghost && ghost.parentNode) ghost.remove();
       ghost = null;
       if (!moved) {
-        if (!itemBtn.classList.contains('selected')) {
-          clearSel();
-          itemBtn.classList.add('selected');
-        }
-        itemBtn.dataset.justActivated = '1';
-        setTimeout(function () { delete itemBtn.dataset.justActivated; }, 150);
-        if (selectedItems().length > 1) return;
-        activate(itemBtn);
+        /* Open on click — same path as desk icons (menus.js), not pointerup */
         return;
       }
       itemBtn.dataset.dragged = '1';
-      var prevFolder = icon.dataset.shelf;
       if (target && target.type === 'trash') {
         moveToTrash(icon);
       } else if (target && target.type === 'folder' && target.name) {
@@ -1797,6 +2160,139 @@
       }
     }
     ['pointerup', 'pointercancel'].forEach(function (t) { itemBtn.addEventListener(t, end); });
+  }
+
+  function dragWinItem(itemBtn, icon, host, folderName) {
+    if (!itemBtn || !icon || !host || itemBtn.dataset.shelfDragBound) return;
+    itemBtn.dataset.shelfDragBound = '1';
+    var on = false, moved = false, sx, sy, group = null, ghost = null;
+
+    itemBtn.addEventListener('pointerdown', function (e) {
+      if (D.small() || e.button > 0) return;
+      if (typeof D.hideMenus === 'function') D.hideMenus();
+      if (e.shiftKey || e.metaKey || e.ctrlKey) {
+        itemBtn.classList.toggle('selected');
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+      if (!itemBtn.classList.contains('selected')) {
+        clearSel();
+        itemBtn.classList.add('selected');
+      }
+      on = true; moved = false;
+      sx = e.clientX; sy = e.clientY;
+      group = selectedItems().filter(function (el) { return host.contains(el); }).map(function (el) {
+        return {
+          el: el,
+          ox: parseInt(el.style.left, 10) || 0,
+          oy: parseInt(el.style.top, 10) || 0
+        };
+      });
+      if (!group.some(function (g) { return g.el === itemBtn; })) {
+        group = [{
+          el: itemBtn,
+          ox: parseInt(itemBtn.style.left, 10) || 0,
+          oy: parseInt(itemBtn.style.top, 10) || 0
+        }];
+      }
+      itemBtn.setPointerCapture(e.pointerId);
+      group.forEach(function (g) {
+        g.el.classList.add('dragging');
+        dragLiftZ(g.el);
+      });
+      e.preventDefault();
+      e.stopPropagation();
+    });
+
+    itemBtn.addEventListener('pointermove', function (e) {
+      if (!on || !group) return;
+      var dx = e.clientX - sx, dy = e.clientY - sy;
+      var thresh = D.coarse() ? 100 : 25;
+      if (!moved && dx * dx + dy * dy < thresh) return;
+      moved = true;
+      var hostRect = host.getBoundingClientRect();
+      var pad = 10;
+      var inHost = e.clientX >= hostRect.left - pad && e.clientX <= hostRect.right + pad &&
+        e.clientY >= hostRect.top - pad && e.clientY <= hostRect.bottom + pad;
+      if (!inHost) {
+        if (!ghost) {
+          ghost = createShelfGhost(itemBtn);
+          group.forEach(function (g) { g.el.style.opacity = '0.35'; });
+        }
+        positionShelfGhost(ghost, itemBtn, e.clientX, e.clientY);
+        highlightDropTarget(dropTargetAt(e.clientX, e.clientY, ghost));
+        return;
+      }
+      if (ghost) {
+        ghost.remove();
+        ghost = null;
+        group.forEach(function (g) { g.el.style.opacity = ''; });
+      }
+      group.forEach(function (g) {
+        var size = winItemSize(g.el);
+        var maxX = Math.max(0, host.clientWidth - size.w);
+        var maxY = Math.max(0, host.scrollHeight - size.h);
+        g.el.style.left = Math.max(0, Math.min(g.ox + dx, maxX)) + 'px';
+        g.el.style.top = Math.max(0, Math.min(g.oy + dy, maxY)) + 'px';
+      });
+      syncHostMinHeight(host);
+      highlightDropTarget(dropTargetAt(e.clientX, e.clientY, itemBtn));
+    });
+
+    function end(e) {
+      if (!on) return;
+      on = false;
+      var list = group || [{ el: itemBtn, ox: 0, oy: 0 }];
+      var probe = ghost || itemBtn;
+      group = null;
+      list.forEach(function (g) {
+        g.el.classList.remove('dragging');
+        g.el.style.opacity = '';
+        dragRestoreZ(g.el);
+      });
+      if (ghost && ghost.parentNode) ghost.remove();
+      ghost = null;
+      try { itemBtn.releasePointerCapture(e.pointerId); } catch (err) {}
+      var target = moved ? dropTargetAt(e.clientX, e.clientY, probe) : null;
+      clearDropTargets();
+      if (!moved) return;
+
+      list.forEach(function (g) { g.el.dataset.dragged = '1'; });
+
+      if (target && target.type === 'trash') {
+        list.forEach(function (g) {
+          var ic = findShelvedIcon(g.el.dataset.unshelf);
+          if (ic && !isTrashProtected(ic)) moveToTrash(ic);
+        });
+        return;
+      }
+      if (target && target.type === 'folder' && target.name && target.name !== folderName) {
+        list.forEach(function (g) {
+          var ic = findShelvedIcon(g.el.dataset.unshelf);
+          if (ic && !isDeskPinned(ic) && !(D.trashed && D.trashed.contains(ic))) moveToFolder(ic, target.name);
+        });
+        return;
+      }
+
+      if (folderWindowBodyAt(e.clientX, e.clientY, folderName)) {
+        list.forEach(function (g) { clampItemToHost(g.el, host); });
+        resolveItemOverlapsInHost(host, folderName);
+        saveWinPositions(folderName, host);
+        syncHostMinHeight(host);
+        return;
+      }
+
+      var ic = findShelvedIcon(itemBtn.dataset.unshelf);
+      if (ic && !(D.trashed && D.trashed.contains(ic))) unshelfToDesktop(ic, e.clientX, e.clientY);
+    }
+    ['pointerup', 'pointercancel'].forEach(function (t) { itemBtn.addEventListener(t, end); });
+  }
+
+  function bindShelfItemDrag(itemBtn, icon, host, folderName) {
+    if (!itemBtn || !icon) return;
+    if (D.small()) bindShelfItemDragTouch(itemBtn, icon);
+    else dragWinItem(itemBtn, icon, host, folderName);
   }
 
   function bindTrashItemDrag(itemBtn, icon) {
@@ -1819,14 +2315,10 @@
       if (!moved && dx * dx + dy * dy < thresh) return;
       if (!moved) {
         moved = true;
-        ghost = itemBtn.cloneNode(true);
-        ghost.classList.add('shelf-drag');
-        var gw = itemBtn.offsetWidth || 100;
-        ghost.style.cssText = 'position:fixed;left:0;top:0;z-index:9999;pointer-events:none;margin:0;width:' + gw + 'px';
-        document.body.appendChild(ghost);
+        ghost = createShelfGhost(itemBtn);
         itemBtn.style.opacity = '0.35';
       }
-      ghost.style.transform = 'translate(' + (e.clientX - (itemBtn.offsetWidth || 100) / 2) + 'px,' + (e.clientY - 40) + 'px)';
+      positionShelfGhost(ghost, itemBtn, e.clientX, e.clientY);
       highlightDropTarget(dropTargetAt(e.clientX, e.clientY, ghost));
     });
     function end(e) {
@@ -1845,16 +2337,10 @@
         return;
       }
       itemBtn.dataset.dragged = '1';
-      if (target && target.type === 'folder' && target.name) {
-        delete icon.dataset.trashId;
-        delete icon.dataset.trashOrigin;
-        moveToFolder(icon, target.name);
-        updateTrashAppearance();
-        refreshTrashWindow();
-      } else if (target && target.type === 'trash') {
+      if (target && target.type === 'trash') {
         /* released in trash -> stays in trash */
       } else {
-        /* dropped on desktop — place at drop point */
+        /* trash items only go back to the desk, never into folders/windows */
         if (trashId) {
           delete icon.dataset.trashOrigin;
           restoreFromTrash(trashId, e.clientX, e.clientY);
@@ -1986,6 +2472,7 @@
       localStorage.removeItem(D.SHELF_KEY);
       localStorage.removeItem(D.GONE_KEY);
       localStorage.removeItem(D.SEED_KEY);
+      localStorage.removeItem(D.WIN_POS_KEY);
       sessionStorage.removeItem(LABS_ACCESS_KEY);
     } catch (err) {}
     if (typeof D.closeAll === 'function') D.closeAll();
@@ -2010,6 +2497,7 @@
   D.savePositions = savePositions;
   D.scatterIcons = scatterIcons;
   D.arrangeIcons = arrangeIcons;
+  D.composeStackedLayout = composeStackedLayout;
   D.overTrash = overTrash;
   D.clearSel = clearSel;
   D.selectedIcons = selectedIcons;
@@ -2021,6 +2509,10 @@
   D.dragIcon = dragIcon;
   D.countShelved = countShelved;
   D.fillFolderShelf = fillFolderShelf;
+  D.applyWinPositions = applyWinPositions;
+  D.layoutFolderWindow = layoutFolderWindow;
+  D.folderHostExtent = folderHostExtent;
+  D.saveWinPositions = saveWinPositions;
   D.applyLabsGate = applyLabsGate;
   D.moveToFolder = moveToFolder;
   D.unshelfToDesktop = unshelfToDesktop;
@@ -2045,6 +2537,12 @@
         x1: (d.x || 0) - rect.left + (d.width || rect.width * 0.6) + padX,
         y1: (d.y || 0) - rect.top + (d.height || 100) + padY
       };
+      /* First paint often lands before the wordmark metrics — nudge once */
+      if (composeOnceOnWordmark && !D.small()) {
+        composeOnceOnWordmark = false;
+        composeStackedLayout();
+        savePositions();
+      }
     });
     ensureTrashOnDesktop();
     if (!D.shelved) D.shelved = document.getElementById('shelved');
